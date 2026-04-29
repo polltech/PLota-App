@@ -43,14 +43,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Determine platform
-        id: determine
-        run: |
-          if [ "${{ github.event.inputs.platform }}" != "" ]; then
-            echo "platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
-          else
-            echo "platform=all" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build on EAS
-        run: eas build --profile development --platform ${{ steps.determine.outputs.platform }} --non-interactive
+        run: eas build --profile development --platform ${{ (github.event.inputs && github.event.inputs.platform) || 'all' }} --non-interactive
