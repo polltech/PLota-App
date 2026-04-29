@@ -21,6 +21,8 @@ jobs:
   build:
     name: Build and deploy to production
     runs-on: ubuntu-latest
+    env:
+      PLATFORM: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.platform || 'all' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,10 +41,10 @@ jobs:
 
       - name: Build on EAS
         run: |
-          if [ "${{ github.event.inputs.platform || 'all' }}" = "all" ]; then
+          if [ "${{ env.PLATFORM }}" = "all" ]; then
             eas build --profile production --non-interactive
           else
-            eas build --profile production --platform "${{ github.event.inputs.platform }}" --non-interactive
+            eas build --profile production --platform "${{ env.PLATFORM }}" --non-interactive
           fi
 
       - name: Submit to stores (Android)
