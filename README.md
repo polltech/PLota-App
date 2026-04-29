@@ -567,3 +567,4 @@ Background sync (if pending records exist + online):
 ---
 
 **Questions?** See `BUILD_GUIDE.md` for detailed build instructions.
+"# PLota-App" 
