@@ -27,6 +27,8 @@ jobs:
   publish:
     name: Publish preview update
     runs-on: ubuntu-latest
+    env:
+      PLATFORM: ${{ (github.event.inputs && github.event.inputs.platform) || 'all' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,8 +46,8 @@ jobs:
         run: npm ci
 
       - name: Publish to Expo
-        run: eas update --branch ${{ github.ref_name }} --message "${{ github.event.head_commit.message }}"
+        run: eas update --branch ${{ github.ref_name }} --message "${{ github.event.head_commit.message || 'Manual update via workflow dispatch' }}"
 
       - name: Build for target platform
         if: github.event.inputs && github.event.inputs.platform != ''
-        run: eas build --profile preview --platform ${{ github.event.inputs.platform }} --non-interactive
+        run: eas build --profile preview --platform ${{ env.PLATFORM }} --non-interactive
