@@ -1,6 +1,12 @@
 {
   "build": {
     "development": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
       "developmentClient": true,
       "distribution": "internal"
     },
