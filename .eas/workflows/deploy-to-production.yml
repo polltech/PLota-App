@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: 'Platform to build (android, ios, or all)'
+        description: 'Platform to build'
         required: true
         default: 'all'
         type: choice
@@ -21,8 +21,6 @@ jobs:
   build:
     name: Build and deploy to production
     runs-on: ubuntu-latest
-    env:
-      PLATFORM: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.platform || 'all' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,20 +37,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build on EAS
+      - name: Determine platform
+        id: platform
         run: |
-          if [ "${{ env.PLATFORM }}" = "all" ]; then
-            eas build --profile production --non-interactive
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "selected_platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
           else
-            eas build --profile production --platform "${{ env.PLATFORM }}" --non-interactive
+            echo "selected_platform=all" >> $GITHUB_OUTPUT
           fi
 
-      - name: Submit to stores (Android)
-        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-        run: eas submit --platform android --latest --non-interactive
-        continue-on-error: true
+      - name: Build on EAS
+        run: |
+          if [ "${{ steps.platform.outputs.selected_platform }}" = "all" ]; then
+            eas build --profile production --non-interactive
+          else
+            eas build --profile production --platform "${{ steps.platform.outputs.selected_platform }}" --non-interactive
+          fi
 
-      - name: Submit to stores (iOS)
+      - name: Submit to stores
         if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-        run: eas submit --platform ios --latest --non-interactive
-        continue-on-error: true
+        run: |
+          if [ "${{ steps.platform.outputs.selected_platform }}" = "all" ] || [ "${{ steps.platform.outputs.selected_platform }}" = "android" ]; then
+            eas submit --platform android --latest --non-interactive || true
+          fi
+          if [ "${{ steps.platform.outputs.selected_platform }}" = "all" ] || [ "${{ steps.platform.outputs.selected_platform }}" = "ios" ]; then
+            eas submit --platform ios --latest --non-interactive || true
+          fi

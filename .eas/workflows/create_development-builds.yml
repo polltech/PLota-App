@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: 'Platform to build (android, ios, or all)'
+        description: 'Platform to build'
         required: true
         default: 'all'
         type: choice
@@ -27,8 +27,6 @@ jobs:
   build:
     name: Install and build
     runs-on: ubuntu-latest
-    env:
-      PLATFORM: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.platform || 'all' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,10 +43,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Determine platform
+        id: platform
+        run: |
+          # Check if this is a workflow_dispatch event with platform input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "selected_platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
+          else
+            echo "selected_platform=all" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build on EAS
         run: |
-          if [ "${{ env.PLATFORM }}" = "all" ]; then
+          if [ "${{ steps.platform.outputs.selected_platform }}" = "all" ]; then
             eas build --profile development --non-interactive
           else
-            eas build --profile development --platform "${{ env.PLATFORM }}" --non-interactive
+            eas build --profile development --platform "${{ steps.platform.outputs.selected_platform }}" --non-interactive
           fi
