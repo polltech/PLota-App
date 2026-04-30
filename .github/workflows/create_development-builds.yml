@@ -59,4 +59,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build on EAS
-        run: eas build --profile development --non-interactive
+        run: eas build --profile development --platform all --non-interactive
