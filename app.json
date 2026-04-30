@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Plotra Polygon Capture",
-    "slug": "plotra-polygon-capture",
+    "slug": "plotra-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -43,7 +43,11 @@
     ],
     "extra": {
       "API_BASE_URL": "https://dev.plotra.eu/api/v1",
-      "API_KEY": "plotra-prototype-key-2026"
-    }
+      "API_KEY": "plotra-prototype-key-2026",
+      "eas": {
+        "projectId": "5103948a-d0a8-4cc6-a180-674edaff518f"
+      }
+    },
+    "owner": "polldeveloper"
   }
 }
