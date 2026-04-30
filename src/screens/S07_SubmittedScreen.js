@@ -5,154 +5,155 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { C } from '../theme';
 
 const SubmittedScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { captureId, farmId, area, points, status } = route.params;
+  const { captureId, farmId, areaHectares = 0, pointsCount = 0 } =
+    route.params || {};
 
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Text style={styles.icon}>✓</Text>
-        <Text style={styles.statusText}>Submitted</Text>
-        <Text style={styles.subText}>
-          Polygon received by Plotra{'\n'}
-          {farmId} is ready for satellite review
-        </Text>
-      </View>
-
-      <View style={styles.summaryCard}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Farm ID</Text>
-          <Text style={styles.summaryValue}>{farmId}</Text>
+    <SafeAreaView style={s.safe}>
+      <View style={s.container}>
+        {/* Status block */}
+        <View style={s.statusBlock}>
+          <View style={s.iconCircle}>
+            <Text style={s.iconText}>✓</Text>
+          </View>
+          <Text style={s.statusTitle}>Polygon received</Text>
+          <Text style={s.statusSub}>
+            {farmId} is ready for satellite review
+          </Text>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Area</Text>
-          <Text style={styles.summaryValue}>{area?.toFixed(2) || '0.00'} ha</Text>
+
+        {/* Record card */}
+        <View style={s.card}>
+          <View style={s.cardRow}>
+            <Text style={s.cardFarmId}>{farmId}</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeText}>Synced</Text>
+            </View>
+          </View>
+          <Text style={s.cardMeta}>
+            {areaHectares.toFixed(4)} ha · {pointsCount} pts · synced{' '}
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          {captureId && (
+            <Text style={s.captureIdText}>Record ID: {captureId}</Text>
+          )}
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Points</Text>
-          <Text style={styles.summaryValue}>{points} pts</Text>
+
+        {/* Actions */}
+        <View style={s.actions}>
+          <TouchableOpacity
+            style={s.primaryBtn}
+            onPress={() => navigation.navigate('FarmIDEntry')}
+            activeOpacity={0.8}
+          >
+            <Text style={s.primaryBtnText}>Capture another farm →</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.secondaryBtn}
+            onPress={() => navigation.navigate('QueueList')}
+            activeOpacity={0.8}
+          >
+            <Text style={s.secondaryBtnText}>View all records</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.statusBadge}>
-        <Text style={styles.statusBadgeText}>Synced</Text>
-      </View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.navigate('FarmIDEntry')}
-        >
-          <Text style={styles.primaryButtonText}>Capture another farm →</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => navigation.navigate('QueueList')}
-        >
-          <Text style={styles.secondaryButtonText}>View all records</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.c050 },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
   },
-  iconContainer: {
+
+  statusBlock: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
-  icon: {
-    fontSize: 80,
-    color: '#4caf50',
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: C.syncedBg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  statusText: {
+  iconText: { fontSize: 36, color: C.c700 },
+  statusTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4caf50',
+    fontWeight: '700',
+    color: C.c700,
     marginBottom: 8,
   },
-  subText: {
+  statusSub: {
     fontSize: 14,
-    color: '#666',
+    color: C.muted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
-  summaryCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+
+  card: {
+    backgroundColor: C.white,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: C.rule,
+    shadowColor: C.c800,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 3,
   },
-  summaryRow: {
+  cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 6,
   },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
+  cardFarmId: { fontSize: 15, fontWeight: '700', color: C.ink2 },
+  badge: {
+    backgroundColor: C.syncedBg,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+  badgeText: { fontSize: 11, fontWeight: '600', color: C.syncedText },
+  cardMeta: { fontSize: 12, color: C.muted },
+  captureIdText: {
+    marginTop: 6,
+    fontSize: 11,
+    color: C.subtle,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e8f5e9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginBottom: 30,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2e7d32',
-  },
-  actions: {
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: '#6f4e37',
-    paddingVertical: 16,
-    borderRadius: 8,
+
+  actions: { gap: 10 },
+  primaryBtn: {
+    backgroundColor: C.c600,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
+  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+  secondaryBtn: {
+    paddingVertical: 13,
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#6f4e37',
+    borderWidth: 1.5,
+    borderColor: C.c600,
   },
-  secondaryButtonText: {
-    color: '#6f4e37',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
 });
 
 export default SubmittedScreen;

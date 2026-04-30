@@ -4,142 +4,163 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { C } from '../theme';
 
 const OfflineSavedScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { farmId, areaHectares, points, error } = route.params || { farmId: '', areaHectares: 0, points: 0 };
+  const { farmId = '', areaHectares = 0, pointsCount = 0, error } =
+    route.params || {};
 
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Text style={styles.icon}>📡</Text>
-        <Text style={styles.statusText}>Offline</Text>
-        <Text style={styles.subText}>Saved locally. Will sync automatically when connectivity is restored.</Text>
-      </View>
-
-      <View style={styles.summaryCard}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Farm ID</Text>
-          <Text style={styles.summaryValue}>{farmId}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Area</Text>
-          <Text style={styles.summaryValue}>{areaHectares?.toFixed(2) || '0.00'} ha</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Points</Text>
-          <Text style={styles.summaryValue}>{points} pts</Text>
-        </View>
-        {error && (
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryValue, { fontSize: 12, color: '#f44336' }]}>
-              Error: {error}
-            </Text>
+    <SafeAreaView style={s.safe}>
+      <View style={s.container}>
+        {/* Status block */}
+        <View style={s.statusBlock}>
+          <View style={s.iconCircle}>
+            <Text style={s.iconText}>⌛</Text>
           </View>
-        )}
-      </View>
+          <Text style={s.statusTitle}>No connection</Text>
+          <Text style={s.statusSub}>
+            Saved locally. Will sync automatically{'\n'}when connectivity is restored.
+          </Text>
+        </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.navigate('FarmIDEntry')}
-        >
-          <Text style={styles.primaryButtonText}>Capture another farm →</Text>
-        </TouchableOpacity>
+        {/* Record card */}
+        <View style={s.card}>
+          <View style={s.cardRow}>
+            <Text style={s.cardFarmId}>{farmId || '—'}</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeText}>Pending</Text>
+            </View>
+          </View>
+          <Text style={s.cardMeta}>
+            {areaHectares.toFixed(4)} ha · {pointsCount} pts · saved{' '}
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          {error && (
+            <Text style={s.errorText} numberOfLines={2}>
+              {error}
+            </Text>
+          )}
+        </View>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => navigation.navigate('QueueList')}
-        >
-          <Text style={styles.secondaryButtonText}>View all queued</Text>
-        </TouchableOpacity>
+        {/* Actions */}
+        <View style={s.actions}>
+          <TouchableOpacity
+            style={s.primaryBtn}
+            onPress={() => navigation.navigate('FarmIDEntry')}
+            activeOpacity={0.8}
+          >
+            <Text style={s.primaryBtnText}>Capture another farm →</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.secondaryBtn}
+            onPress={() => navigation.navigate('QueueList')}
+            activeOpacity={0.8}
+          >
+            <Text style={s.secondaryBtnText}>View all queued</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.c050 },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
   },
-  iconContainer: {
+
+  statusBlock: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
-  icon: {
-    fontSize: 80,
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: C.pendingBg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  statusText: {
+  iconText: { fontSize: 36 },
+  statusTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ff9800',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: C.pendingText,
+    marginBottom: 10,
   },
-  subText: {
+  statusSub: {
     fontSize: 14,
-    color: '#666',
+    color: C.muted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
-  summaryCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+
+  card: {
+    backgroundColor: C.white,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: C.rule,
+    shadowColor: C.c800,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 3,
   },
-  summaryRow: {
+  cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 6,
   },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
+  cardFarmId: { fontSize: 15, fontWeight: '700', color: C.ink2 },
+  badge: {
+    backgroundColor: C.pendingBg,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  summaryValue: {
-    fontSize: 16,
+  badgeText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#333',
+    color: C.pendingText,
   },
-  actions: {
-    gap: 12,
+  cardMeta: { fontSize: 12, color: C.muted },
+  errorText: {
+    marginTop: 8,
+    fontSize: 11,
+    color: C.failedText,
+    lineHeight: 16,
   },
-  primaryButton: {
-    backgroundColor: '#6f4e37',
-    paddingVertical: 16,
-    borderRadius: 8,
+
+  actions: { gap: 10 },
+  primaryBtn: {
+    backgroundColor: C.c600,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
+  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+  secondaryBtn: {
+    paddingVertical: 13,
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#6f4e37',
+    borderWidth: 1.5,
+    borderColor: C.c600,
   },
-  secondaryButtonText: {
-    color: '#6f4e37',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
 });
 
 export default OfflineSavedScreen;

@@ -5,242 +5,236 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Image,
-  Alert,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
+import { C } from '../theme';
 
 const FarmConfirmationScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { farmId, farm } = route.params || {};
+  const { farmId, farm: initialFarm } = route.params || {};
 
   const [isOnline, setIsOnline] = useState(true);
-  const [farmDetails, setFarmDetails] = useState(farm || null);
-  const [loading, setLoading] = useState(!farm);
+  const [farmDetails, setFarmDetails] = useState(initialFarm || null);
+  const [loading, setLoading] = useState(!initialFarm);
 
   useEffect(() => {
     checkConnectivity();
-    if (!farm) fetchFarmDetails();
+    if (!initialFarm) fetchFarmDetails();
   }, []);
 
   const checkConnectivity = async () => {
     const state = await Network.getNetworkStateAsync();
-    setIsOnline(state.isConnected);
+    setIsOnline(!!state.isConnected);
   };
 
   const fetchFarmDetails = async () => {
     try {
-      // URS: GET /api/v1/farms/{farm_id} with API key header
-      const response = await fetch(
+      const res = await fetch(
         `http://192.168.100.5:8000/api/v1/farms/${encodeURIComponent(farmId)}`,
-        {
-          headers: {
-            'X-API-Key': 'plotra-prototype-key-2026',
-          },
-        }
+        { headers: { 'X-API-Key': 'plotra-prototype-key-2026' } }
       );
-      if (response.ok) {
-        const data = await response.json();
-        setFarmDetails(data);
-      } else {
-        setFarmDetails({ farm_id: farmId, farm_name: `Farm ${farmId}` });
-      }
-    } catch (error) {
-      setFarmDetails({ farm_id: farmId, farm_name: `Farm ${farmId}` });
+      setFarmDetails(res.ok ? await res.json() : { farm_id: farmId });
+    } catch (_) {
+      setFarmDetails({ farm_id: farmId });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProceed = () => {
-    navigation.navigate('WalkBoundary', { farmId, farm: farmDetails });
-  };
-
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#6f4e37" />
-        <Text style={styles.loadingText}>Loading farm details...</Text>
+      <View style={s.center}>
+        <ActivityIndicator size="large" color={C.c600} />
+        <Text style={s.loadingText}>Loading farm details…</Text>
       </View>
     );
   }
 
+  const farmName = farmDetails?.farm_name || farmDetails?.name || null;
+  const cooperative = farmDetails?.cooperative_name || null;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack}>
-          <Text style={styles.backText}>‹ Back</Text>
+    <SafeAreaView style={s.safe}>
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+          <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Confirm farm</Text>
-        <View style={{ width: 60 }} />
+        <Text style={s.headerTitle}>Confirm farm</Text>
+        <View style={{ width: 56 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.label}>Farm ID</Text>
-            <Text style={styles.value}>{farmId}</Text>
+      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
+        {/* Farm info card */}
+        <View style={s.card}>
+          <View style={s.cardTopRow}>
+            <View>
+              <Text style={s.fieldLabel}>Farm ID</Text>
+              <Text style={s.farmIdText}>{farmId}</Text>
+            </View>
+            <View style={s.noBadge}>
+              <Text style={s.noBadgeText}>No polygon yet</Text>
+            </View>
           </View>
 
-          {farmDetails?.farm_name && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Farm name</Text>
-              <Text style={styles.value}>{farmDetails.farm_name}</Text>
-            </View>
-          )}
+          <View style={s.divider} />
 
-          {farmDetails?.cooperative_name && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Cooperative</Text>
-              <Text style={styles.value}>{farmDetails.cooperative_name}</Text>
+          {farmName ? (
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Farm name</Text>
+              <Text style={s.fieldValue}>{farmName}</Text>
             </View>
-          )}
+          ) : null}
 
-          {farmDetails?.total_area_hectares && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Registered area</Text>
-              <Text style={styles.value}>
-                {farmDetails.total_area_hectares.toFixed(2)} ha
-              </Text>
+          {cooperative ? (
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Cooperative</Text>
+              <Text style={s.fieldValue}>{cooperative}</Text>
             </View>
-          )}
+          ) : null}
 
-          <View style={styles.noteBox}>
-            <Text style={styles.noteText}>
+          <View style={s.noteBox}>
+            <Text style={s.noteText}>
               Check details match the farmer before proceeding
             </Text>
           </View>
 
           {!isOnline && (
-            <View style={styles.offlineBanner}>
-              <Text style={styles.offlineText}>⚠️ Offline mode — details may be outdated</Text>
+            <View style={s.offlineBanner}>
+              <Text style={s.offlineText}>
+                Offline — details may be outdated
+              </Text>
             </View>
           )}
         </View>
 
-        <TouchableOpacity style={styles.proceedButton} onPress={handleProceed}>
-          <Text style={styles.proceedButtonText}>Start polygon walk →</Text>
+        {/* Actions */}
+        <TouchableOpacity
+          style={s.primaryBtn}
+          onPress={() => navigation.navigate('WalkBoundary', { farmId, farm: farmDetails })}
+          activeOpacity={0.8}
+        >
+          <Text style={s.primaryBtnText}>Start polygon walk →</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
-          Wrong farm? Go back and enter a different ID.
-        </Text>
+        <TouchableOpacity
+          style={s.secondaryBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+        >
+          <Text style={s.secondaryBtnText}>Wrong farm — go back</Text>
+        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#666',
-  },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.c050 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.c050 },
+  loadingText: { marginTop: 12, color: C.muted, fontSize: 14 },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: C.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: C.rule,
   },
-  backText: {
-    fontSize: 18,
-    color: '#6f4e37',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
+  backText: { fontSize: 17, color: C.c600, fontWeight: '600' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: C.ink2 },
+
+  scroll: { flex: 1 },
+  content: { padding: 20, paddingBottom: 40 },
+
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: C.white,
+    borderRadius: 14,
+    padding: 18,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: C.c800,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  row: {
-    marginBottom: 12,
+
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
-  label: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  value: {
-    fontSize: 16,
+  fieldLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#333',
+    color: C.muted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
+  farmIdText: { fontSize: 18, fontWeight: '700', color: C.ink },
+  noBadge: {
+    backgroundColor: C.pendingBg,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  noBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: C.pendingText,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+
+  divider: { height: 1, backgroundColor: C.rule, marginBottom: 14 },
+
+  fieldGroup: { marginBottom: 12 },
+  fieldValue: { fontSize: 15, fontWeight: '500', color: C.ink2 },
+
   noteBox: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#fff3e0',
+    backgroundColor: C.c050,
     borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff9800',
+    padding: 12,
+    marginTop: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: C.c400,
   },
-  noteText: {
-    fontSize: 13,
-    color: '#e65100',
-    lineHeight: 18,
-  },
+  noteText: { fontSize: 13, color: C.muted, lineHeight: 19 },
+
   offlineBanner: {
     marginTop: 12,
-    padding: 10,
-    backgroundColor: '#ffebee',
+    backgroundColor: C.failedBg,
     borderRadius: 6,
+    padding: 10,
   },
-  offlineText: {
-    fontSize: 12,
-    color: '#c62828',
-    textAlign: 'center',
-  },
-  proceedButton: {
-    backgroundColor: '#6f4e37',
-    paddingVertical: 16,
-    borderRadius: 8,
+  offlineText: { fontSize: 12, color: C.failedText, textAlign: 'center' },
+
+  primaryBtn: {
+    backgroundColor: C.c600,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
+    marginBottom: 10,
   },
-  proceedButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+
+  secondaryBtn: {
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.c600,
   },
-  footer: {
-    marginTop: 16,
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
+  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
 });
 
 export default FarmConfirmationScreen;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,102 +7,136 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
-  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView, { Polygon } from 'react-native-maps';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import { dbService } from '../services/database';
+import { C } from '../theme';
+
+// Step progress bar
+const StepBar = ({ current }) => (
+  <View style={sb.row}>
+    {[1, 2, 3].map((s) => (
+      <View
+        key={s}
+        style={[
+          sb.seg,
+          s < current && sb.done,
+          s === current && sb.active,
+          s > current && sb.idle,
+        ]}
+      />
+    ))}
+  </View>
+);
+const sb = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 4 },
+  seg: { flex: 1, height: 3, borderRadius: 2 },
+  done: { backgroundColor: C.c400 },
+  active: { backgroundColor: C.c700 },
+  idle: { backgroundColor: C.rule },
+});
+
+const getMapRegion = (coords) => {
+  const lats = coords.map((c) => c.latitude);
+  const lngs = coords.map((c) => c.longitude);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const pad = 0.35;
+  return {
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: Math.max((maxLat - minLat) * (1 + pad), 0.001),
+    longitudeDelta: Math.max((maxLng - minLng) * (1 + pad), 0.001),
+  };
+};
 
 const ReviewPolygonScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const {
-    farmId,
-    farm,
-    polygonCoords,
-    areaHectares,
-    perimeterMeters,
-    pointsCount,
-  } = route.params;
+  const { farmId, farm, polygonCoords, areaHectares, perimeterMeters, pointsCount } =
+    route.params;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-
-  useEffect(() => {
-    // Check connectivity (simplified)
-    // In real app use NetInfo
-  }, []);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const boundaryGeoJSON = {
-        type: "Polygon",
-        coordinates: [[
-          ...polygonCoords.map(p => [p.longitude, p.latitude]),
-          [polygonCoords[0].longitude, polygonCoords[0].latitude] // close ring
-        ]]
-      };
-
-      // Capture device ID
-      const [deviceId, deviceModel] = [
-        await AsyncStorage.getItemAsync('device_id') || `android-${Date.now()}`,
-        'Android',
-      ];
-      await AsyncStorage.setItemAsync('device_id', deviceId);
-
-      // Get mean GPS accuracy from session (approximate)
-      const gpsAccuracyAvg = 5.0; // Would track this during walk
-
-      const payload = {
-        farm_id: parseInt(farmId),
-        parcel_name: farm?.farm_name || `Parcel ${Date.now()}`,
-        boundary_geojson: boundaryGeoJSON,
-        area_hectares: areaHectares,
-        perimeter_meters: perimeterMeters,
-        points_count: pointsCount,
-        captured_at: new Date().toISOString(),
-        device_id: deviceId,
-        device_info: {
-          model: deviceModel,
-          app_version: '1.0.0'
-        },
-        notes: 'Captured via mobile polygon walk',
-        gps_accuracy_avg: gpsAccuracyAvg,
-        agent_id: null, // Optional per URS
-      };
-
-      // Try to submit to URS API (v1) with API key
-      const response = await fetch(
-        'http://192.168.100.5:8000/api/v1/parcels/polygon',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': 'plotra-prototype-key-2026',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        navigation.replace('Submitted', {
-          captureId: result.id,
-          farmId,
-          area: areaHectares,
-          points: pointsCount,
-          status: 'synced'
-        });
-      } else {
-        throw new Error('Server error: ' + response.status);
+      // Persist or retrieve a stable device ID
+      let deviceId = await SecureStore.getItemAsync('device_id');
+      if (!deviceId) {
+        deviceId = `android-${Date.now()}`;
+        await SecureStore.setItemAsync('device_id', deviceId);
       }
-    } catch (error) {
-      console.error('Submit error:', error);
-      // Save offline (this would call dbService.savePolygonCapture)
-      navigation.replace('OfflineSaved', {
+
+      const capturePayload = {
         farmId,
+        parcelName: farm?.farm_name || farm?.name || null,
         polygonCoords,
         areaHectares,
         perimeterMeters,
+        pointsCount,
+        capturedAt: new Date().toISOString(),
+        deviceInfo: {
+          device_id: deviceId,
+          model: 'Android',
+          app_version: '1.0.0',
+        },
+        notes: null,
+        topologyValidated: true,
+        validationWarnings: [],
+      };
+
+      // Save locally first (offline-first)
+      const localId = await dbService.savePolygonCapture(capturePayload);
+
+      // Build API payload
+      const apiPayload = {
+        farm_id: farmId,
+        parcel_name: capturePayload.parcelName,
+        polygon_coordinates: polygonCoords.map((p) => ({
+          lat: p.latitude,
+          lng: p.longitude,
+        })),
+        area_ha: parseFloat(areaHectares.toFixed(4)),
+        perimeter_meters: perimeterMeters ? parseFloat(perimeterMeters.toFixed(1)) : null,
+        points_count: pointsCount,
+        captured_at: capturePayload.capturedAt,
+        device_id: deviceId,
+        agent_id: null,
+        accuracy_m: null,
+      };
+
+      const res = await fetch('http://192.168.100.5:8000/api/v1/parcels/polygon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': 'plotra-prototype-key-2026',
+        },
+        body: JSON.stringify(apiPayload),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        await dbService.updateSyncStatus(localId, 'synced');
+        navigation.replace('Submitted', {
+          captureId: result.record_id || result.id || localId,
+          farmId,
+          areaHectares,
+          pointsCount,
+        });
+      } else {
+        throw new Error(`Server error ${res.status}`);
+      }
+    } catch (error) {
+      // Already saved locally — navigate to offline screen
+      navigation.replace('OfflineSaved', {
+        farmId,
+        areaHectares,
         pointsCount,
         error: error.message,
       });
@@ -111,236 +145,189 @@ const ReviewPolygonScreen = () => {
     }
   };
 
+  const mapRegion = getMapRegion(polygonCoords);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>‹ Back</Text>
+    <SafeAreaView style={s.safe}>
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Review polygon</Text>
-        <View style={{ width: 60 }} />
+        <View style={s.headerCenter}>
+          <Text style={s.headerTitle}>Review polygon</Text>
+          <StepBar current={3} />
+        </View>
+        <View style={{ width: 56 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Area Display */}
-        <View style={styles.areaCard}>
-          <Text style={styles.areaValue}>{areaHectares.toFixed(4)}</Text>
-          <Text style={styles.areaLabel}>hectares — calculated area</Text>
+      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
+        {/* Map preview with actual polygon */}
+        <MapView
+          style={s.mapPreview}
+          region={mapRegion}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          pointerEvents="none"
+        >
+          <Polygon
+            coordinates={[...polygonCoords, polygonCoords[0]]}
+            strokeColor={C.c600}
+            fillColor="rgba(111,78,55,0.22)"
+            strokeWidth={2}
+          />
+        </MapView>
+
+        {/* Area card */}
+        <View style={s.areaCard}>
+          <Text style={s.areaVal}>{areaHectares.toFixed(4)}</Text>
+          <Text style={s.areaUnit}>hectares — calculated area</Text>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Points</Text>
-            <Text style={styles.statValue}>{pointsCount} coords</Text>
+        {/* Stats row */}
+        <View style={s.statsRow}>
+          <View style={s.statBox}>
+            <Text style={s.statLabel}>Points</Text>
+            <Text style={s.statVal}>{pointsCount} coords</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Perimeter</Text>
-            <Text style={styles.statValue}>{perimeterMeters?.toFixed(1)} m</Text>
+          <View style={s.statDivider} />
+          <View style={s.statBox}>
+            <Text style={s.statLabel}>GPS accuracy</Text>
+            <Text style={s.statVal}>3–5 m</Text>
           </View>
         </View>
 
-        {/* Farm Info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{farm?.farm_name || `Farm ${farmId}`}</Text>
-          <Text style={styles.infoSub}>{farmId} — {farm?.cooperative_name || 'Unknown cooperative'}</Text>
-        </View>
-
-        {/* Map Preview (static) */}
-        <View style={styles.mapPreview}>
-          <Text style={styles.mapPlaceholder}>
-            [Map preview with polygon would show here]
-          </Text>
-          <Text style={styles.mapNote}>
-            Open in full screen to verify boundary
+        {/* Farm info */}
+        <View style={s.infoRow}>
+          <Text style={s.infoText} numberOfLines={1}>
+            {farmId}
+            {farm?.farm_name ? ` — ${farm.farm_name}` : ''}
           </Text>
         </View>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.buttonDisabled]}
+          style={[s.primaryBtn, isSubmitting && s.btnDisabled]}
           onPress={handleSubmit}
           disabled={isSubmitting}
+          activeOpacity={0.8}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={C.white} />
           ) : (
-            <>
-              <Text style={styles.submitButtonText}>Submit to Plotra →</Text>
-              <Text style={styles.submitButtonSub}>Capture another farm</Text>
-            </>
+            <Text style={s.primaryBtnText}>Submit to Plotra →</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.secondaryButton}
+          style={s.secondaryBtn}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
         >
-          <Text style={styles.secondaryButtonText}>Re-walk boundary</Text>
+          <Text style={s.secondaryBtnText}>Re-walk boundary</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.c050 },
+
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: C.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: C.rule,
   },
-  backText: {
-    fontSize: 18,
-    color: '#6f4e37',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  areaCard: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  areaValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#6f4e37',
-  },
-  areaLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  statsCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    marginBottom: 16,
-    justifyContent: 'space-around',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  infoCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  infoSub: {
-    fontSize: 14,
-    color: '#666',
-  },
+  backText: { fontSize: 17, color: C.c600, fontWeight: '600', width: 56 },
+  headerCenter: { flex: 1, alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: C.ink2 },
+
+  scroll: { flex: 1 },
+  content: { padding: 16, paddingBottom: 40 },
+
   mapPreview: {
     height: 200,
-    backgroundColor: '#e3f2fd',
     borderRadius: 12,
     marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#bbdefb',
-    borderStyle: 'dashed',
+    borderColor: C.rule,
   },
-  mapPlaceholder: {
-    fontSize: 14,
-    color: '#1976d2',
-    fontStyle: 'italic',
-  },
-  mapNote: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 8,
-  },
-  submitButton: {
-    backgroundColor: '#4caf50',
-    paddingVertical: 16,
-    borderRadius: 8,
+
+  areaCard: {
+    backgroundColor: C.white,
+    borderRadius: 12,
+    padding: 20,
     alignItems: 'center',
     marginBottom: 12,
+    shadowColor: C.c800,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  areaVal: { fontSize: 38, fontWeight: '700', color: C.c700 },
+  areaUnit: { fontSize: 13, color: C.muted, marginTop: 4 },
+
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: C.white,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: C.c800,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden',
   },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  statBox: { flex: 1, alignItems: 'center', padding: 14 },
+  statDivider: { width: 1, backgroundColor: C.rule },
+  statLabel: {
+    fontSize: 11,
+    color: C.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
   },
-  submitButtonSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+  statVal: { fontSize: 15, fontWeight: '600', color: C.ink2 },
+
+  infoRow: {
+    backgroundColor: C.white,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: C.rule,
   },
-  secondaryButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
+  infoText: { fontSize: 13, color: C.muted },
+
+  primaryBtn: {
+    backgroundColor: C.c600,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#6f4e37',
+    marginBottom: 10,
   },
-  secondaryButtonText: {
-    color: '#6f4e37',
-    fontSize: 16,
-    fontWeight: '600',
+  btnDisabled: { backgroundColor: C.c200 },
+  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+
+  secondaryBtn: {
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.c600,
   },
+  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
 });
 
 export default ReviewPolygonScreen;

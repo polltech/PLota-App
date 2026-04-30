@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,55 +6,44 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { C } from '../theme';
 
 const FarmIDEntryScreen = () => {
   const [farmId, setFarmId] = useState('');
+  const [touched, setTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    // Check connectivity on mount
-    checkConnection();
-  }, []);
-
-  const checkConnection = async () => {
-    const networkState = await Network.getNetworkStateAsync();
-    return networkState.isConnected;
-  };
+  const hasError = touched && !farmId.trim();
 
   const handleContinue = async () => {
-    if (!farmId.trim()) {
-      Alert.alert('Error', 'Farm ID is required');
-      return;
-    }
+    setTouched(true);
+    if (!farmId.trim()) return;
 
     setIsLoading(true);
     try {
-      // If online, fetch farm details
-      const isConnected = await checkConnection();
-      if (isConnected) {
-        // Fetch from API
-        const response = await fetch(
-          `http://192.168.100.5:8000/api/v2/farmer/farm?farm_id=${encodeURIComponent(farmId)}`
-        );
-        if (response.ok) {
-          const farmData = await response.json();
-          navigation.navigate('FarmConfirmation', { farm: farmData });
-          return;
-        }
+      const net = await Network.getNetworkStateAsync();
+      if (net.isConnected) {
+        try {
+          const res = await fetch(
+            `http://192.168.100.5:8000/api/v1/farms/${encodeURIComponent(farmId.trim())}`,
+            { headers: { 'X-API-Key': 'plotra-prototype-key-2026' } }
+          );
+          if (res.ok) {
+            const farm = await res.json();
+            navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm });
+            return;
+          }
+        } catch (_) {}
       }
-
-      // Offline or fetch failed: proceed to map anyway (user can enter manually)
-      navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
-    } catch (error) {
-      // Offline or error — proceed to map
+      // Offline or API unavailable — skip confirmation screen
       navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
     } finally {
       setIsLoading(false);
@@ -62,155 +51,174 @@ const FarmIDEntryScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>Plotra Field</Text>
-          <Text style={styles.title}>Start Polygon Capture</Text>
-          <Text style={styles.subtitle}>
-            Enter the Farm ID from the Plotra web portal
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Farm ID / Code</Text>
-            <TextInput
-              style={[styles.input, styles.inputError]}
-              value={farmId}
-              onChangeText={setFarmId}
-              placeholder="e.g., KE-NYR-00412"
-              placeholderTextColor="#999"
-              autoCapitalize="characters"
-              testID="farm-id-input"
-              accessibilityLabel="Farm ID input"
-            />
-            <Text style={styles.hint}>As shown on the farmer record in Plotra</Text>
+    <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView
+        style={s.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={s.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo row */}
+          <View style={s.logoRow}>
+            <View style={s.logoMark}>
+              <Text style={s.logoLetter}>P</Text>
+            </View>
+            <Text style={s.logoText}>Plotra Field</Text>
           </View>
 
-          {!farmId.trim() && (
-            <Text style={styles.errorText}>Farm ID required</Text>
-          )}
+          {/* Title */}
+          <View style={s.titleBlock}>
+            <Text style={s.title}>Start polygon capture</Text>
+            <Text style={s.subtitle}>
+              Enter the Farm ID from{'\n'}the Plotra web portal
+            </Text>
+          </View>
 
-          <TouchableOpacity
-            style={[
-              styles.button,
-              (!farmId.trim() || isLoading) && styles.buttonDisabled
-            ]}
-            onPress={handleContinue}
-            disabled={!farmId.trim() || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
+          {/* Form card */}
+          <View style={s.card}>
+            <Text style={s.label}>Farm ID / Code</Text>
+            <TextInput
+              style={[s.input, hasError && s.inputError]}
+              value={farmId}
+              onChangeText={(v) => {
+                setFarmId(v);
+                setTouched(false);
+              }}
+              onBlur={() => setTouched(true)}
+              placeholder="e.g. KE-NYR-00412"
+              placeholderTextColor={C.subtle}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="go"
+              onSubmitEditing={handleContinue}
+            />
+            {hasError ? (
+              <Text style={s.errorText}>Enter a Farm ID before continuing</Text>
             ) : (
-              <>
-                <Text style={styles.buttonText}>Confirm Farm ID →</Text>
-                <Text style={styles.buttonSub}>View queued records</Text>
-              </>
+              <Text style={s.hintText}>As shown on the farmer record in Plotra</Text>
             )}
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+
+            <TouchableOpacity
+              style={[s.primaryBtn, (!farmId.trim() || isLoading) && s.btnDisabled]}
+              onPress={handleContinue}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={s.primaryBtnText}>Confirm farm ID →</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.secondaryBtn}
+              onPress={() => navigation.navigate('QueueList')}
+              activeOpacity={0.8}
+            >
+              <Text style={s.secondaryBtnText}>View queued records</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  header: {
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.c050 },
+  flex: { flex: 1 },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+
+  logoRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    marginBottom: 6,
   },
-  logo: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#6f4e37',
-    marginBottom: 8,
+  logoMark: {
+    width: 34,
+    height: 34,
+    backgroundColor: C.c600,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 9,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
+  logoLetter: { color: C.white, fontSize: 17, fontWeight: '700' },
+  logoText: { fontSize: 17, fontWeight: '600', color: C.ink2 },
+
+  titleBlock: { alignItems: 'center', marginVertical: 28 },
+  title: { fontSize: 22, fontWeight: '700', color: C.ink, marginBottom: 8 },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: C.muted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
-  form: {
-    backgroundColor: '#fff',
+
+  card: {
+    backgroundColor: C.white,
     padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
+    borderRadius: 14,
+    shadowColor: C.c800,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
+
   label: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: C.muted,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 7,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: C.rule,
     borderRadius: 8,
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     fontSize: 16,
-    color: '#333',
+    color: C.ink,
+    backgroundColor: C.c050,
   },
   inputError: {
-    borderColor: '#f44336',
+    borderColor: C.failedText,
+    backgroundColor: C.failedBg,
   },
-  hint: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 6,
-  },
+  hintText: { fontSize: 12, color: C.subtle, marginTop: 6 },
   errorText: {
     fontSize: 12,
-    color: '#f44336',
-    marginBottom: 12,
-    marginTop: -8,
+    color: C.failedText,
+    fontWeight: '500',
+    marginTop: 6,
   },
-  button: {
-    backgroundColor: '#6f4e37',
-    paddingVertical: 16,
-    borderRadius: 8,
+
+  primaryBtn: {
+    backgroundColor: C.c600,
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
+    marginTop: 20,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  btnDisabled: { backgroundColor: C.c200 },
+  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+
+  secondaryBtn: {
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.c600,
+    marginTop: 10,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
+  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
 });
 
 export default FarmIDEntryScreen;

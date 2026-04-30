@@ -4,215 +4,222 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
-import MapView, { Polygon, Circle, Marker, Polyline } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Polygon, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as turf from '@turf/turf';
+import { C } from '../theme';
+
+// Step progress bar (step 1=farm ID done, step 2=walk active, step 3=review idle)
+const StepBar = ({ current }) => (
+  <View style={sb.row}>
+    {[1, 2, 3].map((s) => (
+      <View
+        key={s}
+        style={[
+          sb.seg,
+          s < current && sb.done,
+          s === current && sb.active,
+          s > current && sb.idle,
+        ]}
+      />
+    ))}
+  </View>
+);
+const sb = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 4 },
+  seg: { flex: 1, height: 3, borderRadius: 2 },
+  done: { backgroundColor: C.c400 },
+  active: { backgroundColor: C.c700 },
+  idle: { backgroundColor: C.rule },
+});
 
 const WalkBoundaryScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { farmId, farm } = route.params || {};
 
   const [currentLocation, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [polygonCoords, setPolygonCoords] = useState([]);
   const [accuracy, setAccuracy] = useState(null);
   const [topologyError, setTopologyError] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
   const mapRef = useRef(null);
+  const locationSub = useRef(null);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Location permission is needed for boundary capture');
-        return;
-      }
-
-      const locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 1000,
-          distanceInterval: 1,
-        },
-        (loc) => {
-          setCurrentLocation(loc);
-          setAccuracy(loc.coords.accuracy);
-        }
-      );
-
-      return () => locationSubscription.remove();
-    })();
+    startLocation();
+    return () => locationSub.current?.remove();
   }, []);
 
-  // Validate polygon topology when we have 4+ points
+  // Re-validate whenever markers change
   useEffect(() => {
-    if (polygonCoords.length >= 4) {
-      validatePolygon();
+    if (markers.length >= 4) {
+      validatePolygon(markers);
     } else {
       setTopologyError(null);
     }
-  }, [polygonCoords]);
+  }, [markers]);
 
-  const validatePolygon = () => {
-    setIsCalculating(true);
+  const startLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission required',
+        'Location permission is needed for boundary capture'
+      );
+      return;
+    }
+    locationSub.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 1000,
+        distanceInterval: 1,
+      },
+      (loc) => {
+        setCurrentLocation(loc);
+        setAccuracy(loc.coords.accuracy);
+      }
+    );
+  };
+
+  const validatePolygon = (pts) => {
     try {
-      // Build polygon (first point must repeat at end for closure)
-      const coordsForTurf = [
-        ...polygonCoords.map(p => [p.longitude, p.latitude]),
-        [polygonCoords[0].longitude, polygonCoords[0].latitude] // close ring
+      const ring = [
+        ...pts.map((p) => [p.longitude, p.latitude]),
+        [pts[0].longitude, pts[0].latitude],
       ];
-
-      const polygon = turf.polygon([coordsForTurf]);
-
-      // Check validity
-      const valid = turf.booleanValid(polygon);
-      if (!valid) {
-        setTopologyError('Boundary geometry is invalid. Please re-walk.');
+      const poly = turf.polygon([ring]);
+      const kinks = turf.kinks(poly);
+      if (kinks.features.length > 0) {
+        setTopologyError(
+          'Boundary lines cross. Walk in one direction without backtracking.'
+        );
         return;
       }
-
-      // Check self-intersection
-      const intersects = turf.kinks(polygon);
-      if (intersects.features.length > 0) {
-        setTopologyError('Boundary lines cross. Walk in one direction without backtracking.');
+      const areaSqM = turf.area(poly);
+      if (areaSqM / 10000 < 0.01) {
+        setTopologyError('Area too small — add more points.');
         return;
       }
-
-      // Check area (minimum 0.1 ha)
-      const area = turf.area(polygon); // m²
-      const hectares = area / 10000;
-      if (hectares < 0.1) {
-        setTopologyError('Polygon too small (min 0.1 ha).');
-        return;
-      }
-
       setTopologyError(null);
-    } catch (e) {
-      setTopologyError('Validation error: ' + e.message);
-    } finally {
-      setIsCalculating(false);
+    } catch (_) {
+      setTopologyError(null);
     }
   };
 
-  const handleMapPress = (event) => {
-    if (!isRecording) return;
+  // Primary action: mark current GPS position
+  const handleMarkPoint = () => {
+    if (!currentLocation) {
+      Alert.alert('No GPS signal', 'Wait for GPS lock before marking a point.');
+      return;
+    }
+    const { latitude, longitude } = currentLocation.coords;
 
-    const { coordinate } = event.nativeEvent;
-    // Check minimum distance between points (5m)
+    // Enforce minimum 5 m between consecutive points
     if (markers.length > 0) {
       const last = markers[markers.length - 1];
-      const dist = calculateDistance(last, coordinate);
-      if (dist < 5) {
-        Alert.alert('Too close', 'Points must be at least 5m apart');
+      const from = turf.point([last.longitude, last.latitude]);
+      const to = turf.point([longitude, latitude]);
+      const distM = turf.distance(from, to, { units: 'kilometers' }) * 1000;
+      if (distM < 5) {
+        Alert.alert(
+          'Too close',
+          'Move at least 5 m before marking the next point.'
+        );
         return;
       }
     }
 
-    const newMarker = {
-      id: Date.now().toString(),
-      coordinate,
-      timestamp: new Date().toISOString(),
-    };
-
-    const newMarkers = [...markers, newMarker];
-    setMarkers(newMarkers);
-    setPolygonCoords(newMarkers.map(m => m.coordinate));
+    setMarkers((prev) => [
+      ...prev,
+      { id: Date.now().toString(), latitude, longitude },
+    ]);
   };
 
-  const calculateDistance = (p1, p2) => {
-    // Approximate distance in meters using haversine
-    const R = 6371000; // Earth radius in m
-    const φ1 = (p1.latitude * Math.PI) / 180;
-    const φ2 = (p2.latitude * Math.PI) / 180;
-    const Δφ = ((p2.latitude - p1.latitude) * Math.PI) / 180;
-    const Δλ = ((p2.longitude - p1.longitude) * Math.PI) / 180;
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
+  // Long-press on map also marks a point (useful for demo / testing)
+  const handleMapLongPress = ({ nativeEvent: { coordinate } }) => {
+    setMarkers((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+      },
+    ]);
   };
 
-  const handleUndo = () => {
-    if (markers.length === 0) return;
-    const newMarkers = markers.slice(0, -1);
-    setMarkers(newMarkers);
-    setPolygonCoords(newMarkers.map(m => m.coordinate));
-  };
+  const handleUndo = () =>
+    setMarkers((prev) => prev.slice(0, -1));
 
   const handleClear = () => {
     setMarkers([]);
-    setPolygonCoords([]);
     setTopologyError(null);
   };
 
-  const handleContinue = () => {
-    if (polygonCoords.length < 4) {
-      Alert.alert('Not enough points', 'At least 4 points required to form a closed boundary');
+  const handleSave = () => {
+    if (markers.length < 4) {
+      Alert.alert('Not enough points', 'Mark at least 4 boundary points.');
       return;
     }
-
     if (topologyError) {
-      Alert.alert('Topology error', 'Please fix boundary errors before continuing');
+      Alert.alert('Boundary error', 'Fix the boundary error before continuing.');
       return;
     }
 
-    // Calculate area
-    const coordsForTurf = [
-      polygonCoords.map(p => [p.longitude, p.latitude]),
-      [polygonCoords[0].longitude, polygonCoords[0].latitude]
+    const ring = [
+      ...markers.map((p) => [p.longitude, p.latitude]),
+      [markers[0].longitude, markers[0].latitude],
     ];
-    const polygon = turf.polygon(coordsForTurf);
-    const areaSqM = turf.area(polygon);
-    const hectares = areaSqM / 10000;
-
-    // Calculate perimeter
-    const perimeter = turf.length(polygon, { units: 'meters' });
+    const poly = turf.polygon([ring]);
+    const areaHectares = turf.area(poly) / 10000;
+    const perimeterMeters =
+      turf.length(turf.lineString(ring), { units: 'kilometers' }) * 1000;
 
     navigation.navigate('ReviewPolygon', {
       farmId,
       farm,
-      polygonCoords,
-      areaHectares: hectares,
-      perimeterMeters: perimeter,
-      pointsCount: polygonCoords.length,
+      polygonCoords: markers.map((m) => ({
+        latitude: m.latitude,
+        longitude: m.longitude,
+      })),
+      areaHectares,
+      perimeterMeters,
+      pointsCount: markers.length,
     });
   };
 
-  const renderPolygon = () => {
-    if (polygonCoords.length < 3) return null;
+  const polygonCoords = markers.map((m) => ({
+    latitude: m.latitude,
+    longitude: m.longitude,
+  }));
 
-    const polygonCoordsClosed = [
-      ...polygonCoords.map(p => ({ latitude: p.latitude, longitude: p.longitude })),
-      polygonCoords[0] // close
-    ];
+  const accuracyColor =
+    accuracy == null
+      ? C.subtle
+      : accuracy <= 5
+      ? C.c600
+      : accuracy <= 10
+      ? C.c400
+      : accuracy <= 30
+      ? C.pendingText
+      : C.failedText;
 
-    return (
-      <Polygon
-        coordinates={polygonCoordsClosed}
-        strokeColor="#6f4e37"
-        fillColor="rgba(111, 78, 55, 0.3)"
-        strokeWidth={2}
-      />
-    );
-  };
+  const canSave = markers.length >= 4 && !topologyError;
 
   return (
-    <View style={styles.container}>
-      {/* Map */}
+    <View style={s.container}>
+      {/* Full-screen map */}
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={s.map}
+        showsUserLocation
+        followsUserLocation
+        onLongPress={handleMapLongPress}
         initialRegion={
           currentLocation
             ? {
@@ -223,282 +230,262 @@ const WalkBoundaryScreen = () => {
               }
             : undefined
         }
-        showsUserLocation
-        followsUserLocation
-        onPress={handleMapPress}
       >
-        {renderPolygon()}
-        {markers.map((marker) => (
+        {polygonCoords.length >= 3 && (
+          <Polygon
+            coordinates={[...polygonCoords, polygonCoords[0]]}
+            strokeColor={topologyError ? C.failedText : C.c600}
+            fillColor={
+              topologyError
+                ? 'rgba(198,40,40,0.15)'
+                : 'rgba(111,78,55,0.2)'
+            }
+            strokeWidth={2}
+          />
+        )}
+        {polygonCoords.length >= 2 && polygonCoords.length < 3 && (
+          <Polyline
+            coordinates={polygonCoords}
+            strokeColor={C.c600}
+            strokeWidth={2}
+          />
+        )}
+        {markers.map((m, i) => (
           <Marker
-            key={marker.id}
-            coordinate={marker.coordinate}
-            title={`Point ${markers.indexOf(marker) + 1}`}
+            key={m.id}
+            coordinate={{ latitude: m.latitude, longitude: m.longitude }}
+            pinColor={C.c700}
+            title={`Point ${i + 1}`}
           />
         ))}
       </MapView>
 
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>‹ Back</Text>
+      {/* Top overlay */}
+      <View style={[s.topBar, { top: insets.top + 4 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>
-          Walk boundary {farmId && `· ${farmId}`}
-        </Text>
-        <View style={{ width: 60 }} />
+        <View style={s.topCenter}>
+          <Text style={s.topTitle} numberOfLines={1}>
+            Walk boundary{farmId ? ` · ${farmId}` : ''}
+          </Text>
+          <StepBar current={2} />
+        </View>
+        <View style={{ width: 56 }} />
       </View>
 
-      {/* GPS Accuracy Indicator */}
-      {accuracy && (
-        <View style={styles.accuracyBar}>
-          <View
-            style={[
-              styles.accuracyDot,
-              accuracy <= 5 ? styles.accuracyExcellent :
-              accuracy <= 10 ? styles.accuracyGood :
-              accuracy <= 30 ? styles.accuracyFair : styles.accuracyPoor
-            ]}
-          />
-          <Text style={styles.accuracyText}>
-            GPS accuracy: {accuracy.toFixed(1)} m
-          </Text>
+      {/* GPS accuracy pill */}
+      {accuracy != null && (
+        <View style={[s.accuracyPill, { top: insets.top + 70 }]}>
+          <View style={[s.accuracyDot, { backgroundColor: accuracyColor }]} />
+          <Text style={s.accuracyText}>GPS: {accuracy.toFixed(1)} m</Text>
+          {accuracy > 10 && (
+            <Text style={s.accuracyWarn}> — poor signal</Text>
+          )}
         </View>
       )}
 
-      {/* Topology Error */}
+      {/* Topology error banner */}
       {topologyError && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorIcon}>✕</Text>
-          <View style={styles.errorContent}>
-            <Text style={styles.errorTitle}>Boundary lines cross</Text>
-            <Text style={styles.errorTextSmall}>{topologyError}</Text>
+        <View style={[s.errorBanner, { top: insets.top + 112 }]}>
+          <View style={s.errorContent}>
+            <Text style={s.errorTitle}>Boundary lines cross</Text>
+            <Text style={s.errorMsg}>{topologyError}</Text>
           </View>
-          <TouchableOpacity onPress={handleUndo} style={styles.undoButton}>
-            <Text style={styles.undoButtonText}>Undo last</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Clear all</Text>
-          </TouchableOpacity>
         </View>
       )}
 
-      {/* Bottom Controls */}
-      <View style={styles.controls}>
-        <View style={styles.stats}>
-          <Text style={styles.statsText}>
-            Points marked: {markers.length} (min 4 required ✓)
+      {/* Bottom controls */}
+      <View style={[s.controls, { paddingBottom: insets.bottom + 12 }]}>
+        {/* Points count */}
+        <View style={s.statsRow}>
+          <Text style={s.statsText}>
+            Points marked:{' '}
+            <Text style={s.statsCount}>{markers.length}</Text>
           </Text>
+          {markers.length >= 4 ? (
+            <Text style={s.statsGood}>min. 4 required ✓</Text>
+          ) : (
+            <Text style={s.statsNeed}>
+              {4 - markers.length} more needed
+            </Text>
+          )}
         </View>
 
-        <View style={styles.buttonRow}>
+        {/* Mark Point button — primary action */}
+        <TouchableOpacity
+          style={[s.markBtn, !currentLocation && s.markBtnDisabled]}
+          onPress={handleMarkPoint}
+          activeOpacity={0.85}
+        >
+          <Text style={s.markBtnText}>
+            {currentLocation ? '+ Mark point here' : 'Waiting for GPS…'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Undo / Save row */}
+        <View style={s.btnRow}>
           <TouchableOpacity
-            style={[styles.sideButton, markers.length === 0 && styles.buttonDisabled]}
+            style={[s.undoBtn, markers.length === 0 && s.btnOff]}
             onPress={handleUndo}
             disabled={markers.length === 0}
+            activeOpacity={0.8}
           >
-            <Text style={styles.sideButtonText}>Undo last</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.captureButton, !isRecording && styles.captureButtonInactive]}
-            onPress={() => setIsRecording(!isRecording)}
-          >
-            <Text style={styles.captureButtonText}>
-              {isRecording ? '● Mark point here' : '+ Mark point here'}
+            <Text style={[s.undoBtnText, markers.length === 0 && s.textOff]}>
+              Undo last
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {markers.length >= 4 && !topologyError && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleContinue}>
-            <Text style={styles.saveButtonText}>Save polygon ›</Text>
-          </TouchableOpacity>
-        )}
+          {topologyError ? (
+            <TouchableOpacity
+              style={[s.saveBtn, s.saveBtnDanger]}
+              onPress={handleClear}
+              activeOpacity={0.8}
+            >
+              <Text style={s.saveBtnText}>Clear and restart</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[s.saveBtn, !canSave && s.saveBtnOff]}
+              onPress={handleSave}
+              disabled={!canSave}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.saveBtnText, !canSave && s.textOff]}>
+                Save polygon ›
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1 },
+  map: { flex: 1 },
+
   topBar: {
     position: 'absolute',
-    top: 60,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderBottomWidth: 1,
+    borderBottomColor: C.rule,
   },
-  backText: {
-    fontSize: 18,
-    color: '#6f4e37',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  accuracyBar: {
+  backText: { fontSize: 17, color: C.c600, fontWeight: '600', width: 56 },
+  topCenter: { flex: 1, alignItems: 'center', gap: 6 },
+  topTitle: { fontSize: 13, fontWeight: '600', color: C.ink2 },
+
+  accuracyPill: {
     position: 'absolute',
-    top: 130,
     left: 16,
-    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.95)',
-    padding: 10,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: C.c800,
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   accuracyDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
-  accuracyExcellent: { backgroundColor: '#4caf50' },
-  accuracyGood: { backgroundColor: '#8bc34a' },
-  accuracyFair: { backgroundColor: '#ff9800' },
-  accuracyPoor: { backgroundColor: '#f44336' },
-  accuracyText: {
-    fontSize: 13,
-    color: '#333',
-    fontWeight: '500',
-  },
+  accuracyText: { fontSize: 12, color: C.ink2, fontWeight: '500' },
+  accuracyWarn: { fontSize: 11, color: C.pendingText },
+
   errorBanner: {
     position: 'absolute',
-    top: 190,
     left: 16,
     right: 16,
-    backgroundColor: '#ffebee',
+    backgroundColor: C.failedBg,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
-    padding: 12,
+    borderLeftColor: C.failedText,
     borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    padding: 12,
   },
-  errorIcon: {
-    fontSize: 20,
-    color: '#f44336',
-    marginRight: 8,
-  },
-  errorContent: {
-    flex: 1,
-  },
-  errorTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#c62828',
-    marginBottom: 2,
-  },
-  errorTextSmall: {
-    fontSize: 12,
-    color: '#666',
-  },
-  undoButton: {
-    marginLeft: 8,
-    padding: 6,
-  },
-  undoButtonText: {
-    fontSize: 12,
-    color: '#6f4e37',
-    fontWeight: '600',
-  },
-  clearButton: {
-    marginLeft: 4,
-    padding: 6,
-  },
-  clearButtonText: {
-    fontSize: 12,
-    color: '#f44336',
-    fontWeight: '600',
-  },
+  errorContent: { flex: 1 },
+  errorTitle: { fontSize: 13, fontWeight: '700', color: C.failedText, marginBottom: 2 },
+  errorMsg: { fontSize: 12, color: C.muted, lineHeight: 17 },
+
   controls: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: 'rgba(255,255,255,0.98)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    paddingBottom: 30,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 8,
   },
-  stats: {
+
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  statsText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+  statsText: { fontSize: 13, color: C.muted },
+  statsCount: { color: C.ink2, fontWeight: '700' },
+  statsGood: { fontSize: 12, color: C.c600, fontWeight: '600' },
+  statsNeed: { fontSize: 12, color: C.pendingText, fontWeight: '500' },
+
+  markBtn: {
+    backgroundColor: C.c800,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
+  markBtnDisabled: { backgroundColor: C.c200 },
+  markBtnText: {
+    color: C.white,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  sideButton: {
+
+  btnRow: { flexDirection: 'row', gap: 10 },
+  undoBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#6f4e37',
+    paddingVertical: 13,
+    borderRadius: 10,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.c600,
   },
-  buttonDisabled: {
-    borderColor: '#ccc',
-    opacity: 0.5,
-  },
-  sideButtonText: {
-    color: '#6f4e37',
-    fontWeight: '600',
-  },
-  captureButton: {
+  undoBtnText: { color: C.c600, fontWeight: '600', fontSize: 14 },
+  btnOff: { borderColor: C.rule },
+  textOff: { color: C.subtle },
+
+  saveBtn: {
     flex: 2,
-    backgroundColor: '#4caf50',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: C.c600,
+    paddingVertical: 13,
+    borderRadius: 10,
     alignItems: 'center',
   },
-  captureButtonInactive: {
-    backgroundColor: '#ccc',
-  },
-  captureButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    marginTop: 12,
-    backgroundColor: '#6f4e37',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  saveBtnOff: { backgroundColor: C.c100 },
+  saveBtnDanger: { backgroundColor: C.failedText },
+  saveBtnText: { color: C.white, fontWeight: '600', fontSize: 14 },
 });
 
 export default WalkBoundaryScreen;
