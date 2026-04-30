@@ -17,10 +17,10 @@ const api = axios.create({
 // Get device ID (persistent)
 export async function getDeviceId() {
   try {
-    const stored = await AsyncStorage.getItemAsync('device_id');
+    const stored = await AsyncStorage.getItem('device_id');
     if (stored) return stored;
     const deviceId = Device.deviceId || `android-${Date.now()}`;
-    await AsyncStorage.setItemAsync('device_id', deviceId);
+    await AsyncStorage.setItem('device_id', deviceId);
     return deviceId;
   } catch (e) {
     return 'unknown-device';
@@ -75,17 +75,29 @@ export class SyncService {
       const pending = await dbService.getQueue(null, 'pending');
       if (pending.length === 0) return;
 
-      // Batch sync: send all pending in one call
+      // Map local DB rows → PolygonCaptureCreate API shape
+      const captures = pending.map((r) => ({
+        farm_id: parseInt(r.farm_id, 10),          // backend requires integer
+        polygon_coordinates: r.polygon_coordinates, // already parsed [{lat,lng}]
+        area_ha: r.area_ha,
+        captured_at: r.captured_at,
+        device_id: r.device_id,
+        accuracy_m: r.accuracy_m ?? null,
+        agent_id: r.agent_id ?? null,
+        parcel_name: r.parcel_name ?? null,
+        perimeter_meters: r.perimeter_meters ?? null,
+        points_count: r.points_count ?? null,
+        notes: r.notes ?? null,
+      }));
+
       try {
-        const response = await polygonAPI.syncBatch(pending);
+        const response = await polygonAPI.syncBatch(captures);
         if (response.data?.synced > 0) {
-          // Mark all as synced
           for (const c of pending) {
             await dbService.updateSyncStatus(c.id, 'synced');
           }
         }
       } catch (error) {
-        // Mark all as failed
         for (const c of pending) {
           await dbService.updateSyncStatus(c.id, 'failed', error.message);
         }

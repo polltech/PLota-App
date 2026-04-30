@@ -95,9 +95,12 @@ const ReviewPolygonScreen = () => {
       // Save locally first (offline-first)
       const localId = await dbService.savePolygonCapture(capturePayload);
 
+      // farm.id is the integer primary key returned by GET /farms/{id}
+      const farmInternalId = farm?.id ?? parseInt(farmId, 10);
+
       // Build API payload
       const apiPayload = {
-        farm_id: farmId,
+        farm_id: farmInternalId,
         parcel_name: capturePayload.parcelName,
         polygon_coordinates: polygonCoords.map((p) => ({
           lat: p.latitude,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -63,9 +64,11 @@ const FarmIDEntryScreen = () => {
         >
           {/* Logo row */}
           <View style={s.logoRow}>
-            <View style={s.logoMark}>
-              <Text style={s.logoLetter}>P</Text>
-            </View>
+            <Image
+              source={require('../../assets/logo.jpeg')}
+              style={s.logoMark}
+              resizeMode="contain"
+            />
             <Text style={s.logoText}>Plotra Field</Text>
           </View>
 
@@ -73,7 +76,7 @@ const FarmIDEntryScreen = () => {
           <View style={s.titleBlock}>
             <Text style={s.title}>Start polygon capture</Text>
             <Text style={s.subtitle}>
-              Enter the Farm ID from{'\n'}the Plotra web portal
+              Enter the numeric Farm ID{'\n'}from the Plotra web portal
             </Text>
           </View>
 
@@ -88,17 +91,18 @@ const FarmIDEntryScreen = () => {
                 setTouched(false);
               }}
               onBlur={() => setTouched(true)}
-              placeholder="e.g. KE-NYR-00412"
+              placeholder="e.g. 1042"
               placeholderTextColor={C.subtle}
-              autoCapitalize="characters"
+              autoCapitalize="none"
               autoCorrect={false}
+              keyboardType="numeric"
               returnKeyType="go"
               onSubmitEditing={handleContinue}
             />
             {hasError ? (
               <Text style={s.errorText}>Enter a Farm ID before continuing</Text>
             ) : (
-              <Text style={s.hintText}>As shown on the farmer record in Plotra</Text>
+              <Text style={s.hintText}>Numeric Farm ID from the Plotra web portal</Text>
             )}
 
             <TouchableOpacity
@@ -142,13 +146,10 @@ const s = StyleSheet.create({
   logoMark: {
     width: 34,
     height: 34,
-    backgroundColor: C.c600,
     borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginRight: 9,
   },
-  logoLetter: { color: C.white, fontSize: 17, fontWeight: '700' },
   logoText: { fontSize: 17, fontWeight: '600', color: C.ink2 },
 
   titleBlock: { alignItems: 'center', marginVertical: 28 },

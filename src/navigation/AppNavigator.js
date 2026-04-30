@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import LandingScreen from '../screens/S00_LandingScreen';
 import FarmIDEntryScreen from '../screens/S01_FarmIDEntryScreen';
 import FarmConfirmationScreen from '../screens/S02_FarmConfirmationScreen';
 import WalkBoundaryScreen from '../screens/S03_WalkBoundaryScreen';
@@ -21,6 +22,11 @@ const AppNavigator = () => (
         animation: 'slide_from_right',
       }}
     >
+      <Stack.Screen
+        name="Landing"
+        component={LandingScreen}
+        options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }}
+      />
       <Stack.Screen name="FarmIDEntry" component={FarmIDEntryScreen} />
       <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
       <Stack.Screen name="WalkBoundary" component={WalkBoundaryScreen} />
