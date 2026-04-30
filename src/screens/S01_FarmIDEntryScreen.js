@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
+import { API_BASE_URL, API_KEY } from '../config';
 import { C } from '../theme';
 
 const FarmIDEntryScreen = () => {
@@ -33,8 +34,8 @@ const FarmIDEntryScreen = () => {
       if (net.isConnected) {
         try {
           const res = await fetch(
-            `http://192.168.100.5:8000/api/v1/farms/${encodeURIComponent(farmId.trim())}`,
-            { headers: { 'X-API-Key': 'plotra-prototype-key-2026' } }
+            `${API_BASE_URL}/farms/${encodeURIComponent(farmId.trim())}`,
+            { headers: { 'X-API-Key': API_KEY } }
           );
           if (res.ok) {
             const farm = await res.json();

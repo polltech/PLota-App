@@ -4,9 +4,7 @@ import * as Network from 'expo-network';
 import * as Device from 'expo-device';
 import { dbService } from '../services/database';
 
-// URS-compliant API base (v1 endpoints)
-const API_BASE_URL = 'http://192.168.100.5:8000/api/v1';
-const API_KEY = 'plotra-prototype-key-2026';  // Static API key per URS
+import { API_BASE_URL, API_KEY } from '../config';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

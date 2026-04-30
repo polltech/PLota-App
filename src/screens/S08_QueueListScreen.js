@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { API_BASE_URL, API_KEY } from '../config';
 import { dbService } from '../services/database';
 import { C } from '../theme';
 
@@ -79,11 +80,11 @@ const QueueListScreen = () => {
         accuracy_m: item.accuracy_m,
       };
 
-      const res = await fetch('http://192.168.100.5:8000/api/v1/parcels/polygon', {
+      const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': 'plotra-prototype-key-2026',
+          'X-API-Key': API_KEY,
         },
         body: JSON.stringify(payload),
       });

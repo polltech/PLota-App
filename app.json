@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#4caf50"
+      "backgroundColor": "#6f4e37"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4caf50"
+        "backgroundColor": "#6f4e37"
       },
       "package": "africa.plotra.polygon",
       "permissions": [
