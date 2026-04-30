@@ -4,10 +4,10 @@
     "slug": "plotra-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.jpeg",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/logo.jpeg",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0d0803"
     },
@@ -23,7 +23,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.jpeg",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0803"
       },
       "package": "africa.plotra.polygon",
@@ -36,7 +36,7 @@
       "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/logo.jpeg"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       "expo-location",
