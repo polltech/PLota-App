@@ -39,12 +39,7 @@
     },
     "plugins": [
       "expo-location",
-      [
-        "expo-sqlite",
-        {
-          "enableFTS": true
-        }
-      ]
+      "expo-sqlite"
     ],
     "extra": {
       "API_BASE_URL": "https://dev.plotra.eu/api/v1",
