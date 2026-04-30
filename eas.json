@@ -1,11 +1,14 @@
 {
+  "cli": {
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "android": {
         "buildType": "apk"
       },
       "ios": {
-        "simulator": false
+        "simulator": true
       },
       "developmentClient": true,
       "distribution": "internal"
