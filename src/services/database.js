@@ -1,5 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-import { catchAsync } from '../utils/helpers';
 
 const DB_NAME = 'plotra_capture.db';
 const DB_VERSION = 1;
@@ -104,7 +103,6 @@ class DatabaseService {
     return result.lastInsertRowId;
   }
 
-  @catchAsync
   async getQueue(farmId = null, status = null) {
     let query = 'SELECT * FROM polygon_captures';
     const params = [];
@@ -133,7 +131,6 @@ class DatabaseService {
      }));
   }
 
-   @catchAsync
    async getCapture(id) {
      const row = await this.db.getFirstAsync(
        'SELECT * FROM polygon_captures WHERE id = ?',
@@ -150,7 +147,6 @@ class DatabaseService {
      return null;
    }
 
-  @catchAsync
   async updateSyncStatus(id, status, error = null) {
     const fields = ['sync_status = ?', 'sync_attempts = sync_attempts + 1'];
     const params = [status, id];
@@ -169,7 +165,6 @@ class DatabaseService {
     );
   }
 
-  @catchAsync
   async deleteCapture(id) {
     await this.db.runAsync('DELETE FROM polygon_captures WHERE id = ?', [id]);
   }

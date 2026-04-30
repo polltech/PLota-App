@@ -30,8 +30,7 @@
     "react-native": "~0.83.6",
     "react-native-maps": "~1.27.2",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.24.0",
-    "react-native-vector-icons": "^10.3.0"
+    "react-native-screens": "~4.24.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
