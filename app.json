@@ -17,7 +17,8 @@
       "bundleIdentifier": "africa.plotra.polygon",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses GPS to capture farm boundaries for EUDR compliance.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Needed for continuous GPS tracking during boundary walk."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Needed for continuous GPS tracking during boundary walk.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
