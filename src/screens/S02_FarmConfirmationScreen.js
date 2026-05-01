@@ -146,7 +146,7 @@ const FarmConfirmationScreen = () => {
         {/* ── Land & Area ── */}
         <View style={s.card}>
           <Section title="Land & Area" />
-          <DetailRow label="Total area" value={farm?.total_area_hectares ? `${fmtNum(farm.total_area_hectares, 4)} ha` : null} />
+          <DetailRow label="Total area" value={farm?.area_hectares ? `${fmtNum(farm.area_hectares, 4)} ha` : null} />
           <DetailRow label="Farm type" value={fmt(farm?.farm_type)} />
           <DetailRow label="Land use" value={fmt(farm?.land_use_type)} />
           <DetailRow label="Soil type" value={fmt(farm?.soil_type)} />

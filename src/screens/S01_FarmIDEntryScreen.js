@@ -95,7 +95,8 @@ const FarmIDEntryScreen = () => {
               placeholderTextColor={C.subtle}
               autoCapitalize="none"
               autoCorrect={false}
-              keyboardType="numeric"
+              keyboardType="default"
+              autoCapitalize="characters"
               returnKeyType="go"
               onSubmitEditing={handleContinue}
             />

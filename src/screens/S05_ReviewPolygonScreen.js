@@ -60,7 +60,14 @@ window.addEventListener('message',function(e){
 const ReviewPolygonScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { farmId, farm, polygonCoords, areaHectares, perimeterMeters, pointsCount } = route.params;
+  const {
+    farmId = '',
+    farm = null,
+    polygonCoords = [],
+    areaHectares = 0,
+    perimeterMeters = null,
+    pointsCount = 0,
+  } = route.params || {};
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const webViewRef = useRef(null);
@@ -94,13 +101,13 @@ const ReviewPolygonScreen = () => {
       };
 
       const localId = await dbService.savePolygonCapture(capturePayload);
-      const farmInternalId = farm?.id ?? parseInt(farmId, 10);
+      const farmInternalId = farm?.id ?? farmId;
 
       const apiPayload = {
         farm_id: farmInternalId,
         parcel_name: capturePayload.parcelName,
         polygon_coordinates: polygonCoords.map((p) => ({ lat: p.latitude, lng: p.longitude })),
-        area_ha: parseFloat(areaHectares.toFixed(4)),
+        area_ha: parseFloat((areaHectares || 0).toFixed(4)),
         perimeter_meters: perimeterMeters ? parseFloat(perimeterMeters.toFixed(1)) : null,
         points_count: pointsCount,
         captured_at: capturePayload.capturedAt,
@@ -109,11 +116,11 @@ const ReviewPolygonScreen = () => {
         accuracy_m: null,
       };
 
-      const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-        body: JSON.stringify(apiPayload),
-      });
+       const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+         body: JSON.stringify(apiPayload),
+       });
 
       if (res.ok) {
         const result = await res.json();
@@ -160,7 +167,7 @@ const ReviewPolygonScreen = () => {
         </View>
 
         <View style={s.areaCard}>
-          <Text style={s.areaVal}>{areaHectares.toFixed(4)}</Text>
+          <Text style={s.areaVal}>{(areaHectares || 0).toFixed(4)}</Text>
           <Text style={s.areaUnit}>hectares — calculated area</Text>
         </View>
 

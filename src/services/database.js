@@ -42,16 +42,13 @@ class DatabaseService {
       );
     `;
 
-    const createQueueIndex = `
-      CREATE INDEX IF NOT EXISTS idx_polygon_status ON polygon_captures(sync_status);
-      CREATE INDEX IF NOT EXISTS idx_polygon_farm ON polygon_captures(farm_id);
-    `;
-
     await this.db.execAsync(createPolygonTable);
-    await this.db.execAsync(createQueueIndex);
+    await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_status ON polygon_captures(sync_status);`);
+    await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_farm ON polygon_captures(farm_id);`);
   }
 
   async savePolygonCapture(capture) {
+    if (!this.db) throw new Error('Database not initialized');
     const {
       farmId,
       parcelName,
@@ -104,6 +101,7 @@ class DatabaseService {
   }
 
   async getQueue(farmId = null, status = null) {
+    if (!this.db) return [];
     let query = 'SELECT * FROM polygon_captures';
     const params = [];
 
@@ -131,7 +129,8 @@ class DatabaseService {
      }));
   }
 
-   async getCapture(id) {
+  async getCapture(id) {
+    if (!this.db) return null;
      const row = await this.db.getFirstAsync(
        'SELECT * FROM polygon_captures WHERE id = ?',
        [id]
@@ -148,8 +147,9 @@ class DatabaseService {
    }
 
   async updateSyncStatus(id, status, error = null) {
+    if (!this.db) return;
     const fields = ['sync_status = ?', 'sync_attempts = sync_attempts + 1'];
-    const params = [status, id];
+    const params = [status];
 
     if (status === 'synced') {
       fields.push('synced_at = datetime("now")');
@@ -158,6 +158,7 @@ class DatabaseService {
       fields.push('last_sync_error = ?');
       params.push(error);
     }
+    params.push(id); // id must be last — it binds the WHERE clause
 
     await this.db.runAsync(
       `UPDATE polygon_captures SET ${fields.join(', ')} WHERE id = ?`,
@@ -166,10 +167,12 @@ class DatabaseService {
   }
 
   async deleteCapture(id) {
+    if (!this.db) return;
     await this.db.runAsync('DELETE FROM polygon_captures WHERE id = ?', [id]);
   }
 
   getPendingCount() {
+    if (!this.db) return Promise.resolve({ count: 0 });
     return this.db.getFirstAsync(
       "SELECT COUNT(*) as count FROM polygon_captures WHERE sync_status = 'pending'"
     );

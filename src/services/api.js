@@ -10,7 +10,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': API_KEY,  // URS: static API key in header
+    'X-API-Key': API_KEY,
   },
 });
 
@@ -27,16 +27,16 @@ export async function getDeviceId() {
   }
 }
 
-// Polygon API (URS endpoints)
+// Polygon API (Plotra v2 mobile endpoints — all at /api/v2)
 export const polygonAPI = {
-  // URS: POST /api/v1/parcels/polygon
-  submit: (data) => api.post('/parcels/polygon', data),
-  
-  // URS: GET /api/v1/farms/{farm_id}
+  // GET  /api/v2/farms/{identifier}
   getFarm: (farmId) => api.get(`/farms/${farmId}`),
-  
-  // URS: POST /api/v1/sync/batch
-  syncBatch: (captures) => api.post('/sync/batch', captures),
+
+  // POST /api/v2/parcels/polygon
+  submit: (data) => api.post('/parcels/polygon', data),
+
+  // POST /api/v2/sync/batch — body must be { captures: [...] }
+  syncBatch: (body) => api.post('/sync/batch', body),
 };
 
 // Sync Service
@@ -58,7 +58,6 @@ export class SyncService {
   }
 
   async startAutoSync() {
-    // Check every 30 seconds
     setInterval(async () => {
       const online = await this.checkConnectivity();
       if (online && !this.isSyncing) {
@@ -75,9 +74,8 @@ export class SyncService {
       const pending = await dbService.getQueue(null, 'pending');
       if (pending.length === 0) return;
 
-      // Map local DB rows → PolygonCaptureCreate API shape
       const captures = pending.map((r) => ({
-        farm_id: parseInt(r.farm_id, 10),          // backend requires integer
+        farm_id: r.farm_id,                         // UUID string — backend PolygonCaptureCreate.farm_id: str
         polygon_coordinates: r.polygon_coordinates, // already parsed [{lat,lng}]
         area_ha: r.area_ha,
         captured_at: r.captured_at,
@@ -91,7 +89,8 @@ export class SyncService {
       }));
 
       try {
-        const response = await polygonAPI.syncBatch(captures);
+        // BatchSyncRequest expects { captures: [...] }
+        const response = await polygonAPI.syncBatch({ captures });
         if (response.data?.synced > 0) {
           for (const c of pending) {
             await dbService.updateSyncStatus(c.id, 'synced');
