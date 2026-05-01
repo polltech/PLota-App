@@ -11,16 +11,6 @@ on:
         options:
           - android
           - ios
-  push:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - '**.md'
-  pull_request:
-    branches:
-      - main
-      - develop
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
