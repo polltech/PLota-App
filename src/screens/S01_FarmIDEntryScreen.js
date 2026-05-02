@@ -21,12 +21,14 @@ const FarmIDEntryScreen = () => {
   const [farmId, setFarmId] = useState('');
   const [touched, setTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const navigation = useNavigation();
 
   const hasError = touched && !farmId.trim();
 
   const handleContinue = async () => {
     setTouched(true);
+    setApiError(null);
     if (!farmId.trim()) return;
 
     setIsLoading(true);
@@ -43,9 +45,21 @@ const FarmIDEntryScreen = () => {
             navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm });
             return;
           }
-        } catch (_) {}
+          if (res.status === 404) {
+            // Farm ID does not exist — block the user, do NOT proceed
+            setApiError('Farm ID not found. Check the ID and try again.');
+            return;
+          }
+          if (res.status === 401) {
+            setApiError('Authentication error. Please contact support.');
+            return;
+          }
+          // Server error (5xx) — fall through to offline mode
+        } catch (_) {
+          // Network exception — fall through to offline mode
+        }
       }
-      // Offline or API unavailable — skip confirmation screen
+      // Offline or server temporarily unavailable — allow offline capture
       navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
     } finally {
       setIsLoading(false);
@@ -89,21 +103,23 @@ const FarmIDEntryScreen = () => {
               onChangeText={(v) => {
                 setFarmId(v);
                 setTouched(false);
+                setApiError(null);
               }}
               onBlur={() => setTouched(true)}
               placeholder="e.g. 1042"
               placeholderTextColor={C.subtle}
-              autoCapitalize="none"
+              autoCapitalize="characters"
               autoCorrect={false}
               keyboardType="default"
-              autoCapitalize="characters"
               returnKeyType="go"
               onSubmitEditing={handleContinue}
             />
             {hasError ? (
               <Text style={s.errorText}>Enter a Farm ID before continuing</Text>
+            ) : apiError ? (
+              <Text style={s.errorText}>{apiError}</Text>
             ) : (
-              <Text style={s.hintText}>Numeric Farm ID from the Plotra web portal</Text>
+              <Text style={s.hintText}>Farm ID or code from the Plotra web portal</Text>
             )}
 
             <TouchableOpacity
