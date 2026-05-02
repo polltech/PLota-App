@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -141,6 +141,8 @@ const WalkBoundaryScreen = () => {
   const [markers, setMarkers] = useState([]);
   const [accuracy, setAccuracy] = useState(null);
   const [topologyError, setTopologyError] = useState(null);
+  const [mapError, setMapError] = useState(false);
+  const [mapLoading, setMapLoading] = useState(true);
 
   const webViewRef = useRef(null);
   const locationSub = useRef(null);
@@ -200,7 +202,7 @@ const WalkBoundaryScreen = () => {
 
   const onMapReady = useCallback(() => {
     mapReadyRef.current = true;
-    // Send current location immediately if we already have one
+    setMapLoading(false);
     if (currentLocationRef.current) {
       const { latitude, longitude, accuracy: acc } = currentLocationRef.current.coords;
       send({ type: 'loc', lat: latitude, lng: longitude, acc: acc ?? 99 });
@@ -253,6 +255,7 @@ const WalkBoundaryScreen = () => {
   const handleLongPressOnMap = (lat, lng) => {
     const pt = { id: Date.now().toString(), latitude: lat, longitude: lng };
     setMarkers((prev) => [...prev, pt]);
+    send({ type: 'add', lat, lng });
   };
 
   const handleUndo = () => {
@@ -309,15 +312,32 @@ const WalkBoundaryScreen = () => {
         style={s.map}
         onLoad={onMapReady}
         onMessage={onWebViewMessage}
+        onError={() => { setMapError(true); setMapLoading(false); }}
+        onHttpError={() => { setMapError(true); setMapLoading(false); }}
         javaScriptEnabled
         domStorageEnabled
         geolocationEnabled
+        cacheEnabled
         mixedContentMode="always"
         allowsInlineMediaPlayback
         scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
       />
+      {mapLoading && (
+        <View style={s.mapOverlay}>
+          <ActivityIndicator size="large" color={C.c600} />
+          <Text style={s.mapOverlayText}>Loading map…</Text>
+        </View>
+      )}
+      {mapError && (
+        <View style={s.mapOverlay}>
+          <Text style={s.mapErrorText}>Map unavailable — you can still mark points using GPS</Text>
+          <TouchableOpacity onPress={() => { setMapError(false); setMapLoading(true); webViewRef.current?.reload(); }} style={s.reloadBtn}>
+            <Text style={s.reloadBtnText}>Retry map</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={[s.topBar, { top: insets.top + 4 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
@@ -402,6 +422,15 @@ const WalkBoundaryScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  mapOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: C.c050, alignItems: 'center', justifyContent: 'center',
+    gap: 12,
+  },
+  mapOverlayText: { fontSize: 14, color: C.muted, textAlign: 'center', paddingHorizontal: 32 },
+  mapErrorText: { fontSize: 14, color: C.muted, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
+  reloadBtn: { backgroundColor: C.c600, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
+  reloadBtnText: { color: C.white, fontWeight: '600' },
   topBar: {
     position: 'absolute', left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center',
