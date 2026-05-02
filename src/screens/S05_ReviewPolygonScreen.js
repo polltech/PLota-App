@@ -86,14 +86,17 @@ const ReviewPolygonScreen = () => {
         await AsyncStorage.setItem('device_id', deviceId);
       }
 
+      const farmInternalId = farm?.id ?? farmId;
+      const capturedAt = new Date().toISOString();
+
       const capturePayload = {
-        farmId,
+        farmId: farmInternalId,           // Always store UUID so auto-sync can find the farm
         parcelName: farm?.farm_name || farm?.name || null,
         polygonCoords,
         areaHectares,
         perimeterMeters,
         pointsCount,
-        capturedAt: new Date().toISOString(),
+        capturedAt,
         deviceInfo: { device_id: deviceId, model: 'Android', app_version: '1.0.0' },
         notes: null,
         topologyValidated: true,
@@ -101,7 +104,6 @@ const ReviewPolygonScreen = () => {
       };
 
       const localId = await dbService.savePolygonCapture(capturePayload);
-      const farmInternalId = farm?.id ?? farmId;
 
       const apiPayload = {
         farm_id: farmInternalId,
@@ -110,23 +112,27 @@ const ReviewPolygonScreen = () => {
         area_ha: parseFloat((areaHectares || 0).toFixed(4)),
         perimeter_meters: perimeterMeters ? parseFloat(perimeterMeters.toFixed(1)) : null,
         points_count: pointsCount,
-        captured_at: capturePayload.capturedAt,
+        captured_at: capturedAt,
         device_id: deviceId,
         agent_id: null,
         accuracy_m: null,
       };
 
-       const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-         body: JSON.stringify(apiPayload),
-       });
+      const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+        body: JSON.stringify(apiPayload),
+      });
 
       if (res.ok) {
         const result = await res.json();
-        await dbService.updateSyncStatus(localId, 'synced');
+        try {
+          await dbService.updateSyncStatus(localId, 'synced');
+        } catch (_) {
+          // DB update failure must not block navigation to Submitted
+        }
         navigation.replace('Submitted', {
-          captureId: result.record_id || result.id || localId,
+          captureId: result.record_id || localId,
           farmId, areaHectares, pointsCount,
         });
       } else {
