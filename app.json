@@ -28,8 +28,6 @@
       },
       "package": "africa.plotra.polygon",
       "versionCode": 2,
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
