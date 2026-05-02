@@ -15,18 +15,14 @@
     },
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       },
-      "env": {
-        "API_BASE_URL": "https://dev.plotra.eu/api/v2"
-      }
+      "distribution": "internal"
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
-      },
-      "env": {
-        "API_BASE_URL": "https://api.plotra.africa/api/v2"
       }
     }
   }

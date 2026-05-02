@@ -121,12 +121,15 @@ class DatabaseService {
     query += ' ORDER BY created_at DESC';
 
      const rows = await this.db.getAllAsync(query, params);
-     return rows.map(row => ({
-       ...row,
-       polygon_coordinates: JSON.parse(row.polygon_coordinates),
-       device_info: row.device_info ? JSON.parse(row.device_info) : {},
-       validation_warnings: row.validation_warnings ? JSON.parse(row.validation_warnings) : [],
-     }));
+     return rows.map(row => {
+       let polygon_coordinates = [];
+       let device_info = {};
+       let validation_warnings = [];
+       try { polygon_coordinates = JSON.parse(row.polygon_coordinates) || []; } catch (_) {}
+       try { device_info = row.device_info ? JSON.parse(row.device_info) : {}; } catch (_) {}
+       try { validation_warnings = row.validation_warnings ? JSON.parse(row.validation_warnings) : []; } catch (_) {}
+       return { ...row, polygon_coordinates, device_info, validation_warnings };
+     });
   }
 
   async getCapture(id) {
@@ -136,12 +139,13 @@ class DatabaseService {
        [id]
      );
      if (row) {
-       return {
-         ...row,
-         polygon_coordinates: JSON.parse(row.polygon_coordinates),
-         device_info: row.device_info ? JSON.parse(row.device_info) : {},
-         validation_warnings: row.validation_warnings ? JSON.parse(row.validation_warnings) : [],
-       };
+       let polygon_coordinates = [];
+       let device_info = {};
+       let validation_warnings = [];
+       try { polygon_coordinates = JSON.parse(row.polygon_coordinates) || []; } catch (_) {}
+       try { device_info = row.device_info ? JSON.parse(row.device_info) : {}; } catch (_) {}
+       try { validation_warnings = row.validation_warnings ? JSON.parse(row.validation_warnings) : []; } catch (_) {}
+       return { ...row, polygon_coordinates, device_info, validation_warnings };
      }
      return null;
    }

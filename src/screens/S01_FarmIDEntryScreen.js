@@ -108,7 +108,7 @@ const FarmIDEntryScreen = () => {
               onBlur={() => setTouched(true)}
               placeholder="e.g. 1042"
               placeholderTextColor={C.subtle}
-              autoCapitalize="characters"
+              autoCapitalize="none"
               autoCorrect={false}
               keyboardType="default"
               returnKeyType="go"
