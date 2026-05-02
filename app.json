@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Plotra Field",
+    "name": "Plotra",
     "slug": "plotra-app",
     "version": "1.0.1",
     "orientation": "portrait",
@@ -42,8 +42,7 @@
       "favicon": "./assets/icon.png"
     },
     "plugins": [
-      "expo-location",
-      "expo-sqlite"
+      "expo-location"
     ],
     "extra": {
       "eas": {

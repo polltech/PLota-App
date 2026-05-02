@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -46,7 +48,6 @@ const FarmIDEntryScreen = () => {
             return;
           }
           if (res.status === 404) {
-            // Farm ID does not exist — block the user, do NOT proceed
             setApiError('Farm ID not found. Check the ID and try again.');
             return;
           }
@@ -54,12 +55,8 @@ const FarmIDEntryScreen = () => {
             setApiError('Authentication error. Please contact support.');
             return;
           }
-          // Server error (5xx) — fall through to offline mode
-        } catch (_) {
-          // Network exception — fall through to offline mode
-        }
+        } catch (_) {}
       }
-      // Offline or server temporarily unavailable — allow offline capture
       navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
     } finally {
       setIsLoading(false);
@@ -67,177 +64,213 @@ const FarmIDEntryScreen = () => {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView
-        style={s.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1000&auto=format&fit=crop' }}
+        style={s.bgImage}
       >
-        <ScrollView
-          contentContainerStyle={s.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Logo row */}
-          <View style={s.logoRow}>
-            <Image
-              source={require('../../assets/logo.jpeg')}
-              style={s.logoMark}
-              resizeMode="contain"
-            />
-            <Text style={s.logoText}>Plotra Field</Text>
-          </View>
+        <View style={s.overlay} />
 
-          {/* Title */}
-          <View style={s.titleBlock}>
-            <Text style={s.title}>Start polygon capture</Text>
-            <Text style={s.subtitle}>
-              Enter the numeric Farm ID{'\n'}from the Plotra web portal
-            </Text>
-          </View>
-
-          {/* Form card */}
-          <View style={s.card}>
-            <Text style={s.label}>Farm ID / Code</Text>
-            <TextInput
-              style={[s.input, hasError && s.inputError]}
-              value={farmId}
-              onChangeText={(v) => {
-                setFarmId(v);
-                setTouched(false);
-                setApiError(null);
-              }}
-              onBlur={() => setTouched(true)}
-              placeholder="e.g. 1042"
-              placeholderTextColor={C.subtle}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="default"
-              returnKeyType="go"
-              onSubmitEditing={handleContinue}
-            />
-            {hasError ? (
-              <Text style={s.errorText}>Enter a Farm ID before continuing</Text>
-            ) : apiError ? (
-              <Text style={s.errorText}>{apiError}</Text>
-            ) : (
-              <Text style={s.hintText}>Farm ID or code from the Plotra web portal</Text>
-            )}
-
-            <TouchableOpacity
-              style={[s.primaryBtn, (!farmId.trim() || isLoading) && s.btnDisabled]}
-              onPress={handleContinue}
-              disabled={isLoading}
-              activeOpacity={0.8}
+        <SafeAreaView style={s.safe}>
+          <KeyboardAvoidingView
+            style={s.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView
+              contentContainerStyle={s.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              {isLoading ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={s.primaryBtnText}>Confirm farm ID →</Text>
-              )}
-            </TouchableOpacity>
+              <View style={s.header}>
+                <View style={s.logoMiniContainer}>
+                  <Image
+                    source={require('../../assets/logo.jpeg')}
+                    style={s.logoMini}
+                    resizeMode="cover"
+                  />
+                </View>
+                <Text style={s.headerTitle}>PLOTRA</Text>
+              </View>
 
-            <TouchableOpacity
-              style={s.secondaryBtn}
-              onPress={() => navigation.navigate('QueueList')}
-              activeOpacity={0.8}
-            >
-              <Text style={s.secondaryBtnText}>View queued records</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <View style={s.card}>
+                <Text style={s.title}>Identify Farm</Text>
+                <Text style={s.subtitle}>
+                  Enter the unique Farm ID from the portal to begin boundary mapping.
+                </Text>
+
+                <View style={s.inputWrapper}>
+                  <Text style={s.label}>Farm ID / Code</Text>
+                  <View style={[s.inputContainer, hasError && s.inputContainerError]}>
+                    <Text style={s.inputIcon}>#</Text>
+                    <TextInput
+                      style={s.input}
+                      value={farmId}
+                      onChangeText={(v) => {
+                        setFarmId(v);
+                        setTouched(false);
+                        setApiError(null);
+                      }}
+                      onBlur={() => setTouched(true)}
+                      placeholder="e.g. 1042"
+                      placeholderTextColor={C.subtle}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="default"
+                      returnKeyType="go"
+                      onSubmitEditing={handleContinue}
+                    />
+                  </View>
+
+                  {hasError ? (
+                    <Text style={s.errorText}>Please enter a valid Farm ID</Text>
+                  ) : apiError ? (
+                    <Text style={s.errorText}>{apiError}</Text>
+                  ) : (
+                    <Text style={s.hintText}>Verify against farmer's documentation.</Text>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={[s.primaryBtn, (!farmId.trim() || isLoading) && s.btnDisabled]}
+                  onPress={handleContinue}
+                  disabled={isLoading || !farmId.trim()}
+                  activeOpacity={0.8}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={s.primaryBtnText}>Confirm Identity</Text>
+                  )}
+                </TouchableOpacity>
+
+                <View style={s.dividerContainer}>
+                  <View style={s.line} />
+                  <Text style={s.dividerText}>OR</Text>
+                  <View style={s.line} />
+                </View>
+
+                <TouchableOpacity
+                  style={s.secondaryBtn}
+                  onPress={() => navigation.navigate('QueueList')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.secondaryBtnText}>View Sync Queue</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={s.footer}>
+                 <Text style={s.footerText}>Offline mode is enabled for remote areas.</Text>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </ImageBackground>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.c050 },
+  container: { flex: 1 },
+  bgImage: { flex: 1, width: '100%', height: '100%' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.45)' },
+  safe: { flex: 1 },
   flex: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
 
-  logoRow: {
+  header: {
+    position: 'absolute',
+    top: 20,
+    left: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
+    zIndex: 10,
   },
-  logoMark: {
+  logoMiniContainer: {
     width: 34,
     height: 34,
-    borderRadius: 9,
+    borderRadius: 10,
     overflow: 'hidden',
-    marginRight: 9,
+    marginRight: 10,
+    backgroundColor: C.white,
+    padding: 2,
   },
-  logoText: { fontSize: 17, fontWeight: '600', color: C.ink2 },
-
-  titleBlock: { alignItems: 'center', marginVertical: 28 },
-  title: { fontSize: 22, fontWeight: '700', color: C.ink, marginBottom: 8 },
-  subtitle: {
-    fontSize: 14,
-    color: C.muted,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
+  logoMini: { width: '100%', height: '100%', borderRadius: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: C.white, letterSpacing: 2 },
 
   card: {
-    backgroundColor: C.white,
-    padding: 20,
-    borderRadius: 14,
-    shadowColor: C.c800,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 28,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.2,
+    shadowRadius: 25,
+    elevation: 15,
   },
 
+  title: { fontSize: 32, fontWeight: '800', color: C.c900, marginBottom: 12 },
+  subtitle: { fontSize: 16, color: C.muted, lineHeight: 24, marginBottom: 35 },
+
+  inputWrapper: { marginBottom: 30 },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: C.muted,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 7,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: C.rule,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: C.ink,
-    backgroundColor: C.c050,
-  },
-  inputError: {
-    borderColor: C.failedText,
-    backgroundColor: C.failedBg,
-  },
-  hintText: { fontSize: 12, color: C.subtle, marginTop: 6 },
-  errorText: {
     fontSize: 12,
-    color: C.failedText,
-    fontWeight: '500',
-    marginTop: 6,
+    fontWeight: '800',
+    color: C.c700,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+    marginLeft: 4,
   },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.steel100,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: C.steel200,
+    paddingHorizontal: 20,
+    height: 64,
+  },
+  inputContainerError: { borderColor: C.failedText, backgroundColor: C.failedBg },
+  inputIcon: { fontSize: 20, color: C.c400, fontWeight: '800', marginRight: 15 },
+  input: { flex: 1, fontSize: 18, color: C.c900, fontWeight: '700' },
+
+  hintText: { fontSize: 13, color: C.subtle, marginTop: 12, marginLeft: 4, fontWeight: '500' },
+  errorText: { fontSize: 13, color: C.failedText, fontWeight: '700', marginTop: 12, marginLeft: 4 },
 
   primaryBtn: {
-    backgroundColor: C.c600,
-    paddingVertical: 15,
-    borderRadius: 10,
+    backgroundColor: C.c700,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+    shadowColor: C.c700,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 8,
   },
-  btnDisabled: { backgroundColor: C.c200 },
-  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
+  btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0, elevation: 0 },
+  primaryBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 35 },
+  line: { flex: 1, height: 1.5, backgroundColor: C.steel200 },
+  dividerText: { marginHorizontal: 20, fontSize: 13, fontWeight: '800', color: C.steel300 },
 
   secondaryBtn: {
-    paddingVertical: 13,
-    borderRadius: 10,
+    height: 60,
+    borderRadius: 20,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: C.c600,
-    marginTop: 10,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: C.steel200,
   },
-  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
+  secondaryBtnText: { color: C.steel700, fontSize: 16, fontWeight: '800' },
+
+  footer: { marginTop: 30, paddingHorizontal: 20 },
+  footerText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center', fontWeight: '500' },
 });
 
 export default FarmIDEntryScreen;

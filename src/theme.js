@@ -1,32 +1,38 @@
-// Coffee colour palette — used across all screens
+// Refined Modern Coffee & Steel palette
 export const C = {
-  // Coffee scale (dark espresso → light cream)
+  // Primary Coffee
   c900: '#1a0a00',
   c800: '#3b1c08',
   c700: '#5c2d0e',
   c600: '#6f4e37',
   c500: '#8B5E3C',
+
+  // Steel / Modern Accents
+  steel100: '#F1F5F9', // slate 100
+  steel200: '#E2E8F0', // slate 200
+  steel300: '#CBD5E1', // slate 300
+  steel600: '#475569', // slate 600
+  steel700: '#334155', // slate 700
+  steel900: '#0F172A', // slate 900
+
+  // Brand Palette (Light)
   c400: '#A67C52',
   c300: '#C4A882',
   c200: '#D4B896',
   c100: '#EDE0D0',
-  c050: '#FDF8F3',
+  c050: '#F8F9FA', // Modern off-white
 
-  // Sync-status semantics
+  // Semantics
   pendingText: '#B45309',
   pendingBg: '#FFFBEB',
-  pendingBorder: '#F59E0B',
-  syncedText: '#5c2d0e',
-  syncedBg: '#EDE0D0',
-  failedText: '#C62828',
-  failedBg: '#FFF0F0',
-  failedBorder: '#EF4444',
+  syncedText: '#15803d',
+  syncedBg: '#f0fdf4',
+  failedText: '#dc2626',
+  failedBg: '#fef2f2',
 
   // Neutrals
   white: '#FFFFFF',
-  ink: '#1A1A1A',
-  ink2: '#333333',
-  muted: '#6B6B6B',
-  subtle: '#999999',
-  rule: '#E0D6C8',
+  ink: '#1e293b', // darker slate for text
+  muted: '#64748b',
+  rule: '#e2e8f0',
 };

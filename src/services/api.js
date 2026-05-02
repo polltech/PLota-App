@@ -58,12 +58,20 @@ export class SyncService {
   }
 
   async startAutoSync() {
+    // Initial check
+    await this.syncPending();
+
+    // Background interval
     setInterval(async () => {
-      const online = await this.checkConnectivity();
-      if (online && !this.isSyncing) {
-        await this.syncPending();
+      try {
+        const networkState = await Network.getNetworkStateAsync();
+        if (networkState.isConnected && !this.isSyncing) {
+          await this.syncPending();
+        }
+      } catch (e) {
+        console.warn('Auto-sync check failed:', e);
       }
-    }, 30000);
+    }, 30000); // 30 seconds
   }
 
   async syncPending() {

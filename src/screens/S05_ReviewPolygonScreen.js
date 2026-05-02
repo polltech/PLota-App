@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, ScrollView,
+  ActivityIndicator, ScrollView, StatusBar, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -11,45 +11,26 @@ import { API_BASE_URL, API_KEY } from '../config';
 import { dbService } from '../services/database';
 import { C } from '../theme';
 
-const StepBar = ({ current }) => (
-  <View style={sb.row}>
-    {[1, 2, 3].map((s) => (
-      <View key={s} style={[sb.seg, s < current && sb.done, s === current && sb.active, s > current && sb.idle]} />
-    ))}
-  </View>
-);
-const sb = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 4 },
-  seg: { flex: 1, height: 3, borderRadius: 2 },
-  done: { backgroundColor: C.c400 },
-  active: { backgroundColor: C.c700 },
-  idle: { backgroundColor: C.rule },
-});
-
 const REVIEW_MAP_HTML = `<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>*{margin:0;padding:0}#map{width:100vw;height:100vh}</style>
+<style>*{margin:0;padding:0}#map{width:100vw;height:100vh;background:#f8f9fa}</style>
 </head>
 <body>
 <div id="map"></div>
 <script>
 var map=L.map('map',{zoomControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false});
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:20}).addTo(map);
-map.setView([0,37],5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(map);
 window.addEventListener('message',function(e){
   try{
     var d=JSON.parse(e.data);
     if(d.type==='polygon'){
       var coords=d.coords.map(function(c){return[c.latitude,c.longitude];});
-      coords.forEach(function(c,i){
-        L.circleMarker(c,{radius:5,color:'#5c2d0e',fillColor:'#6f4e37',fillOpacity:1,weight:2}).addTo(map);
-      });
-      var poly=L.polygon(coords,{color:'#6f4e37',fillColor:'#6f4e37',fillOpacity:0.22,weight:2}).addTo(map);
-      map.fitBounds(poly.getBounds().pad(0.2));
+      var poly=L.polygon(coords,{color:'#6f4e37',fillColor:'#6f4e37',fillOpacity:0.3,weight:3}).addTo(map);
+      map.fitBounds(poly.getBounds().pad(0.3));
     }
   }catch(err){}
 });
@@ -67,40 +48,32 @@ const ReviewPolygonScreen = () => {
     areaHectares = 0,
     perimeterMeters = null,
     pointsCount = 0,
+    accuracyM = null,
   } = route.params || {};
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const webViewRef = useRef(null);
 
   const onMapLoad = () => {
-    const js = `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(JSON.stringify({ type: 'polygon', coords: polygonCoords }))}}));true;`;
-    webViewRef.current?.injectJavaScript(js);
+    webViewRef.current?.injectJavaScript(`window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(JSON.stringify({ type: 'polygon', coords: polygonCoords }))}}));true;`);
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       let deviceId = await AsyncStorage.getItem('device_id');
-      if (!deviceId) {
-        deviceId = `android-${Date.now()}`;
-        await AsyncStorage.setItem('device_id', deviceId);
-      }
+      if (!deviceId) { deviceId = `android-${Date.now()}`; await AsyncStorage.setItem('device_id', deviceId); }
 
       const farmInternalId = farm?.id ?? farmId;
       const capturedAt = new Date().toISOString();
 
       const capturePayload = {
-        farmId: farmInternalId,           // Always store UUID so auto-sync can find the farm
+        farmId: farmInternalId,
         parcelName: farm?.farm_name || farm?.name || null,
-        polygonCoords,
-        areaHectares,
-        perimeterMeters,
-        pointsCount,
-        capturedAt,
-        deviceInfo: { device_id: deviceId, model: 'Android', app_version: '1.0.0' },
-        notes: null,
-        topologyValidated: true,
-        validationWarnings: [],
+        polygonCoords, areaHectares, perimeterMeters, pointsCount, capturedAt,
+        deviceInfo: { device_id: deviceId, model: 'Android', app_version: '1.0.1' },
+        notes: null, topologyValidated: true, validationWarnings: [],
+        accuracyM,
       };
 
       const localId = await dbService.savePolygonCapture(capturePayload);
@@ -115,7 +88,7 @@ const ReviewPolygonScreen = () => {
         captured_at: capturedAt,
         device_id: deviceId,
         agent_id: null,
-        accuracy_m: null,
+        accuracy_m: accuracyM ? parseFloat(accuracyM.toFixed(2)) : null,
       };
 
       const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
@@ -126,127 +99,135 @@ const ReviewPolygonScreen = () => {
 
       if (res.ok) {
         const result = await res.json();
-        try {
-          await dbService.updateSyncStatus(localId, 'synced');
-        } catch (_) {
-          // DB update failure must not block navigation to Submitted
-        }
-        navigation.replace('Submitted', {
-          captureId: result.record_id || localId,
-          farmId, areaHectares, pointsCount,
-        });
-      } else {
-        throw new Error(`Server error ${res.status}`);
-      }
+        await dbService.updateSyncStatus(localId, 'synced');
+        navigation.replace('SatelliteAnalysis', { captureId: result.record_id || localId, farmId, areaHectares, pointsCount });
+      } else throw new Error('Server error');
     } catch (error) {
       navigation.replace('OfflineSaved', { farmId, areaHectares, pointsCount, error: error.message });
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
   };
 
   return (
     <SafeAreaView style={s.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.white} />
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Text style={s.backText}>‹ Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Text style={s.backBtnText}>✕</Text>
         </TouchableOpacity>
-        <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Review polygon</Text>
-          <StepBar current={3} />
+        <View style={s.headerLogoWrap}>
+          <Image source={require('../../assets/logo.jpeg')} style={s.headerLogo} />
         </View>
-        <View style={{ width: 56 }} />
+        <Text style={s.headerTitle}>Review</Text>
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.content}>
-        <View style={s.mapWrap}>
+        <View style={s.mapCard}>
           <WebView
             ref={webViewRef}
             source={{ html: REVIEW_MAP_HTML }}
-            style={s.map}
             onLoad={onMapLoad}
-            javaScriptEnabled
-            domStorageEnabled
-            mixedContentMode="always"
+            style={s.map}
             scrollEnabled={false}
           />
-        </View>
-
-        <View style={s.areaCard}>
-          <Text style={s.areaVal}>{(areaHectares || 0).toFixed(4)}</Text>
-          <Text style={s.areaUnit}>hectares — calculated area</Text>
-        </View>
-
-        <View style={s.statsRow}>
-          <View style={s.statBox}>
-            <Text style={s.statLabel}>Points</Text>
-            <Text style={s.statVal}>{pointsCount} coords</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.statBox}>
-            <Text style={s.statLabel}>Perimeter</Text>
-            <Text style={s.statVal}>{perimeterMeters ? `${(perimeterMeters / 1000).toFixed(2)} km` : '—'}</Text>
+          <View style={s.mapBadge}>
+            <Text style={s.mapBadgeText}>Polygon Preview</Text>
           </View>
         </View>
 
-        <View style={s.infoRow}>
-          <Text style={s.infoText} numberOfLines={1}>
-            {farmId}{farm?.farm_name ? ` — ${farm.farm_name}` : ''}
+        <View style={s.mainInfo}>
+          <Text style={s.farmName}>{farm?.farm_name || 'Individual Parcel'}</Text>
+          <Text style={s.farmId}>Farm ID: {farmId}</Text>
+        </View>
+
+        <View style={s.statsGrid}>
+          <View style={s.statItem}>
+            <Text style={s.statLabel}>Calculated Area</Text>
+            <Text style={s.statValue}>{areaHectares.toFixed(4)} <Text style={s.statUnit}>ha</Text></Text>
+          </View>
+          <View style={s.statItem}>
+            <Text style={s.statLabel}>Boundary Points</Text>
+            <Text style={s.statValue}>{pointsCount}</Text>
+          </View>
+        </View>
+
+        <View style={s.detailCard}>
+          <View style={s.detailRow}>
+            <Text style={s.detailLabel}>Perimeter</Text>
+            <Text style={s.detailVal}>{perimeterMeters ? `${(perimeterMeters / 1000).toFixed(2)} km` : '—'}</Text>
+          </View>
+          <View style={s.divider} />
+          <View style={s.detailRow}>
+            <Text style={s.detailLabel}>Accuracy</Text>
+            <Text style={s.detailVal}>High (Native GPS)</Text>
+          </View>
+        </View>
+
+        <View style={s.alertBox}>
+          <Text style={s.alertText}>
+            Submitting this data will link it to the farmer's profile for EUDR compliance verification.
           </Text>
         </View>
+      </ScrollView>
 
+      <View style={s.footer}>
         <TouchableOpacity
-          style={[s.primaryBtn, isSubmitting && s.btnDisabled]}
+          style={[s.submitBtn, isSubmitting && s.btnDisabled]}
           onPress={handleSubmit}
           disabled={isSubmitting}
-          activeOpacity={0.8}
         >
-          {isSubmitting ? <ActivityIndicator color={C.white} /> : <Text style={s.primaryBtnText}>Submit to Plotra →</Text>}
+          {isSubmitting ? <ActivityIndicator color={C.white} /> : <Text style={s.submitBtnText}>Finalize & Submit</Text>}
         </TouchableOpacity>
-
-        <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Text style={s.secondaryBtnText}>Re-walk boundary</Text>
+        <TouchableOpacity style={s.cancelBtn} onPress={() => navigation.goBack()}>
+          <Text style={s.cancelBtnText}>Discard & Restart</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.c050 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.rule,
-  },
-  backText: { fontSize: 17, color: C.c600, fontWeight: '600', width: 56 },
-  headerCenter: { flex: 1, alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: C.ink2 },
+  safe: { flex: 1, backgroundColor: C.white },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { fontSize: 18, fontWeight: '700', color: C.steel700 },
+  headerLogoWrap: { width: 32, height: 32, borderRadius: 8, overflow: 'hidden', marginHorizontal: 12, borderWidth: 1, borderColor: C.steel200 },
+  headerLogo: { width: '100%', height: '100%' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: C.ink },
+
   scroll: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  mapWrap: { height: 200, borderRadius: 12, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.rule },
+  content: { padding: 24, paddingBottom: 160 },
+
+  mapCard: { height: 220, borderRadius: 24, overflow: 'hidden', backgroundColor: C.steel100, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 },
   map: { flex: 1 },
-  areaCard: {
-    backgroundColor: C.white, borderRadius: 12, padding: 20, alignItems: 'center',
-    marginBottom: 12, elevation: 3,
-  },
-  areaVal: { fontSize: 38, fontWeight: '700', color: C.c700 },
-  areaUnit: { fontSize: 13, color: C.muted, marginTop: 4 },
-  statsRow: {
-    flexDirection: 'row', backgroundColor: C.white, borderRadius: 12,
-    marginBottom: 12, elevation: 3, overflow: 'hidden',
-  },
-  statBox: { flex: 1, alignItems: 'center', padding: 14 },
-  statDivider: { width: 1, backgroundColor: C.rule },
-  statLabel: { fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
-  statVal: { fontSize: 15, fontWeight: '600', color: C.ink2 },
-  infoRow: { backgroundColor: C.white, borderRadius: 10, padding: 12, marginBottom: 20, borderWidth: 1, borderColor: C.rule },
-  infoText: { fontSize: 13, color: C.muted },
-  primaryBtn: { backgroundColor: C.c600, paddingVertical: 15, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
-  btnDisabled: { backgroundColor: C.c200 },
-  primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '600' },
-  secondaryBtn: { paddingVertical: 13, borderRadius: 10, alignItems: 'center', borderWidth: 1.5, borderColor: C.c600 },
-  secondaryBtnText: { color: C.c600, fontSize: 15, fontWeight: '600' },
+  mapBadge: { position: 'absolute', bottom: 12, right: 12, backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  mapBadgeText: { fontSize: 10, fontWeight: '800', color: C.c700, textTransform: 'uppercase' },
+
+  mainInfo: { marginBottom: 30 },
+  farmName: { fontSize: 28, fontWeight: '800', color: C.ink, marginBottom: 4 },
+  farmId: { fontSize: 14, color: C.muted, fontWeight: '600' },
+
+  statsGrid: { flexDirection: 'row', gap: 15, marginBottom: 20 },
+  statItem: { flex: 1, backgroundColor: C.steel100, padding: 20, borderRadius: 20 },
+  statLabel: { fontSize: 11, fontWeight: '800', color: C.muted, textTransform: 'uppercase', marginBottom: 8 },
+  statValue: { fontSize: 20, fontWeight: '800', color: C.c700 },
+  statUnit: { fontSize: 14, color: C.muted, fontWeight: '500' },
+
+  detailCard: { backgroundColor: C.white, borderRadius: 20, borderWidth: 1.5, borderColor: C.steel100, padding: 20, marginBottom: 24 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  detailLabel: { fontSize: 14, color: C.muted, fontWeight: '600' },
+  detailVal: { fontSize: 14, color: C.ink, fontWeight: '700' },
+  divider: { height: 1.5, backgroundColor: C.steel100, marginVertical: 15 },
+
+  alertBox: { backgroundColor: C.syncedBg, padding: 16, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: C.syncedText },
+  alertText: { fontSize: 13, color: C.syncedText, lineHeight: 20, fontWeight: '500' },
+
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: 'rgba(255,255,255,0.95)', borderTopWidth: 1, borderTopColor: C.steel200 },
+  submitBtn: { backgroundColor: C.c700, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: C.c700, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  submitBtnText: { color: C.white, fontSize: 17, fontWeight: '800' },
+  btnDisabled: { opacity: 0.6 },
+  cancelBtn: { height: 48, alignItems: 'center', justifyContent: 'center' },
+  cancelBtnText: { color: C.muted, fontSize: 14, fontWeight: '700' },
 });
 
 export default ReviewPolygonScreen;

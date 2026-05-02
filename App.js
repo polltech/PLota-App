@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import { dbService } from './src/services/database';
+import { syncService } from './src/services/api';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -36,6 +38,18 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        await dbService.init();
+        await syncService.startAutoSync();
+      } catch (e) {
+        console.error('App init failure:', e);
+      }
+    };
+    initApp();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>

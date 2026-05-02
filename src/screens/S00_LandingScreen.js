@@ -5,278 +5,211 @@ import {
   Image,
   StyleSheet,
   Animated,
-  Dimensions,
+  TouchableOpacity,
   StatusBar,
+  ImageBackground,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-
-const { width, height } = Dimensions.get('window');
-
-// Floating gold particles scattered around the screen
-const PARTICLES = [
-  { x: 0.08, y: 0.12, size: 5, delay: 0,   duration: 2400 },
-  { x: 0.88, y: 0.18, size: 3, delay: 400, duration: 2800 },
-  { x: 0.04, y: 0.55, size: 7, delay: 200, duration: 2200 },
-  { x: 0.93, y: 0.48, size: 4, delay: 600, duration: 3000 },
-  { x: 0.12, y: 0.80, size: 4, delay: 150, duration: 2600 },
-  { x: 0.82, y: 0.75, size: 6, delay: 500, duration: 2500 },
-  { x: 0.48, y: 0.06, size: 3, delay: 100, duration: 2700 },
-  { x: 0.52, y: 0.94, size: 4, delay: 350, duration: 2300 },
-  { x: 0.30, y: 0.88, size: 3, delay: 250, duration: 2900 },
-  { x: 0.72, y: 0.10, size: 5, delay: 450, duration: 2100 },
-];
-
-const Particle = ({ x, y, size, delay, duration }) => {
-  const float = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(opacity, { toValue: 0.65, duration: duration * 0.45, delay, useNativeDriver: true }),
-          Animated.timing(float,   { toValue: -14,  duration: duration,        delay, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(opacity, { toValue: 0.15, duration: duration * 0.45, useNativeDriver: true }),
-          Animated.timing(float,   { toValue: 0,    duration: duration,        useNativeDriver: true }),
-        ]),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  return (
-    <Animated.View
-      style={{
-        position: 'absolute',
-        left: x * width,
-        top:  y * height,
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: '#d4a853',
-        opacity,
-        transform: [{ translateY: float }],
-      }}
-    />
-  );
-};
+import { C } from '../theme';
 
 export default function LandingScreen() {
   const navigation = useNavigation();
 
-  const logoScale   = useRef(new Animated.Value(0.25)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoGlow    = useRef(new Animated.Value(0)).current;
-  const titleY      = useRef(new Animated.Value(30)).current;
-  const titleOp     = useRef(new Animated.Value(0)).current;
-  const dividerW    = useRef(new Animated.Value(0)).current;
-  const taglineOp   = useRef(new Animated.Value(0)).current;
-  const badgeOp     = useRef(new Animated.Value(0)).current;
-  const footerOp    = useRef(new Animated.Value(0)).current;
-  const shimmer     = useRef(new Animated.Value(0)).current;
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    // Entry sequence
-    Animated.sequence([
-      // Logo springs in
-      Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, tension: 55, friction: 7, useNativeDriver: true }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 650, useNativeDriver: true }),
-      ]),
-      Animated.delay(80),
-      // Title slides up
-      Animated.parallel([
-        Animated.timing(titleOp, { toValue: 1, duration: 420, useNativeDriver: true }),
-        Animated.timing(titleY,  { toValue: 0, duration: 420, useNativeDriver: true }),
-      ]),
-      // Divider draws out
-      Animated.timing(dividerW, { toValue: 120, duration: 400, useNativeDriver: false }),
-      // Tagline fades
-      Animated.timing(taglineOp, { toValue: 1, duration: 380, useNativeDriver: true }),
-      // Badge + footer
-      Animated.parallel([
-        Animated.timing(badgeOp,  { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(footerOp, { toValue: 1, duration: 350, useNativeDriver: true }),
-      ]),
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
     ]).start();
-
-    // Glow pulse loop
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoGlow, { toValue: 1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(logoGlow, { toValue: 0, duration: 1800, useNativeDriver: true }),
-      ])
-    ).start();
-
-    // Shimmer on divider
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1400, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 1400, useNativeDriver: true }),
-      ])
-    ).start();
-
-    const timer = setTimeout(() => {
-      navigation.replace('FarmIDEntry');
-    }, 3200);
-    return () => clearTimeout(timer);
   }, []);
 
-  const glowOpacity = logoGlow.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.45] });
-  const shimmerOp   = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+  const handleStart = () => {
+    navigation.replace('FarmIDEntry');
+  };
 
   return (
-    <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d0803" translucent />
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Floating particles */}
-      {PARTICLES.map((p, i) => <Particle key={i} {...p} />)}
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?q=80&w=1000&auto=format&fit=crop' }}
+        style={s.bgImage}
+      >
+        <View style={s.overlay} />
 
-      {/* Radial glow behind logo */}
-      <Animated.View style={[s.glow, { opacity: glowOpacity }]} />
+        <SafeAreaView style={s.safe}>
+          <View style={s.content}>
+            <Animated.View
+              style={[
+                s.logoContainer,
+                { opacity: fadeAnim, transform: [{ scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }
+              ]}
+            >
+              <View style={s.imageShadow}>
+                <Image
+                  source={require('../../assets/logo.jpeg')}
+                  style={s.logo}
+                  resizeMode="cover"
+                />
+              </View>
+            </Animated.View>
 
-      <View style={s.content}>
-        {/* Logo */}
-        <Animated.View
-          style={[s.logoWrap, {
-            opacity: logoOpacity,
-            transform: [{ scale: logoScale }],
-          }]}
-        >
-          <Image
-            source={require('../../assets/logo.jpeg')}
-            style={s.logo}
-            resizeMode="contain"
-          />
-        </Animated.View>
+            <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], alignItems: 'center' }}>
+              <Text style={s.brandName}>PLOTRA</Text>
+              <View style={s.divider} />
+              <Text style={s.tagline}>
+                Mapping Sustainability,{"\n"}Empowering Farmers
+              </Text>
+            </Animated.View>
+          </View>
 
-        {/* Brand name */}
-        <Animated.Text
-          style={[s.title, { opacity: titleOp, transform: [{ translateY: titleY }] }]}
-        >
-          PLOTRA
-        </Animated.Text>
+          <Animated.View style={[s.footer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={s.badge}>
+              <View style={s.badgeDot} />
+              <Text style={s.badgeText}>EUDR COMPLIANT DATA CAPTURE</Text>
+            </View>
 
-        {/* Gold shimmer divider */}
-        <Animated.View style={[s.divider, { width: dividerW, opacity: shimmerOp }]} />
+            <TouchableOpacity
+              style={s.button}
+              onPress={handleStart}
+              activeOpacity={0.8}
+            >
+              <Text style={s.buttonText}>Get Started</Text>
+            </TouchableOpacity>
 
-        {/* Tagline */}
-        <Animated.Text style={[s.tagline, { opacity: taglineOp }]}>
-          Verifiable Sustainability{'\n'}from Farm to Cup
-        </Animated.Text>
-
-        {/* EUDR badge */}
-        <Animated.View style={[s.badge, { opacity: badgeOp }]}>
-          <View style={s.badgeDot} />
-          <Text style={s.badgeText}>EUDR Compliant · East Africa</Text>
-        </Animated.View>
-      </View>
-
-      {/* Bottom footer */}
-      <Animated.Text style={[s.footer, { opacity: footerOp }]}>
-        Mapping Africa's Coffee Story
-      </Animated.Text>
+            <Text style={s.versionText}>Secure Mobile Agent • v1.0.1</Text>
+          </Animated.View>
+        </SafeAreaView>
+      </ImageBackground>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: {
+  container: { flex: 1 },
+  bgImage: { flex: 1, width: '100%', height: '100%' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.35)' },
+  safe: { flex: 1 },
+
+  content: {
     flex: 1,
-    backgroundColor: '#0d0803',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 30,
   },
-  glow: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: '#d4a853',
-    // React Native doesn't have radial gradient natively; simulate with border radius + blur via shadow
-    shadowColor: '#d4a853',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 80,
-    elevation: 0,
+  logoContainer: {
+    marginBottom: 40,
   },
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  logoWrap: {
-    width: 220,
-    height: 220,
-    borderRadius: 24,
-    overflow: 'hidden',
-    marginBottom: 28,
-    // Subtle border glow
-    shadowColor: '#d4a853',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
+  imageShadow: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: C.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.3,
     shadowRadius: 20,
-    elevation: 12,
+    elevation: 15,
+    overflow: 'hidden',
+    borderWidth: 4,
+    borderColor: C.white,
   },
   logo: {
     width: '100%',
     height: '100%',
   },
-  title: {
+  brandName: {
     fontSize: 42,
-    fontWeight: '800',
-    color: '#d4a853',
-    letterSpacing: 10,
-    marginBottom: 14,
-    textShadowColor: 'rgba(212, 168, 83, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    fontWeight: '900',
+    color: C.white,
+    letterSpacing: 6,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
   divider: {
-    height: 2,
-    backgroundColor: '#d4a853',
+    width: 60,
+    height: 4,
+    backgroundColor: C.c400,
     borderRadius: 2,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   tagline: {
-    fontSize: 15,
-    color: '#c4a882',
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
-    lineHeight: 24,
-    letterSpacing: 0.3,
-    marginBottom: 24,
+    lineHeight: 28,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
+  },
+  footer: {
+    paddingHorizontal: 30,
+    paddingBottom: 50,
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: C.c700,
+    width: '100%',
+    paddingVertical: 20,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: C.c700,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  buttonText: {
+    color: C.white,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(212, 168, 83, 0.12)',
-    borderColor: 'rgba(212, 168, 83, 0.35)',
-    borderWidth: 1,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 7,
+    paddingVertical: 8,
+    borderRadius: 24,
+    marginBottom: 35,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#4ade80',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 10,
   },
   badgeText: {
     fontSize: 11,
-    color: '#d4a853',
+    fontWeight: '800',
+    color: C.white,
+    letterSpacing: 1,
+  },
+  versionText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
     fontWeight: '600',
     letterSpacing: 0.5,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 40,
-    fontSize: 11,
-    color: '#5c3a1e',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
   },
 });

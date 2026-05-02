@@ -1,12 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Alert, StatusBar, ScrollView, Image, ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -16,22 +11,6 @@ import { C } from '../theme';
 
 const FILTERS = ['all', 'pending', 'synced', 'failed'];
 
-const statusStyle = (status) => {
-  switch (status) {
-    case 'synced':
-      return { text: C.syncedText, bg: C.syncedBg };
-    case 'pending':
-      return { text: C.pendingText, bg: C.pendingBg };
-    case 'failed':
-      return { text: C.failedText, bg: C.failedBg };
-    default:
-      return { text: C.muted, bg: C.c100 };
-  }
-};
-
-const statusLabel = (s) =>
-  s === 'synced' ? 'Synced' : s === 'pending' ? 'Pending' : s === 'failed' ? 'Failed' : s;
-
 const QueueListScreen = () => {
   const navigation = useNavigation();
   const [captures, setCaptures] = useState([]);
@@ -39,31 +18,17 @@ const QueueListScreen = () => {
   const [filter, setFilter] = useState('all');
   const [retrying, setRetrying] = useState(null);
 
-  // Reload whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadQueue();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadQueue(); }, []));
 
   const loadQueue = async () => {
     setLoading(true);
-    try {
-      const rows = await dbService.getQueue();
-      setCaptures(rows);
-    } catch (e) {
-      console.error('Queue load error:', e);
-    } finally {
-      setLoading(false);
-    }
+    try { setCaptures(await dbService.getQueue()); } catch (e) {}
+    finally { setLoading(false); }
   };
 
-  const pendingCount = captures.filter((c) => c.sync_status === 'pending').length;
-
-  const filtered = captures.filter((c) => {
-    if (filter === 'all') return true;
-    return c.sync_status === filter;
-  });
+  const filtered = captures.filter(c => filter === 'all' || c.sync_status === filter);
+  const totalArea = captures.reduce((acc, c) => acc + (c.area_ha || 0), 0);
+  const pendingCount = captures.filter(c => c.sync_status === 'pending').length;
 
   const handleRetry = async (item) => {
     setRetrying(item.id);
@@ -79,266 +44,221 @@ const QueueListScreen = () => {
         agent_id: item.agent_id,
         accuracy_m: item.accuracy_m,
       };
-
       const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': API_KEY,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
         body: JSON.stringify(payload),
       });
-
-      if (res.ok) {
-        await dbService.updateSyncStatus(item.id, 'synced');
-        loadQueue();
-      } else {
-        await dbService.updateSyncStatus(item.id, 'failed', `Server error ${res.status}`);
-        loadQueue();
-        Alert.alert('Retry failed', `Server returned ${res.status}`);
-      }
-    } catch (e) {
-      await dbService.updateSyncStatus(item.id, 'failed', e.message);
-      loadQueue();
-      Alert.alert('Retry failed', 'Network error — will retry automatically.');
-    } finally {
-      setRetrying(null);
-    }
+      if (res.ok) { await dbService.updateSyncStatus(item.id, 'synced'); loadQueue(); }
+      else { Alert.alert('Error', `Server returned ${res.status}`); }
+    } catch (e) { Alert.alert('Network Error', 'Check your internet connection.'); }
+    finally { setRetrying(null); }
   };
 
   const renderItem = ({ item }) => {
-    const st = statusStyle(item.sync_status);
-    const isRetrying = retrying === item.id;
-    const time = item.created_at
-      ? new Date(item.created_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : '—';
+    const isSynced = item.sync_status === 'synced';
+    const isFailed = item.sync_status === 'failed';
 
     return (
       <View style={s.card}>
-        <View style={s.cardRow}>
-          <Text style={s.farmId}>{item.farm_id || 'Unknown'}</Text>
-          <View style={[s.badge, { backgroundColor: st.bg }]}>
-            <Text style={[s.badgeText, { color: st.text }]}>
-              {statusLabel(item.sync_status)}
+        <View style={s.cardImageContainer}>
+           <Image
+             source={{ uri: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?q=80&w=200&auto=format&fit=crop' }}
+             style={s.cardThumb}
+           />
+           <View style={[s.statusDot, isSynced ? s.dotSynced : isFailed ? s.dotFailed : s.dotPending]} />
+        </View>
+
+        <View style={s.cardContent}>
+          <View style={s.cardHeader}>
+            <Text style={s.farmId} numberOfLines={1}>{item.farm_id || 'Unknown ID'}</Text>
+            <Text style={s.cardTime}>
+              {item.created_at ? new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}
             </Text>
           </View>
-        </View>
-        <Text style={s.cardMeta}>
-          {(item.area_ha || 0).toFixed(2)} ha · {item.points_count || 0} pts · {time}
-        </Text>
-        {item.sync_status === 'failed' && (
-          <TouchableOpacity
-            style={[s.retryBtn, isRetrying && s.retryBtnDisabled]}
-            onPress={() => handleRetry(item)}
-            disabled={isRetrying}
-            activeOpacity={0.8}
-          >
-            {isRetrying ? (
-              <ActivityIndicator size="small" color={C.white} />
-            ) : (
-              <Text style={s.retryBtnText}>Retry →</Text>
-            )}
-          </TouchableOpacity>
-        )}
-        {item.last_sync_error ? (
-          <Text style={s.errorNote} numberOfLines={1}>
-            {item.last_sync_error}
+
+          <Text style={s.cardMeta}>
+            {item.area_ha?.toFixed(4)} ha • {item.points_count} points
           </Text>
-        ) : null}
+
+          <View style={s.statusRow}>
+             <Text style={[s.statusLabel, isSynced && s.textSynced, isFailed && s.textFailed]}>
+               {item.sync_status.toUpperCase()}
+             </Text>
+             <View style={s.cardActions}>
+               <TouchableOpacity
+                 style={s.viewBtn}
+                 onPress={() => navigation.navigate('FarmConfirmation', { farmId: item.farm_id })}
+               >
+                 <Text style={s.viewBtnText}>View Details</Text>
+               </TouchableOpacity>
+               {isFailed && (
+                 <TouchableOpacity
+                   style={s.retryBtn}
+                   onPress={() => handleRetry(item)}
+                   disabled={retrying === item.id}
+                 >
+                   {retrying === item.id ? <ActivityIndicator size="small" color={C.white} /> : <Text style={s.retryBtnText}>Retry</Text>}
+                 </TouchableOpacity>
+               )}
+             </View>
+          </View>
+        </View>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Text style={s.backText}>‹ Back</Text>
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Queued records</Text>
-        <View style={{ width: 56 }} />
-      </View>
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Count row */}
-      <View style={s.countRow}>
-        <Text style={s.countText}>{captures.length} records total</Text>
-        {pendingCount > 0 && (
-          <View style={s.pendingBadge}>
-            <Text style={s.pendingBadgeText}>{pendingCount} pending</Text>
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1000&auto=format&fit=crop' }}
+        style={s.hero}
+      >
+        <View style={s.heroOverlay} />
+        <SafeAreaView style={s.heroContent}>
+          <View style={s.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+              <Text style={s.backBtnText}>✕</Text>
+            </TouchableOpacity>
+            <View style={s.logoBadge}>
+               <Image source={require('../../assets/logo.jpeg')} style={s.logoBadgeImg} />
+            </View>
           </View>
+
+          <View style={s.heroStats}>
+             <Text style={s.heroTitle}>Sync History</Text>
+             <View style={s.statRow}>
+                <View style={s.statBox}>
+                   <Text style={s.statVal}>{captures.length}</Text>
+                   <Text style={s.statLabel}>Records</Text>
+                </View>
+                <View style={s.vLine} />
+                <View style={s.statBox}>
+                   <Text style={s.statVal}>{totalArea.toFixed(2)}</Text>
+                   <Text style={s.statLabel}>Total Ha</Text>
+                </View>
+                {pendingCount > 0 && (
+                  <>
+                    <View style={s.vLine} />
+                    <View style={s.statBox}>
+                       <Text style={[s.statVal, { color: '#fbbf24' }]}>{pendingCount}</Text>
+                       <Text style={s.statLabel}>Pending</Text>
+                    </View>
+                  </>
+                )}
+             </View>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+
+      <View style={s.main}>
+        <View style={s.filterScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterContainer}>
+            {FILTERS.map(f => (
+              <TouchableOpacity
+                key={f}
+                style={[s.filterTab, filter === f && s.filterTabActive]}
+                onPress={() => setFilter(f)}
+              >
+                <Text style={[s.filterText, filter === f && s.filterTextActive]}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {loading ? (
+          <View style={s.center}><ActivityIndicator color={C.c700} /></View>
+        ) : (
+          <FlatList
+            data={filtered}
+            renderItem={renderItem}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={s.list}
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?q=80&w=400&auto=format&fit=crop' }}
+                  style={s.emptyImg}
+                />
+                <Text style={s.emptyText}>No sync records found</Text>
+              </View>
+            }
+          />
         )}
       </View>
 
-      {/* Filter tabs */}
-      <View style={s.tabs}>
-        {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[s.tab, filter === f && s.tabActive]}
-            onPress={() => setFilter(f)}
-            activeOpacity={0.7}
-          >
-            <Text style={[s.tabText, filter === f && s.tabTextActive]}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={C.c600} />
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          renderItem={renderItem}
-          keyExtractor={(item) => `q-${item.id}`}
-          contentContainerStyle={s.list}
-          ListEmptyComponent={
-            <View style={s.empty}>
-              <Text style={s.emptyIcon}>📭</Text>
-              <Text style={s.emptyText}>
-                No {filter === 'all' ? '' : filter + ' '}records found
-              </Text>
-            </View>
-          }
-        />
-      )}
-
-      {/* FAB */}
-      <TouchableOpacity
-        style={s.fab}
-        onPress={() => navigation.navigate('FarmIDEntry')}
-        activeOpacity={0.85}
-      >
-        <Text style={s.fabText}>+</Text>
+      <TouchableOpacity style={s.fab} onPress={() => navigation.navigate('FarmIDEntry')}>
+        <Text style={s.fabIcon}>+</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.c050 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: C.white },
+  hero: { height: 280, width: '100%' },
+  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.6)' },
+  heroContent: { flex: 1, padding: 24 },
 
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: C.rule,
-  },
-  backText: { fontSize: 17, color: C.c600, fontWeight: '600', width: 56 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: C.ink2 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { color: C.white, fontSize: 18, fontWeight: 'bold' },
+  logoBadge: { width: 40, height: 40, borderRadius: 10, overflow: 'hidden', borderWidth: 2, borderColor: C.white },
+  logoBadgeImg: { width: '100%', height: '100%' },
 
-  countRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: C.rule,
-  },
-  countText: { fontSize: 13, color: C.muted },
-  pendingBadge: {
-    backgroundColor: C.pendingBg,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  pendingBadgeText: { fontSize: 11, fontWeight: '600', color: C.pendingText },
+  heroStats: { marginTop: 'auto' },
+  heroTitle: { fontSize: 32, fontWeight: '800', color: C.white, marginBottom: 15 },
+  statRow: { flexDirection: 'row', alignItems: 'center' },
+  statBox: { flex: 1, alignItems: 'center' },
+  statVal: { fontSize: 22, fontWeight: '800', color: C.white },
+  statLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: 2 },
+  vLine: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.2)' },
 
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: C.white,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: C.rule,
-    gap: 6,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 7,
-    alignItems: 'center',
-    borderRadius: 7,
-  },
-  tabActive: { backgroundColor: C.c600 },
-  tabText: { fontSize: 12, color: C.muted, fontWeight: '500' },
-  tabTextActive: { color: C.white, fontWeight: '600' },
+  main: { flex: 1, backgroundColor: C.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, paddingTop: 20 },
+  filterScroll: { marginBottom: 15 },
+  filterContainer: { paddingHorizontal: 24, gap: 10 },
+  filterTab: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: C.steel100 },
+  filterTabActive: { backgroundColor: C.c700 },
+  filterText: { fontSize: 14, fontWeight: '700', color: C.steel700 },
+  filterTextActive: { color: C.white },
 
-  list: { padding: 16, paddingBottom: 90 },
+  list: { padding: 24, paddingBottom: 100 },
+  card: { flexDirection: 'row', backgroundColor: C.white, borderRadius: 24, padding: 14, marginBottom: 16, borderWidth: 1.5, borderColor: C.steel100, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  cardImageContainer: { width: 64, height: 64, borderRadius: 18, marginRight: 15, position: 'relative' },
+  cardThumb: { width: '100%', height: '100%', borderRadius: 18 },
+  statusDot: { position: 'absolute', top: -4, right: -4, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: C.white },
+  dotSynced: { backgroundColor: C.syncedText },
+  dotFailed: { backgroundColor: C.failedText },
+  dotPending: { backgroundColor: '#fbbf24' },
 
-  card: {
-    backgroundColor: C.white,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: C.rule,
-    shadowColor: C.c800,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  farmId: { fontSize: 15, fontWeight: '700', color: C.ink2 },
-  badge: {
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  badgeText: { fontSize: 11, fontWeight: '600' },
-  cardMeta: { fontSize: 12, color: C.muted },
-  errorNote: { fontSize: 11, color: C.failedText, marginTop: 4 },
+  cardContent: { flex: 1 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  farmId: { fontSize: 16, fontWeight: '800', color: C.ink, flex: 1, marginRight: 8 },
+  cardTime: { fontSize: 12, color: C.muted, fontWeight: '600' },
+  cardMeta: { fontSize: 13, color: C.muted, fontWeight: '500', marginBottom: 6 },
 
-  retryBtn: {
-    marginTop: 10,
-    backgroundColor: C.c600,
-    paddingVertical: 8,
-    borderRadius: 7,
-    alignItems: 'center',
-  },
-  retryBtnDisabled: { backgroundColor: C.c200 },
-  retryBtnText: { color: C.white, fontSize: 13, fontWeight: '600' },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardActions: { flexDirection: 'row', gap: 8 },
+  viewBtn: { backgroundColor: C.steel200, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  viewBtnText: { color: C.steel700, fontSize: 11, fontWeight: '800' },
+  statusLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#fbbf24' },
+  textSynced: { color: C.syncedText },
+  textFailed: { color: C.failedText },
 
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, color: C.subtle },
+  retryBtn: { backgroundColor: C.c700, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 10 },
+  retryBtnText: { color: C.white, fontSize: 11, fontWeight: '800' },
 
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 32,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: C.c600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: C.c800,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  fabText: { fontSize: 30, color: C.white, lineHeight: 34 },
+  center: { flex: 1, justifyContent: 'center' },
+  empty: { flex: 1, alignItems: 'center', marginTop: 60, paddingHorizontal: 40 },
+  emptyImg: { width: 120, height: 120, borderRadius: 60, marginBottom: 20, opacity: 0.6 },
+  emptyText: { color: C.subtle, fontWeight: '700', textAlign: 'center' },
+
+  fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10 },
+  fabIcon: { fontSize: 32, color: C.white, lineHeight: 36, fontWeight: '300' },
 });
 
 export default QueueListScreen;

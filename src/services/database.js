@@ -69,6 +69,7 @@ class DatabaseService {
       notes,
       topologyValidated,
       validationWarnings,
+      accuracyM,
     } = capture;
 
     // URS format: polygon_coordinates as array of {lat, lng} objects
@@ -89,15 +90,14 @@ class DatabaseService {
       [
         farmId,
         parcelName || null,
-        JSON.stringify(polygonCoordinates),  // Store as URS format
+        JSON.stringify(polygonCoordinates),
         areaHectares,
         perimeterMeters || null,
         pointsCount,
         capturedAt || new Date().toISOString(),
         new Date().toISOString(),
         deviceId,
-        null,  // accuracy_m — set later if available
-        null,  // agent_id — optional
+        accuracyM || null,
         notes || null,
         topologyValidated ? 1 : 0,
         JSON.stringify(validationWarnings || []),
