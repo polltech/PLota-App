@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { dbService } from '../services/database';
+import { syncService } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -7,7 +8,10 @@ export const AuthProvider = ({ children }) => {
   const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
-    dbService.init().then(() => setDbReady(true));
+    dbService.init().then(() => {
+      setDbReady(true);
+      syncService.startAutoSync();
+    });
   }, []);
 
   return (

@@ -38,6 +38,7 @@ class DatabaseService {
         topology_validated BOOLEAN DEFAULT 0,
         validation_warnings TEXT,  -- JSON array
         device_info TEXT,  -- JSON object
+        synced_at TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       );
     `;
@@ -45,6 +46,13 @@ class DatabaseService {
     await this.db.execAsync(createPolygonTable);
     await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_status ON polygon_captures(sync_status);`);
     await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_farm ON polygon_captures(farm_id);`);
+
+    // Migration: add synced_at to existing installs that predate this column
+    try {
+      await this.db.execAsync(`ALTER TABLE polygon_captures ADD COLUMN synced_at TEXT;`);
+    } catch (_) {
+      // Column already exists — safe to ignore
+    }
   }
 
   async savePolygonCapture(capture) {
