@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, StatusBar, ScrollView, Image, ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
 import { polygonAPI } from '../services/api';
@@ -11,6 +12,33 @@ import { dbService } from '../services/database';
 import { C } from '../theme';
 
 const FILTERS = ['all', 'pending', 'synced', 'failed'];
+
+const MINI_MAP_HTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>*{margin:0;padding:0}#map{width:100vw;height:100vh;background:#f8f9fa}</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var map=L.map('map',{zoomControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+window.addEventListener('message',function(e){
+  try{
+    var d=JSON.parse(e.data);
+    if(d.type==='polygon'){
+      var coords=d.coords.map(function(c){return[c.lat,c.lng];});
+      var poly=L.polygon(coords,{color:'#6f4e37',fillColor:'#6f4e37',fillOpacity:0.5,weight:2}).addTo(map);
+      map.fitBounds(poly.getBounds().pad(0.2));
+    }
+  }catch(err){}
+});
+</script>
+</body>
+</html>`;
 
 const QueueListScreen = () => {
   const navigation = useNavigation();
@@ -86,9 +114,21 @@ const QueueListScreen = () => {
     return (
       <View style={s.card}>
         <View style={s.cardImageContainer}>
-           <Image
-             source={{ uri: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?q=80&w=200&auto=format&fit=crop' }}
+           <WebView
+             source={{ html: MINI_MAP_HTML }}
              style={s.cardThumb}
+             scrollEnabled={false}
+             injectedJavaScript={`
+               setTimeout(function() {
+                 window.dispatchEvent(new MessageEvent('message', {
+                   data: JSON.stringify({
+                     type: 'polygon',
+                     coords: ${JSON.stringify(item.polygon_coordinates)}
+                   })
+                 }));
+               }, 200);
+               true;
+             `}
            />
            <View style={[s.statusDot, isSynced ? s.dotSynced : isFailed ? s.dotFailed : s.dotPending]} />
         </View>
@@ -255,9 +295,9 @@ const s = StyleSheet.create({
 
   list: { padding: 24, paddingBottom: 100 },
   card: { flexDirection: 'row', backgroundColor: C.white, borderRadius: 24, padding: 14, marginBottom: 16, borderWidth: 1.5, borderColor: C.steel100, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
-  cardImageContainer: { width: 64, height: 64, borderRadius: 18, marginRight: 15, position: 'relative' },
+  cardImageContainer: { width: 80, height: 80, borderRadius: 18, marginRight: 15, position: 'relative', overflow: 'hidden', backgroundColor: C.steel100 },
   cardThumb: { width: '100%', height: '100%', borderRadius: 18 },
-  statusDot: { position: 'absolute', top: -4, right: -4, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: C.white },
+  statusDot: { position: 'absolute', top: 6, right: 6, width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: C.white, zIndex: 10 },
   dotSynced: { backgroundColor: C.syncedText },
   dotFailed: { backgroundColor: C.failedText },
   dotPending: { backgroundColor: '#fbbf24' },
