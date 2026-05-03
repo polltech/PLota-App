@@ -49,7 +49,9 @@ export class SyncService {
   async checkConnectivity() {
     try {
       const networkState = await Network.getNetworkStateAsync();
-      this.isOnline = networkState.isConnected;
+      // isInternetReachable is true if internet access is available
+      // isConnected is true if the device is connected to a network (Wi-Fi, Cellular, etc.)
+      this.isOnline = networkState.isConnected && networkState.isInternetReachable !== false;
       return this.isOnline;
     } catch (e) {
       this.isOnline = false;
@@ -59,13 +61,15 @@ export class SyncService {
 
   async startAutoSync() {
     // Initial check
-    await this.syncPending();
+    setTimeout(() => this.syncPending(), 2000);
 
     // Background interval
     setInterval(async () => {
       try {
         const networkState = await Network.getNetworkStateAsync();
-        if (networkState.isConnected && !this.isSyncing) {
+        const isOnline = networkState.isConnected && networkState.isInternetReachable !== false;
+
+        if (isOnline && !this.isSyncing) {
           await this.syncPending();
         }
       } catch (e) {

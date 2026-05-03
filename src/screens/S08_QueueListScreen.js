@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import * as Network from 'expo-network';
 import { API_BASE_URL, API_KEY } from '../config';
 import { dbService } from '../services/database';
 import { C } from '../theme';
@@ -53,6 +54,26 @@ const QueueListScreen = () => {
       else { Alert.alert('Error', `Server returned ${res.status}`); }
     } catch (e) { Alert.alert('Network Error', 'Check your internet connection.'); }
     finally { setRetrying(null); }
+  };
+
+  const handleSyncAll = async () => {
+    if (pendingCount === 0) return;
+    setLoading(true);
+    try {
+      const net = await Network.getNetworkStateAsync();
+      if (!net.isConnected) {
+        Alert.alert('Offline', 'Please connect to Wi-Fi or mobile data to sync.');
+        return;
+      }
+      const { syncService } = require('../services/api');
+      await syncService.syncPending();
+      await loadQueue();
+      Alert.alert('Sync Complete', 'All pending records have been processed.');
+    } catch (e) {
+      Alert.alert('Sync Failed', e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderItem = ({ item }) => {
@@ -142,10 +163,13 @@ const QueueListScreen = () => {
                 {pendingCount > 0 && (
                   <>
                     <View style={s.vLine} />
-                    <View style={s.statBox}>
+                    <TouchableOpacity style={s.statBox} onPress={handleSyncAll}>
                        <Text style={[s.statVal, { color: '#fbbf24' }]}>{pendingCount}</Text>
-                       <Text style={s.statLabel}>Pending</Text>
-                    </View>
+                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                         <Text style={[s.statLabel, { color: '#fbbf24' }]}>Sync Now</Text>
+                         <Text style={{ fontSize: 10, marginLeft: 4 }}>🔄</Text>
+                       </View>
+                    </TouchableOpacity>
                   </>
                 )}
              </View>

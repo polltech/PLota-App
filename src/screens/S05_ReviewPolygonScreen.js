@@ -91,19 +91,32 @@ const ReviewPolygonScreen = () => {
         accuracy_m: accuracyM ? parseFloat(accuracyM.toFixed(2)) : null,
       };
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for submission
+
       const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
         body: JSON.stringify(apiPayload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const result = await res.json();
         await dbService.updateSyncStatus(localId, 'synced');
         navigation.replace('SatelliteAnalysis', { captureId: result.record_id || localId, farmId, areaHectares, pointsCount });
-      } else throw new Error('Server error');
+      } else {
+        throw new Error(`Server returned ${res.status}`);
+      }
     } catch (error) {
-      navigation.replace('OfflineSaved', { farmId, areaHectares, pointsCount, error: error.message });
+      console.log('Submission failed:', error.message);
+      navigation.replace('OfflineSaved', {
+        farmId,
+        areaHectares,
+        pointsCount,
+        error: error.name === 'AbortError' ? 'Request timed out. Saved to queue.' : error.message
+      });
     } finally { setIsSubmitting(false); }
   };
 

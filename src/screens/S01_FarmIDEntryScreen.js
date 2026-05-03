@@ -36,12 +36,21 @@ const FarmIDEntryScreen = () => {
     setIsLoading(true);
     try {
       const net = await Network.getNetworkStateAsync();
-      if (net.isConnected) {
+      // Only attempt fetch if we have a connection AND internet is potentially reachable
+      if (net.isConnected && net.isInternetReachable !== false) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+
           const res = await fetch(
             `${API_BASE_URL}/farms/${encodeURIComponent(farmId.trim())}`,
-            { headers: { 'X-API-Key': API_KEY } }
+            {
+              headers: { 'X-API-Key': API_KEY },
+              signal: controller.signal
+            }
           );
+          clearTimeout(timeoutId);
+
           if (res.ok) {
             const farm = await res.json();
             navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm });
@@ -51,11 +60,9 @@ const FarmIDEntryScreen = () => {
             setApiError('Farm ID not found. Check the ID and try again.');
             return;
           }
-          if (res.status === 401) {
-            setApiError('Authentication error. Please contact support.');
-            return;
-          }
-        } catch (_) {}
+        } catch (_) {
+          // If fetch fails (timeout or network), we still allow proceeding to WalkBoundary
+        }
       }
       navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
     } finally {

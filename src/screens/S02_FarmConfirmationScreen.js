@@ -42,14 +42,23 @@ const FarmConfirmationScreen = () => {
 
   const fetchFarmDetails = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
       const res = await fetch(
         `${API_BASE_URL}/farms/${encodeURIComponent(farmId)}`,
-        { headers: { 'X-API-Key': API_KEY } }
+        {
+          headers: { 'X-API-Key': API_KEY },
+          signal: controller.signal,
+        }
       );
+      clearTimeout(timeoutId);
+
       if (res.ok) setFarm(await res.json());
       else setError(`Farm not found`);
     } catch (e) {
-      setError('Connection error');
+      if (e.name === 'AbortError') setError('Request timed out. Using local fallback.');
+      else setError('Connection error');
     } finally {
       setLoading(false);
     }

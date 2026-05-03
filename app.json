@@ -28,6 +28,7 @@
       },
       "package": "africa.plotra.polygon",
       "versionCode": 2,
+      "usesCleartextTraffic": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
