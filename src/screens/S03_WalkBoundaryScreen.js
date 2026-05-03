@@ -183,11 +183,20 @@ const WalkBoundaryScreen = () => {
       }
 
       setGpsStatus('Waiting for high accuracy lock...');
+
+      // Auto-dismiss loading after 12 seconds if we have at least SOME location
+      const timeoutTimer = setTimeout(() => {
+        if (currentLocationRef.current) {
+          console.log('GPS calibration timeout - proceeding with current accuracy');
+          setGpsLoading(false);
+        }
+      }, 12000);
+
       try {
         locationSub.current = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.BestForNavigation,
-            timeInterval: 2000, // Slightly slower interval for stability on budget devices
+            timeInterval: 2000,
             distanceInterval: 1
           },
           (loc) => {
@@ -196,7 +205,9 @@ const WalkBoundaryScreen = () => {
             currentLocationRef.current = loc;
             send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
 
-            if (loc.coords.accuracy <= 15) { // Relaxed to 15m for faster "ready" state
+            // Relaxed to 25m for budget devices to allow proceeding
+            if (loc.coords.accuracy <= 25) {
+              clearTimeout(timeoutTimer);
               setGpsLoading(false);
             } else {
               setGpsStatus(`Improving accuracy (±${loc.coords.accuracy.toFixed(1)}m)...`);
@@ -204,6 +215,7 @@ const WalkBoundaryScreen = () => {
           }
         );
       } catch (watchErr) {
+        clearTimeout(timeoutTimer);
         console.warn('Watcher failed, falling back to lower accuracy:', watchErr.message);
         // Final fallback: use Balanced accuracy watcher if BestForNavigation fails
         locationSub.current = await Location.watchPositionAsync(
@@ -213,7 +225,7 @@ const WalkBoundaryScreen = () => {
             setAccuracy(loc.coords.accuracy);
             currentLocationRef.current = loc;
             send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
-            setGpsLoading(false); // Force skip loading if we get any data
+            setGpsLoading(false);
           }
         );
       }
