@@ -100,6 +100,8 @@ const WalkBoundaryScreen = () => {
   const [accuracy, setAccuracy] = useState(null);
   const [isManualMode, setIsManualMode] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
+  const [gpsLoading, setGpsLoading] = useState(true);
+  const [gpsStatus, setGpsStatus] = useState('Initializing GPS...');
 
   const webViewRef = useRef(null);
   const locationSub = useRef(null);
@@ -137,17 +139,47 @@ const WalkBoundaryScreen = () => {
   };
 
   const startLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return;
-    locationSub.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0.5 },
-      (loc) => {
-        setCurrentLocation(loc);
-        setAccuracy(loc.coords.accuracy);
-        currentLocationRef.current = loc;
-        send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
+    try {
+      setGpsStatus('Requesting permissions...');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setGpsStatus('Permission denied');
+        Alert.alert('Permission Denied', 'Location access is required to capture farm boundaries.');
+        return;
       }
-    );
+
+      setGpsStatus('Acquiring initial location...');
+      // Get a quick initial location
+      const initial = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      if (initial) {
+        setCurrentLocation(initial);
+        setAccuracy(initial.coords.accuracy);
+        currentLocationRef.current = initial;
+        send({ type: 'loc', lat: initial.coords.latitude, lng: initial.coords.longitude, acc: initial.coords.accuracy });
+      }
+
+      setGpsStatus('Waiting for high accuracy lock...');
+      locationSub.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0.5 },
+        (loc) => {
+          setCurrentLocation(loc);
+          setAccuracy(loc.coords.accuracy);
+          currentLocationRef.current = loc;
+          send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
+
+          if (loc.coords.accuracy <= 10) {
+            setGpsLoading(false);
+          } else {
+            setGpsStatus(`Improving accuracy (±${loc.coords.accuracy.toFixed(1)}m)...`);
+          }
+        }
+      );
+    } catch (err) {
+      setGpsStatus('GPS Error');
+      console.error(err);
+    }
   };
 
   const handleMarkPoint = () => {
@@ -300,6 +332,23 @@ const WalkBoundaryScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {gpsLoading && !isManualMode && (
+        <View style={s.gpsOverlay}>
+          <View style={s.gpsLoadingCard}>
+            <ActivityIndicator size="large" color={C.c700} />
+            <Text style={s.gpsLoadingTitle}>Calibrating GPS</Text>
+            <Text style={s.gpsLoadingMsg}>{gpsStatus}</Text>
+            <TouchableOpacity
+              style={s.gpsSkipBtn}
+              onPress={() => setGpsLoading(false)}
+            >
+              <Text style={s.gpsSkipText}>Continue Anyway</Text>
+            </TouchableOpacity>
+            <Text style={s.gpsHint}>Go outside and move to a clear area for best results.</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -351,6 +400,14 @@ const s = StyleSheet.create({
   undoBtnText: { fontSize: 16, fontWeight: '800', color: C.steel600 },
   saveBtn: { flex: 2, backgroundColor: C.c700, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
   saveBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
+
+  gpsOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  gpsLoadingCard: { width: '85%', backgroundColor: C.white, borderRadius: 28, padding: 30, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 15 },
+  gpsLoadingTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginTop: 20, marginBottom: 8 },
+  gpsLoadingMsg: { fontSize: 14, color: C.muted, textAlign: 'center', lineHeight: 20, marginBottom: 25 },
+  gpsSkipBtn: { backgroundColor: C.steel100, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginBottom: 15 },
+  gpsSkipText: { fontSize: 14, fontWeight: '700', color: C.steel600 },
+  gpsHint: { fontSize: 12, color: C.subtle, textAlign: 'center', fontStyle: 'italic' },
 });
 
 export default WalkBoundaryScreen;

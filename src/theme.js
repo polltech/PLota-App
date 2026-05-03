@@ -34,5 +34,6 @@ export const C = {
   white: '#FFFFFF',
   ink: '#1e293b', // darker slate for text
   muted: '#64748b',
+  subtle: '#94a3b8', // slate 400
   rule: '#e2e8f0',
 };
