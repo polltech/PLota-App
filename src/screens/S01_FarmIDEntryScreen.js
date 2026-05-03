@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import { API_BASE_URL, API_KEY } from '../config';
+import { polygonAPI } from '../services/api';
 import { C } from '../theme';
 
 const FarmIDEntryScreen = () => {
@@ -39,28 +39,18 @@ const FarmIDEntryScreen = () => {
       // Only attempt fetch if we have a connection AND internet is potentially reachable
       if (net.isConnected && net.isInternetReachable !== false) {
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+          const res = await polygonAPI.getFarm(farmId.trim());
 
-          const res = await fetch(
-            `${API_BASE_URL}/farms/${encodeURIComponent(farmId.trim())}`,
-            {
-              headers: { 'X-API-Key': API_KEY },
-              signal: controller.signal
-            }
-          );
-          clearTimeout(timeoutId);
-
-          if (res.ok) {
-            const farm = await res.json();
+          if (res.status === 200) {
+            const farm = res.data;
             navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm });
             return;
           }
-          if (res.status === 404) {
+        } catch (error) {
+          if (error.response?.status === 404) {
             setApiError('Farm ID not found. Check the ID and try again.');
             return;
           }
-        } catch (_) {
           // If fetch fails (timeout or network), we still allow proceeding to WalkBoundary
         }
       }

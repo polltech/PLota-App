@@ -44,13 +44,12 @@ export class SyncService {
   constructor() {
     this.isOnline = true;
     this.isSyncing = false;
+    this.autoSyncStarted = false;
   }
 
   async checkConnectivity() {
     try {
       const networkState = await Network.getNetworkStateAsync();
-      // isInternetReachable is true if internet access is available
-      // isConnected is true if the device is connected to a network (Wi-Fi, Cellular, etc.)
       this.isOnline = networkState.isConnected && networkState.isInternetReachable !== false;
       return this.isOnline;
     } catch (e) {
@@ -60,35 +59,49 @@ export class SyncService {
   }
 
   async startAutoSync() {
-    // Initial check
-    setTimeout(() => this.syncPending(), 2000);
+    if (this.autoSyncStarted) return;
+    this.autoSyncStarted = true;
+
+    // Initial delayed check to allow DB to settle
+    setTimeout(() => {
+      this.syncPending().catch(err => console.warn('Initial sync failed:', err));
+    }, 5000);
 
     // Background interval
     setInterval(async () => {
       try {
+        if (this.isSyncing) return;
+
         const networkState = await Network.getNetworkStateAsync();
         const isOnline = networkState.isConnected && networkState.isInternetReachable !== false;
 
-        if (isOnline && !this.isSyncing) {
+        if (isOnline) {
           await this.syncPending();
         }
       } catch (e) {
-        console.warn('Auto-sync check failed:', e);
+        console.warn('Auto-sync interval failed:', e);
       }
-    }, 30000); // 30 seconds
+    }, 45000); // Increased to 45 seconds to reduce DB contention
   }
 
   async syncPending() {
     if (this.isSyncing) return;
-    this.isSyncing = true;
 
+    // Safety check for DB readiness
+    if (!dbService.db) {
+      console.log('Sync skipped: Database not ready');
+      return;
+    }
+
+    this.isSyncing = true;
     try {
       const pending = await dbService.getQueue(null, 'pending');
-      if (pending.length === 0) return;
+      if (!pending || pending.length === 0) return;
 
+      console.log(`Syncing ${pending.length} pending captures...`);
       const captures = pending.map((r) => ({
-        farm_id: r.farm_id,                         // UUID string — backend PolygonCaptureCreate.farm_id: str
-        polygon_coordinates: r.polygon_coordinates, // already parsed [{lat,lng}]
+        farm_id: r.farm_id,
+        polygon_coordinates: r.polygon_coordinates,
         area_ha: r.area_ha,
         captured_at: r.captured_at,
         device_id: r.device_id,
@@ -101,18 +114,22 @@ export class SyncService {
       }));
 
       try {
-        // BatchSyncRequest expects { captures: [...] }
         const response = await polygonAPI.syncBatch({ captures });
-        if (response.data?.synced > 0) {
+        // Backend returns { synced: X }
+        if (response.data && response.data.synced > 0) {
+          console.log(`Successfully synced ${response.data.synced} records`);
           for (const c of pending) {
             await dbService.updateSyncStatus(c.id, 'synced');
           }
         }
       } catch (error) {
+        console.warn('Batch sync API error:', error.message);
         for (const c of pending) {
           await dbService.updateSyncStatus(c.id, 'failed', error.message);
         }
       }
+    } catch (dbError) {
+      console.error('Sync database operation failed:', dbError);
     } finally {
       this.isSyncing = false;
     }

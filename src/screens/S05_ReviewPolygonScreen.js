@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { API_BASE_URL, API_KEY } from '../config';
 import { dbService } from '../services/database';
+import { polygonAPI } from '../services/api';
 import { C } from '../theme';
 
 const REVIEW_MAP_HTML = `<!DOCTYPE html>
@@ -91,23 +91,13 @@ const ReviewPolygonScreen = () => {
         accuracy_m: accuracyM ? parseFloat(accuracyM.toFixed(2)) : null,
       };
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for submission
+      const response = await polygonAPI.submit(apiPayload);
 
-      const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-        body: JSON.stringify(apiPayload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const result = await res.json();
+      if (response.status === 200 || response.status === 201) {
         await dbService.updateSyncStatus(localId, 'synced');
-        navigation.replace('SatelliteAnalysis', { captureId: result.record_id || localId, farmId, areaHectares, pointsCount });
+        navigation.replace('Submitted', { farmId, areaHectares, pointsCount });
       } else {
-        throw new Error(`Server returned ${res.status}`);
+        throw new Error(`Server returned ${response.status}`);
       }
     } catch (error) {
       console.log('Submission failed:', error.message);
@@ -115,7 +105,7 @@ const ReviewPolygonScreen = () => {
         farmId,
         areaHectares,
         pointsCount,
-        error: error.name === 'AbortError' ? 'Request timed out. Saved to queue.' : error.message
+        error: error.message
       });
     } finally { setIsSubmitting(false); }
   };

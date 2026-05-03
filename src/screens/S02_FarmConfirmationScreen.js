@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import { API_BASE_URL, API_KEY } from '../config';
+import { polygonAPI } from '../services/api';
 import { C } from '../theme';
 
 const fmtNum = (v, decimals = 2) => v == null ? '—' : Number(v).toFixed(decimals);
@@ -42,22 +42,11 @@ const FarmConfirmationScreen = () => {
 
   const fetchFarmDetails = async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-      const res = await fetch(
-        `${API_BASE_URL}/farms/${encodeURIComponent(farmId)}`,
-        {
-          headers: { 'X-API-Key': API_KEY },
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-
-      if (res.ok) setFarm(await res.json());
+      const res = await polygonAPI.getFarm(farmId);
+      if (res.status === 200) setFarm(res.data);
       else setError(`Farm not found`);
     } catch (e) {
-      if (e.name === 'AbortError') setError('Request timed out. Using local fallback.');
+      if (e.response?.status === 404) setError('Farm not found');
       else setError('Connection error');
     } finally {
       setLoading(false);

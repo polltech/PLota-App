@@ -5,24 +5,38 @@ const DB_VERSION = 1;
 
 class DatabaseService {
   db = null;
+  _initPromise = null;
 
   async init() {
+    if (this._initPromise) return this._initPromise;
+    this._initPromise = this._doInit();
+    return this._initPromise;
+  }
+
+  async _doInit() {
     try {
+      if (this.db) return;
       this.db = await SQLite.openDatabaseAsync(DB_NAME);
       await this.createTables();
-      console.log('Database initialized');
+      console.log('Database initialized and ready');
     } catch (e) {
       console.error('DB init error:', e);
+      this._initPromise = null; // Allow retry on failure
+      throw e;
     }
   }
 
   async createTables() {
-    const createPolygonTable = `
+    if (!this.db) return;
+
+    // Use a single transaction for schema setup
+    await this.db.execAsync(`
+      PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS polygon_captures (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         farm_id TEXT NOT NULL,
         parcel_name TEXT,
-        polygon_coordinates TEXT NOT NULL,  -- JSON array of {lat, lng}
+        polygon_coordinates TEXT NOT NULL,
         area_ha REAL NOT NULL,
         perimeter_meters REAL,
         points_count INTEGER NOT NULL,
@@ -36,22 +50,24 @@ class DatabaseService {
         agent_id TEXT,
         notes TEXT,
         topology_validated BOOLEAN DEFAULT 0,
-        validation_warnings TEXT,  -- JSON array
-        device_info TEXT,  -- JSON object
+        validation_warnings TEXT,
+        device_info TEXT,
         synced_at TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       );
-    `;
+      CREATE INDEX IF NOT EXISTS idx_polygon_status ON polygon_captures(sync_status);
+      CREATE INDEX IF NOT EXISTS idx_polygon_farm ON polygon_captures(farm_id);
+    `);
 
-    await this.db.execAsync(createPolygonTable);
-    await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_status ON polygon_captures(sync_status);`);
-    await this.db.execAsync(`CREATE INDEX IF NOT EXISTS idx_polygon_farm ON polygon_captures(farm_id);`);
-
-    // Migration: add synced_at to existing installs that predate this column
+    // Safe migration check
     try {
-      await this.db.execAsync(`ALTER TABLE polygon_captures ADD COLUMN synced_at TEXT;`);
-    } catch (_) {
-      // Column already exists — safe to ignore
+      const tableInfo = await this.db.getAllAsync("PRAGMA table_info(polygon_captures)");
+      const hasSyncedAt = tableInfo.some(col => col.name === 'synced_at');
+      if (!hasSyncedAt) {
+        await this.db.execAsync(`ALTER TABLE polygon_captures ADD COLUMN synced_at TEXT;`);
+      }
+    } catch (err) {
+      console.warn('Migration check failed:', err);
     }
   }
 

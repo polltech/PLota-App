@@ -6,7 +6,6 @@ import LandingScreen from '../screens/S00_LandingScreen';
 import FarmIDEntryScreen from '../screens/S01_FarmIDEntryScreen';
 import FarmConfirmationScreen from '../screens/S02_FarmConfirmationScreen';
 import WalkBoundaryScreen from '../screens/S03_WalkBoundaryScreen';
-import SatelliteAnalysisScreen from '../screens/S04_SatelliteAnalysisScreen';
 import ReviewPolygonScreen from '../screens/S05_ReviewPolygonScreen';
 import OfflineSavedScreen from '../screens/S06_OfflineSavedScreen';
 import SubmittedScreen from '../screens/S07_SubmittedScreen';
@@ -31,7 +30,6 @@ const AppNavigator = () => (
       <Stack.Screen name="FarmIDEntry" component={FarmIDEntryScreen} />
       <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
       <Stack.Screen name="WalkBoundary" component={WalkBoundaryScreen} />
-      <Stack.Screen name="SatelliteAnalysis" component={SatelliteAnalysisScreen} />
       <Stack.Screen name="ReviewPolygon" component={ReviewPolygonScreen} />
       <Stack.Screen name="OfflineSaved" component={OfflineSavedScreen} />
       <Stack.Screen name="Submitted" component={SubmittedScreen} />

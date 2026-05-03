@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import { API_BASE_URL, API_KEY } from '../config';
+import { polygonAPI } from '../services/api';
 import { dbService } from '../services/database';
 import { C } from '../theme';
 
@@ -45,15 +45,18 @@ const QueueListScreen = () => {
         agent_id: item.agent_id,
         accuracy_m: item.accuracy_m,
       };
-      const res = await fetch(`${API_BASE_URL}/parcels/polygon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) { await dbService.updateSyncStatus(item.id, 'synced'); loadQueue(); }
-      else { Alert.alert('Error', `Server returned ${res.status}`); }
-    } catch (e) { Alert.alert('Network Error', 'Check your internet connection.'); }
-    finally { setRetrying(null); }
+      const res = await polygonAPI.submit(payload);
+      if (res.status === 200 || res.status === 201) {
+        await dbService.updateSyncStatus(item.id, 'synced');
+        loadQueue();
+      } else {
+        Alert.alert('Error', `Server returned ${res.status}`);
+      }
+    } catch (e) {
+      Alert.alert('Network Error', 'Check your internet connection.');
+    } finally {
+      setRetrying(null);
+    }
   };
 
   const handleSyncAll = async () => {
