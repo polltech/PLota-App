@@ -140,6 +140,14 @@ const WalkBoundaryScreen = () => {
 
   const startLocation = async () => {
     try {
+      setGpsStatus('Checking GPS services...');
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
+        setGpsStatus('GPS is disabled');
+        Alert.alert('GPS Disabled', 'Please enable location services (GPS) in your device settings to continue.');
+        return;
+      }
+
       setGpsStatus('Requesting permissions...');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -149,36 +157,70 @@ const WalkBoundaryScreen = () => {
       }
 
       setGpsStatus('Acquiring initial location...');
-      // Get a quick initial location
-      const initial = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      if (initial) {
-        setCurrentLocation(initial);
-        setAccuracy(initial.coords.accuracy);
-        currentLocationRef.current = initial;
-        send({ type: 'loc', lat: initial.coords.latitude, lng: initial.coords.longitude, acc: initial.coords.accuracy });
+      try {
+        // 1. Try last known position first (very fast fallback)
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (lastKnown) {
+          setCurrentLocation(lastKnown);
+          setAccuracy(lastKnown.coords.accuracy);
+          currentLocationRef.current = lastKnown;
+          send({ type: 'loc', lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude, acc: lastKnown.coords.accuracy });
+        }
+
+        // 2. Try current position with a balanced accuracy if high fails
+        const initial = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }).catch(() => null);
+
+        if (initial) {
+          setCurrentLocation(initial);
+          setAccuracy(initial.coords.accuracy);
+          currentLocationRef.current = initial;
+          send({ type: 'loc', lat: initial.coords.latitude, lng: initial.coords.longitude, acc: initial.coords.accuracy });
+        }
+      } catch (posErr) {
+        console.warn('Initial position failed:', posErr.message);
       }
 
       setGpsStatus('Waiting for high accuracy lock...');
-      locationSub.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0.5 },
-        (loc) => {
-          setCurrentLocation(loc);
-          setAccuracy(loc.coords.accuracy);
-          currentLocationRef.current = loc;
-          send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
+      try {
+        locationSub.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.BestForNavigation,
+            timeInterval: 2000, // Slightly slower interval for stability on budget devices
+            distanceInterval: 1
+          },
+          (loc) => {
+            setCurrentLocation(loc);
+            setAccuracy(loc.coords.accuracy);
+            currentLocationRef.current = loc;
+            send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
 
-          if (loc.coords.accuracy <= 10) {
-            setGpsLoading(false);
-          } else {
-            setGpsStatus(`Improving accuracy (±${loc.coords.accuracy.toFixed(1)}m)...`);
+            if (loc.coords.accuracy <= 15) { // Relaxed to 15m for faster "ready" state
+              setGpsLoading(false);
+            } else {
+              setGpsStatus(`Improving accuracy (±${loc.coords.accuracy.toFixed(1)}m)...`);
+            }
           }
-        }
-      );
+        );
+      } catch (watchErr) {
+        console.warn('Watcher failed, falling back to lower accuracy:', watchErr.message);
+        // Final fallback: use Balanced accuracy watcher if BestForNavigation fails
+        locationSub.current = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, timeInterval: 3000, distanceInterval: 2 },
+          (loc) => {
+            setCurrentLocation(loc);
+            setAccuracy(loc.coords.accuracy);
+            currentLocationRef.current = loc;
+            send({ type: 'loc', lat: loc.coords.latitude, lng: loc.coords.longitude, acc: loc.coords.accuracy });
+            setGpsLoading(false); // Force skip loading if we get any data
+          }
+        );
+      }
     } catch (err) {
       setGpsStatus('GPS Error');
-      console.error(err);
+      console.error('GPS Start Error:', err);
+      Alert.alert('Location Error', 'Could not initialize GPS. Please check your settings and try again.');
     }
   };
 
