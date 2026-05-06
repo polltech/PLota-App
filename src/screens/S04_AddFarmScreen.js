@@ -19,25 +19,31 @@ import { mobileAPI } from '../services/api';
 import { C } from '../theme';
 
 const LAND_USE_OPTIONS = [
-  { value: 'agroforestry',  label: 'Agroforestry' },
-  { value: 'monocrop',      label: 'Monocrop' },
+  { value: 'agroforestry',   label: 'Agroforestry' },
+  { value: 'monocrop',       label: 'Monocrop' },
   { value: 'mixed_cropping', label: 'Mixed Cropping' },
   { value: 'forest_reserve', label: 'Forest Reserve' },
-  { value: 'buffer_zone',   label: 'Buffer Zone' },
+  { value: 'buffer_zone',    label: 'Buffer Zone' },
 ];
+
+const LAND_USE_LABELS = Object.fromEntries(LAND_USE_OPTIONS.map(o => [o.value, o.label]));
 
 export default function AddFarmScreen() {
   const navigation = useNavigation();
 
+  // Form fields
   const [farmName,    setFarmName]    = useState('');
+  const [farmCode,    setFarmCode]    = useState('');
   const [county,      setCounty]      = useState('');
   const [subCounty,   setSubCounty]   = useState('');
   const [coffeeTrees, setCoffeeTrees] = useState('');
   const [landUse,     setLandUse]     = useState('agroforestry');
 
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
-  const [touched,  setTouched]  = useState(false);
+  // UI state
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState(null);
+  const [touched,   setTouched]   = useState(false);
+  const [created,   setCreated]   = useState(null); // preview data after creation
 
   const nameError   = touched && !farmName.trim();
   const countyError = touched && !county.trim();
@@ -56,25 +62,15 @@ export default function AddFarmScreen() {
       }
 
       const res = await mobileAPI.createFarm({
-        farm_name:    farmName.trim(),
-        county:       county.trim(),
-        sub_county:   subCounty.trim() || null,
-        coffee_trees: coffeeTrees ? parseInt(coffeeTrees, 10) : null,
+        farm_name:     farmName.trim(),
+        farm_code:     farmCode.trim() || null,
+        county:        county.trim(),
+        sub_county:    subCounty.trim() || null,
+        coffee_trees:  coffeeTrees ? parseInt(coffeeTrees, 10) : null,
         land_use_type: landUse,
       });
 
-      const { farm_id, farm_code, farm_name: createdName } = res.data;
-
-      // Go straight to polygon capture
-      navigation.navigate('WalkBoundary', {
-        farmId: farm_id,
-        farm: {
-          id: farm_id,
-          farm_code,
-          farm_name: createdName,
-          status: 'admin_approved',
-        },
-      });
+      setCreated(res.data);
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to create farm.';
       setError(msg);
@@ -83,6 +79,83 @@ export default function AddFarmScreen() {
     }
   };
 
+  const handleCapture = () => {
+    navigation.navigate('WalkBoundary', {
+      farmId: created.farm_id,
+      farm: {
+        id: created.farm_id,
+        farm_code: created.farm_code,
+        farm_name: created.farm_name,
+        status: 'admin_approved',
+      },
+    });
+  };
+
+  // ── Preview (shown after successful creation) ────────────────────────────────
+  if (created) {
+    return (
+      <View style={s.container}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <ImageBackground
+          source={{ uri: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1000&auto=format&fit=crop' }}
+          style={s.bgImage}
+        >
+          <View style={s.overlay} />
+          <SafeAreaView style={s.safe}>
+            <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+              <View style={s.topBar}>
+                <View style={{ width: 60 }} />
+                <Text style={s.appTitle}>PLOTRA</Text>
+                <View style={{ width: 60 }} />
+              </View>
+
+              <View style={s.card}>
+                {/* Success badge */}
+                <View style={s.successBadge}>
+                  <Text style={s.successBadgeText}>✓ Farm Created</Text>
+                </View>
+
+                <Text style={s.title}>{created.farm_name}</Text>
+                <Text style={s.previewSubtitle}>Review details before capturing the boundary</Text>
+
+                <View style={s.divider} />
+
+                <PreviewRow label="Farm Code"     value={created.farm_code} highlight />
+                <PreviewRow label="County"        value={created.county} />
+                {created.sub_county ? <PreviewRow label="Sub-County" value={created.sub_county} /> : null}
+                <PreviewRow label="Land Use"      value={LAND_USE_LABELS[created.land_use_type] || created.land_use_type} />
+                {created.coffee_trees ? <PreviewRow label="Coffee Trees" value={`${created.coffee_trees} trees`} /> : null}
+                <PreviewRow label="Farmer"        value={created.farmer} />
+                <PreviewRow label="Cooperative"   value={created.cooperative} />
+                <PreviewRow label="Status"        value="Admin Approved" statusGreen />
+
+                <View style={s.divider} />
+
+                <View style={s.codeBox}>
+                  <Text style={s.codeBoxLabel}>Use this code to load this farm later</Text>
+                  <Text style={s.codeBoxCode}>{created.farm_code}</Text>
+                </View>
+
+                <TouchableOpacity style={s.primaryBtn} onPress={handleCapture} activeOpacity={0.8}>
+                  <Text style={s.primaryBtnText}>Capture Boundary Now →</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={s.secondaryBtn}
+                  onPress={() => navigation.navigate('FarmIDEntry')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.secondaryBtnText}>Done — Capture Later</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </ImageBackground>
+      </View>
+    );
+  }
+
+  // ── Form ─────────────────────────────────────────────────────────────────────
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -101,12 +174,12 @@ export default function AddFarmScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              {/* Header */}
               <View style={s.topBar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
                   <Text style={s.backText}>← Back</Text>
                 </TouchableOpacity>
                 <Text style={s.appTitle}>PLOTRA</Text>
+                <View style={{ width: 60 }} />
               </View>
 
               <View style={s.card}>
@@ -126,6 +199,22 @@ export default function AddFarmScreen() {
                     returnKeyType="next"
                   />
                   {nameError && <Text style={s.errText}>Farm name is required</Text>}
+                </Field>
+
+                {/* Farm Code */}
+                <Field label="Farm Code (optional)">
+                  <TextInput
+                    style={s.input}
+                    value={farmCode}
+                    onChangeText={t => setFarmCode(t.toUpperCase())}
+                    placeholder="e.g. KIR-001  (auto-generated if blank)"
+                    placeholderTextColor={C.subtle}
+                    autoCapitalize="characters"
+                    returnKeyType="next"
+                  />
+                  <Text style={s.fieldHint}>
+                    This code is used to load the farm in the polygon capture flow.
+                  </Text>
                 </Field>
 
                 {/* County */}
@@ -194,7 +283,7 @@ export default function AddFarmScreen() {
                 >
                   {loading
                     ? <ActivityIndicator color={C.white} />
-                    : <Text style={s.primaryBtnText}>Create Farm & Map Boundary</Text>
+                    : <Text style={s.primaryBtnText}>Create Farm</Text>
                   }
                 </TouchableOpacity>
 
@@ -219,6 +308,21 @@ function Field({ label, children }) {
   );
 }
 
+function PreviewRow({ label, value, highlight, statusGreen }) {
+  return (
+    <View style={s.previewRow}>
+      <Text style={s.previewLabel}>{label}</Text>
+      <Text style={[
+        s.previewValue,
+        highlight && s.previewValueHighlight,
+        statusGreen && s.previewValueGreen,
+      ]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   container: { flex: 1 },
   bgImage:   { flex: 1, width: '100%', height: '100%' },
@@ -234,7 +338,7 @@ const s = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 16,
   },
-  backBtn:   { padding: 8 },
+  backBtn:   { padding: 8, width: 60 },
   backText:  { color: C.white, fontSize: 16, fontWeight: '700' },
   appTitle:  { fontSize: 16, fontWeight: '900', color: C.white, letterSpacing: 2 },
 
@@ -249,8 +353,8 @@ const s = StyleSheet.create({
     elevation: 12,
   },
 
-  title:    { fontSize: 28, fontWeight: '800', color: C.c900, marginBottom: 6 },
-  subtitle: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 22 },
+  title:    { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 },
+  subtitle: { fontSize: 14, color: '#6B6B6B', lineHeight: 20, marginBottom: 22 },
 
   fieldWrap: { marginBottom: 18 },
   label: {
@@ -262,18 +366,19 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: C.steel100,
+    backgroundColor: '#F5F0EC',
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: C.steel200,
+    borderColor: '#E8DDD5',
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: C.c900,
+    color: '#1a1a1a',
     fontWeight: '600',
   },
-  inputError: { borderColor: C.failedText, backgroundColor: C.failedBg },
-  errText:    { fontSize: 12, color: C.failedText, fontWeight: '700', marginTop: 6, marginLeft: 2 },
+  inputError:  { borderColor: '#C62828', backgroundColor: '#FFF5F5' },
+  errText:     { fontSize: 12, color: '#C62828', fontWeight: '700', marginTop: 6, marginLeft: 2 },
+  fieldHint:   { fontSize: 11, color: '#9E9E9E', marginTop: 6, marginLeft: 2, fontStyle: 'italic' },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
@@ -281,8 +386,8 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: C.steel200,
-    backgroundColor: C.steel100,
+    borderColor: '#E8DDD5',
+    backgroundColor: '#F5F0EC',
   },
   chipActive:     { backgroundColor: C.c700, borderColor: C.c700 },
   chipText:       { fontSize: 13, fontWeight: '700', color: C.c700 },
@@ -290,11 +395,11 @@ const s = StyleSheet.create({
 
   globalError: {
     fontSize: 13,
-    color: C.failedText,
+    color: '#C62828',
     fontWeight: '700',
     marginBottom: 14,
     marginTop: -4,
-    backgroundColor: C.failedBg,
+    backgroundColor: '#FFF5F5',
     padding: 10,
     borderRadius: 10,
   },
@@ -312,14 +417,67 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  btnDisabled:    { backgroundColor: C.steel300, shadowOpacity: 0, elevation: 0 },
+  btnDisabled:    { backgroundColor: '#D1C4BC', shadowOpacity: 0, elevation: 0 },
   primaryBtnText: { color: C.white, fontSize: 17, fontWeight: '800' },
 
   hint: {
     fontSize: 12,
-    color: C.subtle,
+    color: '#9E9E9E',
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '500',
   },
+
+  // ── Preview styles ─────────────────────────────────────────────────────────
+  successBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+  },
+  successBadgeText: { fontSize: 13, fontWeight: '800', color: '#2E7D32' },
+
+  previewSubtitle: { fontSize: 13, color: '#6B6B6B', marginBottom: 18 },
+
+  divider: { height: 1, backgroundColor: '#F0E8E2', marginVertical: 16 },
+
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F0EC',
+  },
+  previewLabel:          { fontSize: 13, color: '#9E9E9E', fontWeight: '600', flex: 1 },
+  previewValue:          { fontSize: 14, color: '#1a1a1a', fontWeight: '700', flex: 2, textAlign: 'right' },
+  previewValueHighlight: { color: C.c700, fontSize: 15 },
+  previewValueGreen:     { color: '#2E7D32' },
+
+  codeBox: {
+    backgroundColor: '#F5F0EC',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#E8DDD5',
+  },
+  codeBoxLabel: { fontSize: 11, color: '#9E9E9E', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  codeBoxCode:  { fontSize: 26, fontWeight: '900', color: C.c700, letterSpacing: 3 },
+
+  secondaryBtn: {
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E8DDD5',
+    marginTop: 10,
+  },
+  secondaryBtnText: { color: '#6B6B6B', fontSize: 15, fontWeight: '700' },
 });
