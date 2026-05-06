@@ -192,8 +192,8 @@ const ReviewPolygonScreen = () => {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.white },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },
-  backBtnText: { fontSize: 18, fontWeight: '700', color: C.steel700 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.c100, alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { fontSize: 18, fontWeight: '700', color: C.c700 },
   headerLogoWrap: { width: 32, height: 32, borderRadius: 8, overflow: 'hidden', marginHorizontal: 12, borderWidth: 1, borderColor: C.steel200 },
   headerLogo: { width: '100%', height: '100%' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: C.ink },
@@ -230,7 +230,7 @@ const s = StyleSheet.create({
   submitBtnText: { color: C.white, fontSize: 17, fontWeight: '800' },
   btnDisabled: { opacity: 0.6 },
   cancelBtn: { height: 48, alignItems: 'center', justifyContent: 'center' },
-  cancelBtnText: { color: C.muted, fontSize: 14, fontWeight: '700' },
+  cancelBtnText: { color: C.c400, fontSize: 14, fontWeight: '700' },
 });
 
 export default ReviewPolygonScreen;

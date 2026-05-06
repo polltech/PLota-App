@@ -445,7 +445,7 @@ const s = StyleSheet.create({
   modeText: { fontSize: 14, fontWeight: '800', color: C.steel700 },
   modeTextActive: { color: C.white },
 
-  markBtn: { backgroundColor: C.ink, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8 },
+  markBtn: { backgroundColor: C.c800, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8 },
   markBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
   btnDisabled: { opacity: 0.3, elevation: 0 },
 
