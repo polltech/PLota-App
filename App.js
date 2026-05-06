@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { dbService } from './src/services/database';
-import { syncService } from './src/services/api';
+import { syncService, mobileAPI } from './src/services/api';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -43,6 +43,8 @@ export default function App() {
       try {
         await dbService.init();
         await syncService.startAutoSync();
+        // Provision default Polygon accounts (idempotent — safe every launch)
+        mobileAPI.setup().catch(e => console.warn('Setup provisioning failed:', e.message));
       } catch (e) {
         console.error('App init failure:', e);
       }

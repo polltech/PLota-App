@@ -149,6 +149,14 @@ const FarmIDEntryScreen = () => {
                 </View>
 
                 <TouchableOpacity
+                  style={s.addFarmBtn}
+                  onPress={() => navigation.navigate('AddFarm')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.addFarmBtnText}>+ Add New Farm</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   style={s.secondaryBtn}
                   onPress={() => navigation.navigate('QueueList')}
                   activeOpacity={0.7}
@@ -255,6 +263,21 @@ const s = StyleSheet.create({
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 35 },
   line: { flex: 1, height: 1.5, backgroundColor: C.steel200 },
   dividerText: { marginHorizontal: 20, fontSize: 13, fontWeight: '800', color: C.steel300 },
+
+  addFarmBtn: {
+    height: 60,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2d6a4f',
+    marginBottom: 14,
+    shadowColor: '#2d6a4f',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  addFarmBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
 
   secondaryBtn: {
     height: 60,

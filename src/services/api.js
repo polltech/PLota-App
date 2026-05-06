@@ -39,6 +39,15 @@ export const polygonAPI = {
   syncBatch: (body) => api.post('/sync/batch', body),
 };
 
+// Mobile provisioning API
+export const mobileAPI = {
+  // POST /api/v2/mobile/setup — idempotent, creates default accounts if needed
+  setup: () => api.post('/mobile/setup', {}),
+
+  // POST /api/v2/mobile/farms/create — create farm linked to default farmer
+  createFarm: (data) => api.post('/mobile/farms/create', data),
+};
+
 // Sync Service
 export class SyncService {
   constructor() {
