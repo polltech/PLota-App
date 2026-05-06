@@ -32,7 +32,6 @@ export default function AddFarmScreen() {
   const [farmName,    setFarmName]    = useState('');
   const [county,      setCounty]      = useState('');
   const [subCounty,   setSubCounty]   = useState('');
-  const [village,     setVillage]     = useState('');
   const [coffeeTrees, setCoffeeTrees] = useState('');
   const [landUse,     setLandUse]     = useState('agroforestry');
 
@@ -60,7 +59,6 @@ export default function AddFarmScreen() {
         farm_name:    farmName.trim(),
         county:       county.trim(),
         sub_county:   subCounty.trim() || null,
-        village:      village.trim() || null,
         coffee_trees: coffeeTrees ? parseInt(coffeeTrees, 10) : null,
         land_use_type: landUse,
       });
@@ -150,18 +148,6 @@ export default function AddFarmScreen() {
                     value={subCounty}
                     onChangeText={setSubCounty}
                     placeholder="e.g. Mwea"
-                    placeholderTextColor={C.subtle}
-                    returnKeyType="next"
-                  />
-                </Field>
-
-                {/* Village */}
-                <Field label="Village">
-                  <TextInput
-                    style={s.input}
-                    value={village}
-                    onChangeText={setVillage}
-                    placeholder="e.g. Karura"
                     placeholderTextColor={C.subtle}
                     returnKeyType="next"
                   />
