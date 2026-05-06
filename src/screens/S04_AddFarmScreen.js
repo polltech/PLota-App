@@ -58,19 +58,39 @@ export default function AddFarmScreen() {
       const net = await Network.getNetworkStateAsync();
       if (!net.isConnected || net.isInternetReachable === false) {
         setError('No internet connection. Connect and try again.');
+        setLoading(false);
         return;
       }
 
-      const res = await mobileAPI.createFarm({
+      const payload = {
         farm_name:     farmName.trim(),
         farm_code:     farmCode.trim() || null,
         county:        county.trim(),
         sub_county:    subCounty.trim() || null,
         coffee_trees:  coffeeTrees ? parseInt(coffeeTrees, 10) : null,
         land_use_type: landUse,
-      });
+      };
 
-      setCreated(res.data);
+      try {
+        const res = await mobileAPI.createFarm(payload);
+        setCreated(res.data);
+      } catch (e) {
+        // If backend says setup is missing, try to run setup once and then retry creation
+        const errorDetail = e.response?.data?.detail;
+        if (errorDetail && typeof errorDetail === 'string' && errorDetail.includes('/mobile/setup')) {
+          console.log('Detected missing setup. Attempting auto-provisioning...');
+          try {
+            await mobileAPI.setup();
+            // Retry creation after successful setup
+            const retryRes = await mobileAPI.createFarm(payload);
+            setCreated(retryRes.data);
+          } catch (setupErr) {
+            throw new Error('Server setup required. Please contact support.');
+          }
+        } else {
+          throw e;
+        }
+      }
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to create farm.';
       setError(msg);

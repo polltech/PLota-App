@@ -43,8 +43,6 @@ export default function App() {
       try {
         await dbService.init();
         await syncService.startAutoSync();
-        // Provision default Polygon accounts (idempotent — safe every launch)
-        mobileAPI.setup().catch(e => console.warn('Setup provisioning failed:', e.message));
       } catch (e) {
         console.error('App init failure:', e);
       }
