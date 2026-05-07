@@ -145,8 +145,10 @@ export default function AddFarmScreen() {
                 {created.sub_county ? <PreviewRow label="Sub-County" value={created.sub_county} /> : null}
                 <PreviewRow label="Land Use"      value={LAND_USE_LABELS[created.land_use_type] || created.land_use_type} />
                 {created.coffee_trees ? <PreviewRow label="Coffee Trees" value={`${created.coffee_trees} trees`} /> : null}
-                <PreviewRow label="Farmer"        value={created.farmer} />
-                <PreviewRow label="Cooperative"   value={created.cooperative} />
+                <PreviewRow label="Farmer"           value={created.farmer} />
+                <PreviewRow label="Farmer Phone"     value={created.farmer_phone} />
+                <PreviewRow label="Cooperative"      value={created.cooperative} />
+                <PreviewRow label="Coop Phone"       value={created.cooperative_phone} />
                 <PreviewRow label="Status"        value="Admin Approved" statusGreen />
 
                 <View style={s.divider} />
