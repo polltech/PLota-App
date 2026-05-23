@@ -4,8 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { dbService } from './src/services/database';
-import { syncService, mobileAPI } from './src/services/api';
+import { mobileAPI } from './src/services/api';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -39,17 +38,8 @@ class ErrorBoundary extends React.Component {
 
 export default function App() {
   useEffect(() => {
-    const initApp = async () => {
-      try {
-        await dbService.init();
-        await syncService.startAutoSync();
-        // Provision default Polygon accounts (idempotent — safe every launch)
-        mobileAPI.setup().catch(e => console.warn('Setup provisioning failed:', e.message));
-      } catch (e) {
-        console.error('App init failure:', e);
-      }
-    };
-    initApp();
+    // Provision default Polygon capture accounts (idempotent — safe every launch)
+    mobileAPI.setup().catch(e => console.warn('Setup provisioning skipped:', e.message));
   }, []);
 
   return (

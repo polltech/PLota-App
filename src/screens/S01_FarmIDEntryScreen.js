@@ -92,9 +92,9 @@ const FarmIDEntryScreen = () => {
               </View>
 
               <View style={s.card}>
-                <Text style={s.title}>Identify Farm</Text>
+                <Text style={s.title}>Farm Capture</Text>
                 <Text style={s.subtitle}>
-                  Enter the unique Farm ID from the portal to begin boundary mapping.
+                  Enter an existing Farm ID to map its boundary, or add a brand-new farm below.
                 </Text>
 
                 <View style={s.inputWrapper}>
@@ -144,7 +144,7 @@ const FarmIDEntryScreen = () => {
 
                 <View style={s.dividerContainer}>
                   <View style={s.line} />
-                  <Text style={s.dividerText}>OR</Text>
+                  <Text style={s.dividerText}>NEW FARM</Text>
                   <View style={s.line} />
                 </View>
 
@@ -153,7 +153,7 @@ const FarmIDEntryScreen = () => {
                   onPress={() => navigation.navigate('AddFarm')}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.addFarmBtnText}>+ Add New Farm</Text>
+                  <Text style={s.addFarmBtnText}>+ Add Farm</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -161,7 +161,7 @@ const FarmIDEntryScreen = () => {
                   onPress={() => navigation.navigate('QueueList')}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.secondaryBtnText}>View Sync Queue</Text>
+                  <Text style={s.secondaryBtnText}>View Offline Queue</Text>
                 </TouchableOpacity>
               </View>
 

@@ -22,13 +22,21 @@ export const C = {
   c100: '#EDE0D0',
   c050: '#F8F9FA', // Modern off-white
 
-  // Semantics
+  // Semantics (sync status)
   pendingText: '#B45309',
   pendingBg: '#FFFBEB',
   syncedText: '#15803d',
   syncedBg: '#f0fdf4',
   failedText: '#dc2626',
   failedBg: '#fef2f2',
+
+  // EUDR Risk colours
+  eudrLow: '#15803d',
+  eudrLowBg: '#f0fdf4',
+  eudrMedium: '#d97706',
+  eudrMedBg: '#fffbeb',
+  eudrHigh: '#dc2626',
+  eudrHighBg: '#fef2f2',
 
   // Neutrals
   white: '#FFFFFF',

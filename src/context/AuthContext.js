@@ -1,28 +1,90 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import { dbService } from '../services/database';
 import { syncService } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
   const [dbReady, setDbReady] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    dbService.init().then(() => {
-      setDbReady(true);
-      syncService.startAutoSync();
-    });
+    _bootstrap();
   }, []);
 
+  const _bootstrap = async () => {
+    try {
+      await dbService.init();
+      setDbReady(true);
+      syncService.startAutoSync().catch((e) => console.warn('Auto-sync start failed:', e));
+
+      const storedToken = await SecureStore.getItemAsync('access_token');
+      const storedUser = await SecureStore.getItemAsync('user_data');
+
+      if (storedToken && storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (e) {
+      console.error('Auth bootstrap error:', e);
+    } finally {
+      setAuthReady(true);
+    }
+  };
+
+  const login = async (identifier, password) => {
+    // Lazy import to avoid circular dep at module load time
+    const { authAPI } = require('../services/api');
+    try {
+      const res = await authAPI.login(identifier, password);
+      const { access_token } = res.data;
+      await SecureStore.setItemAsync('access_token', access_token);
+
+      // Fetch user profile with the fresh token
+      const meRes = await authAPI.me();
+      const userData = meRes.data;
+      await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+
+      setUser(userData);
+      return { success: true };
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e.message || 'Login failed';
+      return { success: false, error: msg };
+    }
+  };
+
+  const logout = useCallback(async () => {
+    try {
+      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('user_data');
+    } catch (_) {}
+    setUser(null);
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const { authAPI } = require('../services/api');
+    try {
+      const res = await authAPI.refresh();
+      const { access_token } = res.data;
+      await SecureStore.setItemAsync('access_token', access_token);
+      return true;
+    } catch (_) {
+      await logout();
+      return false;
+    }
+  }, [logout]);
+
   return (
-    <AuthContext.Provider value={{ dbReady }}>
+    <AuthContext.Provider value={{ user, dbReady, authReady, login, logout, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 };

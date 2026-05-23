@@ -1,52 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  ImageBackground,
-  Image,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Alert, ImageBackground, Image, StatusBar,
+  KeyboardAvoidingView, Platform, ScrollView, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
-const RegisterScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+export default function LoginScreen() {
+  const { login } = useAuth();
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
-    if (!email || !password || !firstName || !lastName) {
-      Alert.alert('Error', 'Please fill all fields');
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const shake = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 6, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleLogin = async () => {
+    if (!identifier.trim() || !password) {
+      Alert.alert('Required', 'Please enter your email/phone and password.');
       return;
     }
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
-      return;
-    }
-    setIsLoading(true);
-    const result = await register({
-      email,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-      role: 'farmer',
-    });
+    setLoading(true);
+    const result = await login(identifier.trim(), password);
+    setLoading(false);
     if (!result.success) {
-      Alert.alert('Registration failed', result.error);
+      shake();
+      Alert.alert('Login Failed', result.error || 'Incorrect credentials.');
     }
-    setIsLoading(false);
+    // On success AuthContext sets user → AppNavigator renders MainTabs automatically
   };
 
   return (
@@ -54,8 +46,8 @@ const RegisterScreen = ({ navigation }) => {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1497933321188-ee29a888069a?q=80&w=1000&auto=format&fit=crop' }}
-        style={s.bgImage}
+        source={{ uri: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?q=80&w=1000&auto=format&fit=crop' }}
+        style={s.bg}
       >
         <View style={s.overlay} />
 
@@ -65,138 +57,130 @@ const RegisterScreen = ({ navigation }) => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
             <ScrollView
-              contentContainerStyle={s.scrollContent}
+              contentContainerStyle={s.scroll}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View style={s.header}>
-                <View style={s.logoContainer}>
-                  <Image
-                    source={require('../../assets/logo.jpeg')}
-                    style={s.logo}
-                    resizeMode="cover"
-                  />
+              {/* Logo */}
+              <View style={s.logoWrap}>
+                <View style={s.logoCircle}>
+                  <Image source={require('../../assets/logo.jpeg')} style={s.logo} resizeMode="cover" />
                 </View>
-                <Text style={s.brandName}>PLOTRA</Text>
+                <Text style={s.brand}>PLOTRA</Text>
+                <Text style={s.tagline}>Mapping Sustainability, Empowering Farmers</Text>
               </View>
 
-              <View style={s.card}>
-                <Text style={s.title}>Agent Access</Text>
-                <Text style={s.subtitle}>Create your profile to start mapping sustainable farm boundaries.</Text>
+              {/* Card */}
+              <Animated.View style={[s.card, { transform: [{ translateX: shakeAnim }] }]}>
+                <Text style={s.title}>Sign In</Text>
+                <Text style={s.subtitle}>Enter your email or phone number to continue.</Text>
 
-                <View style={s.inputGrid}>
-                  <View style={s.inputHalf}>
-                    <Text style={s.label}>First Name</Text>
-                    <TextInput
-                      style={s.input}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="Jane"
-                      placeholderTextColor={C.subtle}
-                    />
-                  </View>
-                  <View style={s.inputHalf}>
-                    <Text style={s.label}>Last Name</Text>
-                    <TextInput
-                      style={s.input}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Doe"
-                      placeholderTextColor={C.subtle}
-                    />
-                  </View>
-                </View>
-
-                <View style={s.inputWrapper}>
-                  <Text style={s.label}>Email Address</Text>
+                <View style={s.field}>
+                  <Text style={s.label}>Email or Phone</Text>
                   <TextInput
                     style={s.input}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="jane@plotra.africa"
+                    value={identifier}
+                    onChangeText={setIdentifier}
+                    placeholder="you@example.com or +254..."
                     placeholderTextColor={C.subtle}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    returnKeyType="next"
                   />
                 </View>
 
-                <View style={s.inputWrapper}>
+                <View style={s.field}>
                   <Text style={s.label}>Password</Text>
-                  <TextInput
-                    style={s.input}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor={C.subtle}
-                    secureTextEntry
-                  />
+                  <View style={s.pwdRow}>
+                    <TextInput
+                      style={[s.input, s.pwdInput]}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor={C.subtle}
+                      secureTextEntry={!showPwd}
+                      returnKeyType="done"
+                      onSubmitEditing={handleLogin}
+                    />
+                    <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd((v) => !v)}>
+                      <Text style={s.eyeText}>{showPwd ? '🙈' : '👁️'}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <TouchableOpacity
-                  style={[s.primaryBtn, isLoading && s.btnDisabled]}
-                  onPress={handleRegister}
-                  disabled={isLoading}
-                  activeOpacity={0.8}
+                  style={[s.btn, loading && s.btnDisabled]}
+                  onPress={handleLogin}
+                  disabled={loading}
+                  activeOpacity={0.85}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <ActivityIndicator color={C.white} />
                   ) : (
-                    <Text style={s.primaryBtnText}>Register Account</Text>
+                    <Text style={s.btnText}>Sign In</Text>
                   )}
                 </TouchableOpacity>
 
-                <View style={s.footerLinks}>
-                  <Text style={s.footerLinkText}>Already an agent? </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={s.link}>Sign In</Text>
-                  </TouchableOpacity>
+                <View style={s.divider}>
+                  <View style={s.line} />
+                  <Text style={s.divText}>EUDR Certified Platform</Text>
+                  <View style={s.line} />
                 </View>
-              </View>
 
-              <View style={s.complianceRow}>
-                 <Text style={s.complianceText}>EUDR Certified Mapping Protocol</Text>
-              </View>
+                <View style={s.footer}>
+                  <View style={s.dot} />
+                  <Text style={s.footText}>
+                    Contact your cooperative administrator to get access.
+                  </Text>
+                </View>
+              </Animated.View>
+
+              <Text style={s.version}>Plotra Agent App • v1.1.0</Text>
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </ImageBackground>
     </View>
   );
-};
+}
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  bgImage: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.5)' },
+  bg: { flex: 1, width: '100%', height: '100%' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.55)' },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 60 },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 60, paddingBottom: 40 },
 
-  header: { alignItems: 'center', marginBottom: 30 },
-  logoContainer: { width: 70, height: 70, borderRadius: 18, backgroundColor: C.white, padding: 4, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10 },
-  logo: { width: '100%', height: '100%', borderRadius: 14 },
-  brandName: { fontSize: 24, fontWeight: '900', color: C.white, letterSpacing: 4 },
+  logoWrap: { alignItems: 'center', marginBottom: 32 },
+  logoCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: C.white, padding: 4, marginBottom: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 18, elevation: 12 },
+  logo: { width: '100%', height: '100%', borderRadius: 41 },
+  brand: { fontSize: 30, fontWeight: '900', color: C.white, letterSpacing: 6, marginBottom: 6 },
+  tagline: { fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
 
-  card: { backgroundColor: 'rgba(255, 255, 255, 0.98)', borderRadius: 32, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.2, shadowRadius: 25, elevation: 15 },
-  title: { fontSize: 28, fontWeight: '800', color: C.c900, marginBottom: 8 },
-  subtitle: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 25 },
+  card: { backgroundColor: 'rgba(255,255,255,0.98)', borderRadius: 28, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 16 },
+  title: { fontSize: 26, fontWeight: '800', color: C.c900, marginBottom: 6 },
+  subtitle: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 24 },
 
-  inputGrid: { flexDirection: 'row', gap: 12, marginBottom: 15 },
-  inputHalf: { flex: 1 },
-  inputWrapper: { marginBottom: 15 },
+  field: { marginBottom: 16 },
   label: { fontSize: 11, fontWeight: '800', color: C.c700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
-  input: { backgroundColor: C.steel100, borderRadius: 16, height: 56, paddingHorizontal: 16, fontSize: 16, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
+  input: { backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, fontSize: 16, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
+  pwdRow: { flexDirection: 'row', alignItems: 'center' },
+  pwdInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRightWidth: 0 },
+  eyeBtn: { height: 54, width: 54, backgroundColor: C.steel100, borderWidth: 1.5, borderLeftWidth: 0, borderColor: C.steel200, borderTopRightRadius: 14, borderBottomRightRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  eyeText: { fontSize: 18 },
 
-  primaryBtn: { backgroundColor: C.c700, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 15, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  btn: { backgroundColor: C.c700, height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 8, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },
-  primaryBtnText: { color: C.white, fontSize: 17, fontWeight: '800' },
+  btnText: { color: C.white, fontSize: 17, fontWeight: '800' },
 
-  footerLinks: { flexDirection: 'row', justifyContent: 'center', marginTop: 25 },
-  footerLinkText: { fontSize: 14, color: C.muted, fontWeight: '500' },
-  link: { fontSize: 14, color: C.c700, fontWeight: '800' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 22 },
+  line: { flex: 1, height: 1, backgroundColor: C.steel200 },
+  divText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: C.subtle, textTransform: 'uppercase', letterSpacing: 1 },
 
-  complianceRow: { marginTop: 30, alignItems: 'center' },
-  complianceText: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  footer: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#22c55e', marginTop: 4 },
+  footText: { flex: 1, fontSize: 12, color: C.muted, lineHeight: 18 },
+
+  version: { textAlign: 'center', marginTop: 28, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
 });
-
-export default RegisterScreen;

@@ -36,7 +36,7 @@ export default function LandingScreen() {
   }, []);
 
   const handleStart = () => {
-    navigation.replace('FarmIDEntry');
+    navigation.navigate('FarmIDEntry');
   };
 
   return (
@@ -78,7 +78,7 @@ export default function LandingScreen() {
           <Animated.View style={[s.footer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <View style={s.badge}>
               <View style={s.badgeDot} />
-              <Text style={s.badgeText}>EUDR COMPLIANT DATA CAPTURE</Text>
+              <Text style={s.badgeText}>EUDR COMPLIANT FARM CAPTURE</Text>
             </View>
 
             <TouchableOpacity
@@ -86,10 +86,10 @@ export default function LandingScreen() {
               onPress={handleStart}
               activeOpacity={0.8}
             >
-              <Text style={s.buttonText}>Get Started</Text>
+              <Text style={s.buttonText}>Start Capture</Text>
             </TouchableOpacity>
 
-            <Text style={s.versionText}>Secure Mobile Agent • v1.0.1</Text>
+            <Text style={s.versionText}>Add Farm & Capture Boundary • v1.1.0</Text>
           </Animated.View>
         </SafeAreaView>
       </ImageBackground>
