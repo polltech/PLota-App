@@ -310,8 +310,8 @@ const s = StyleSheet.create({
 
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardActions: { flexDirection: 'row', gap: 8 },
-  viewBtn: { backgroundColor: C.steel200, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  viewBtnText: { color: C.steel700, fontSize: 11, fontWeight: '800' },
+  viewBtn: { backgroundColor: C.c100, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: C.c200 },
+  viewBtnText: { color: C.c700, fontSize: 11, fontWeight: '800' },
   statusLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#fbbf24' },
   textSynced: { color: C.syncedText },
   textFailed: { color: C.failedText },
@@ -324,7 +324,7 @@ const s = StyleSheet.create({
   emptyImg: { width: 120, height: 120, borderRadius: 60, marginBottom: 20, opacity: 0.6 },
   emptyText: { color: C.subtle, fontWeight: '700', textAlign: 'center' },
 
-  fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10 },
+  fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, backgroundColor: C.c800, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10 },
   fabIcon: { fontSize: 32, color: C.white, lineHeight: 36, fontWeight: '300' },
 });
 

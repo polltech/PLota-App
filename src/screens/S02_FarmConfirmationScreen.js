@@ -203,8 +203,8 @@ const s = StyleSheet.create({
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: 'rgba(255,255,255,0.95)', borderTopWidth: 1, borderTopColor: C.steel200 },
   btnRow: { flexDirection: 'row', gap: 12 },
-  backBtnAction: { flex: 1, height: 64, borderRadius: 20, borderWidth: 2, borderColor: C.steel200, alignItems: 'center', justifyContent: 'center' },
-  backBtnActionText: { color: C.steel700, fontSize: 16, fontWeight: '800' },
+  backBtnAction: { flex: 1, height: 64, borderRadius: 20, borderWidth: 2, borderColor: C.c200, alignItems: 'center', justifyContent: 'center', backgroundColor: C.c050 },
+  backBtnActionText: { color: C.c700, fontSize: 16, fontWeight: '800' },
   confirmBtn: { flex: 2, backgroundColor: C.c700, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 15, elevation: 10 },
   confirmBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
 });
