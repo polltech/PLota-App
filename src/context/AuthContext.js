@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import * as Network from 'expo-network';
 import { dbService } from '../services/database';
 import { syncService } from '../services/api';
 
@@ -47,24 +48,59 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (identifier, password) => {
-    // Lazy import to avoid circular dep at module load time
     const { authAPI } = require('../services/api');
+
+    let isOnline = false;
     try {
-      const res = await authAPI.login(identifier, password);
-      const { access_token } = res.data;
-      await SecureStore.setItemAsync('access_token', access_token);
+      const net = await Network.getNetworkStateAsync();
+      isOnline = !!net.isConnected && net.isInternetReachable !== false;
+    } catch (_) {}
 
-      // Fetch user profile with the fresh token
-      const meRes = await authAPI.me();
-      const userData = meRes.data;
-      await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+    if (isOnline) {
+      // ── Online login ───────────────────────────────────────────────────────
+      try {
+        const res = await authAPI.login(identifier, password);
+        const { access_token } = res.data;
+        await SecureStore.setItemAsync('access_token', access_token);
 
-      setUser(userData);
-      return { success: true };
-    } catch (e) {
-      const detail = e.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : e.message || 'Login failed';
-      return { success: false, error: msg };
+        const meRes = await authAPI.me();
+        const userData = meRes.data;
+        await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+
+        // Cache credentials for offline use (SecureStore is hardware-encrypted)
+        await SecureStore.setItemAsync('offline_id', identifier.trim().toLowerCase());
+        await SecureStore.setItemAsync('offline_pwd', password);
+
+        setUser(userData);
+        return { success: true };
+      } catch (e) {
+        const detail = e.response?.data?.detail;
+        const msg = typeof detail === 'string' ? detail : e.message || 'Login failed';
+        return { success: false, error: msg };
+      }
+    } else {
+      // ── Offline login using cached credentials ─────────────────────────────
+      try {
+        const cachedId  = await SecureStore.getItemAsync('offline_id');
+        const cachedPwd = await SecureStore.getItemAsync('offline_pwd');
+        const cachedUser = await SecureStore.getItemAsync('user_data');
+
+        if (!cachedId || !cachedPwd || !cachedUser) {
+          return {
+            success: false,
+            error: 'No offline credentials saved. Connect to the internet and log in once first.',
+          };
+        }
+
+        if (cachedId !== identifier.trim().toLowerCase() || cachedPwd !== password) {
+          return { success: false, error: 'Incorrect credentials.' };
+        }
+
+        setUser(JSON.parse(cachedUser));
+        return { success: true, offline: true };
+      } catch (e) {
+        return { success: false, error: 'Offline login failed. Please try again.' };
+      }
     }
   };
 

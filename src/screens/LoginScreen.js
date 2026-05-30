@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ImageBackground, Image, StatusBar,
   KeyboardAvoidingView, Platform, ScrollView, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Network from 'expo-network';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
@@ -15,7 +16,21 @@ export default function LoginScreen({ navigation }) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [isOnline, setIsOnline] = useState(true);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let mounted = true;
+    const checkNet = async () => {
+      try {
+        const net = await Network.getNetworkStateAsync();
+        if (mounted) setIsOnline(!!net.isConnected && net.isInternetReachable !== false);
+      } catch (_) {}
+    };
+    checkNet();
+    const interval = setInterval(checkNet, 5000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   const shake = () => {
     Animated.sequence([
@@ -72,8 +87,22 @@ export default function LoginScreen({ navigation }) {
 
               {/* Card */}
               <Animated.View style={[s.card, { transform: [{ translateX: shakeAnim }] }]}>
+                {!isOnline && (
+                  <View style={s.offlineBanner}>
+                    <Text style={s.offlineIcon}>📴</Text>
+                    <View style={s.offlineTextWrap}>
+                      <Text style={s.offlineTitle}>You're offline</Text>
+                      <Text style={s.offlineMsg}>Using cached credentials from your last online login.</Text>
+                    </View>
+                  </View>
+                )}
+
                 <Text style={s.title}>Sign In</Text>
-                <Text style={s.subtitle}>Enter your email or phone number to continue.</Text>
+                <Text style={s.subtitle}>
+                  {isOnline
+                    ? 'Enter your email or phone number to continue.'
+                    : 'Enter the same credentials you used when last online.'}
+                </Text>
 
                 <View style={s.field}>
                   <Text style={s.label}>Email or Phone</Text>
@@ -165,6 +194,13 @@ const s = StyleSheet.create({
   tagline: { fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
 
   card: { backgroundColor: 'rgba(255,255,255,0.98)', borderRadius: 28, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 16 },
+
+  offlineBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff7ed', borderWidth: 1.5, borderColor: '#fed7aa', borderRadius: 14, padding: 12, marginBottom: 20, gap: 10 },
+  offlineIcon: { fontSize: 22 },
+  offlineTextWrap: { flex: 1 },
+  offlineTitle: { fontSize: 13, fontWeight: '800', color: '#9a3412', marginBottom: 2 },
+  offlineMsg: { fontSize: 12, color: '#c2410c', lineHeight: 16 },
+
   title: { fontSize: 26, fontWeight: '800', color: C.c900, marginBottom: 6 },
   subtitle: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 24 },
 
