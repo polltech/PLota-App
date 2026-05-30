@@ -8,11 +8,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
-export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
-  const [identifier, setIdentifier] = useState('');
+export default function RegisterScreen({ navigation }) {
+  const { register } = useAuth();
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -26,19 +32,38 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   };
 
-  const handleLogin = async () => {
-    if (!identifier.trim() || !password) {
-      Alert.alert('Required', 'Please enter your email/phone and password.');
+  const handleRegister = async () => {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      Alert.alert('Required', 'Please fill in all required fields.');
+      shake();
       return;
     }
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
+      shake();
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters.');
+      shake();
+      return;
+    }
+
     setLoading(true);
-    const result = await login(identifier.trim(), password);
+    const result = await register({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim() || undefined,
+      password,
+    });
     setLoading(false);
+
     if (!result.success) {
       shake();
-      Alert.alert('Login Failed', result.error || 'Incorrect credentials.');
+      Alert.alert('Registration Failed', result.error || 'Could not create account.');
     }
-    // On success AuthContext sets user → AppNavigator renders MainTabs automatically
+    // On success AuthContext sets user → AppNavigator navigates automatically
   };
 
   return (
@@ -72,16 +97,44 @@ export default function LoginScreen({ navigation }) {
 
               {/* Card */}
               <Animated.View style={[s.card, { transform: [{ translateX: shakeAnim }] }]}>
-                <Text style={s.title}>Sign In</Text>
-                <Text style={s.subtitle}>Enter your email or phone number to continue.</Text>
+                <Text style={s.title}>Create Account</Text>
+                <Text style={s.subtitle}>Register as a farmer to manage your farms and deliveries.</Text>
+
+                {/* Name row */}
+                <View style={s.row}>
+                  <View style={[s.field, s.half]}>
+                    <Text style={s.label}>First Name *</Text>
+                    <TextInput
+                      style={s.input}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="John"
+                      placeholderTextColor={C.subtle}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  </View>
+                  <View style={[s.field, s.half]}>
+                    <Text style={s.label}>Last Name *</Text>
+                    <TextInput
+                      style={s.input}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Doe"
+                      placeholderTextColor={C.subtle}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
 
                 <View style={s.field}>
-                  <Text style={s.label}>Email or Phone</Text>
+                  <Text style={s.label}>Email *</Text>
                   <TextInput
                     style={s.input}
-                    value={identifier}
-                    onChangeText={setIdentifier}
-                    placeholder="you@example.com or +254..."
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
                     placeholderTextColor={C.subtle}
                     autoCapitalize="none"
                     keyboardType="email-address"
@@ -90,17 +143,29 @@ export default function LoginScreen({ navigation }) {
                 </View>
 
                 <View style={s.field}>
-                  <Text style={s.label}>Password</Text>
+                  <Text style={s.label}>Phone <Text style={s.optional}>(optional)</Text></Text>
+                  <TextInput
+                    style={s.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+254 700 000 000"
+                    placeholderTextColor={C.subtle}
+                    keyboardType="phone-pad"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={s.field}>
+                  <Text style={s.label}>Password *</Text>
                   <View style={s.pwdRow}>
                     <TextInput
                       style={[s.input, s.pwdInput]}
                       value={password}
                       onChangeText={setPassword}
-                      placeholder="••••••••"
+                      placeholder="Min. 8 characters"
                       placeholderTextColor={C.subtle}
                       secureTextEntry={!showPwd}
-                      returnKeyType="done"
-                      onSubmitEditing={handleLogin}
+                      returnKeyType="next"
                     />
                     <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd((v) => !v)}>
                       <Text style={s.eyeText}>{showPwd ? '🙈' : '👁️'}</Text>
@@ -108,37 +173,47 @@ export default function LoginScreen({ navigation }) {
                   </View>
                 </View>
 
+                <View style={s.field}>
+                  <Text style={s.label}>Confirm Password *</Text>
+                  <View style={s.pwdRow}>
+                    <TextInput
+                      style={[s.input, s.pwdInput]}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Re-enter password"
+                      placeholderTextColor={C.subtle}
+                      secureTextEntry={!showConfirmPwd}
+                      returnKeyType="done"
+                      onSubmitEditing={handleRegister}
+                    />
+                    <TouchableOpacity style={s.eyeBtn} onPress={() => setShowConfirmPwd((v) => !v)}>
+                      <Text style={s.eyeText}>{showConfirmPwd ? '🙈' : '👁️'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <TouchableOpacity
                   style={[s.btn, loading && s.btnDisabled]}
-                  onPress={handleLogin}
+                  onPress={handleRegister}
                   disabled={loading}
                   activeOpacity={0.85}
                 >
                   {loading ? (
                     <ActivityIndicator color={C.white} />
                   ) : (
-                    <Text style={s.btnText}>Sign In</Text>
+                    <Text style={s.btnText}>Create Account</Text>
                   )}
                 </TouchableOpacity>
 
                 <View style={s.divider}>
                   <View style={s.line} />
-                  <Text style={s.divText}>New to Plotra?</Text>
+                  <Text style={s.divText}>Already have an account?</Text>
                   <View style={s.line} />
                 </View>
 
-                <TouchableOpacity
-                  style={s.registerBtn}
-                  onPress={() => navigation.navigate('Register')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={s.registerText}>Create an Account</Text>
+                <TouchableOpacity style={s.signInBtn} onPress={() => navigation.navigate('Login')} activeOpacity={0.8}>
+                  <Text style={s.signInText}>Sign In</Text>
                 </TouchableOpacity>
-
-                <View style={s.footer}>
-                  <View style={s.dot} />
-                  <Text style={s.footText}>EUDR Certified Platform</Text>
-                </View>
               </Animated.View>
 
               <Text style={s.version}>Plotra Agent App • v1.1.0</Text>
@@ -168,8 +243,11 @@ const s = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '800', color: C.c900, marginBottom: 6 },
   subtitle: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 24 },
 
+  row: { flexDirection: 'row', gap: 12 },
+  half: { flex: 1 },
   field: { marginBottom: 16 },
   label: { fontSize: 11, fontWeight: '800', color: C.c700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
+  optional: { fontWeight: '500', color: C.subtle, textTransform: 'none' },
   input: { backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, fontSize: 16, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
   pwdRow: { flexDirection: 'row', alignItems: 'center' },
   pwdInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRightWidth: 0 },
@@ -184,12 +262,8 @@ const s = StyleSheet.create({
   line: { flex: 1, height: 1, backgroundColor: C.steel200 },
   divText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: C.subtle, textTransform: 'uppercase', letterSpacing: 1 },
 
-  registerBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.c700, marginBottom: 16 },
-  registerText: { color: C.c700, fontSize: 16, fontWeight: '800' },
-
-  footer: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#22c55e', marginTop: 4 },
-  footText: { flex: 1, fontSize: 12, color: C.muted, lineHeight: 18 },
+  signInBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.c700 },
+  signInText: { color: C.c700, fontSize: 16, fontWeight: '800' },
 
   version: { textAlign: 'center', marginTop: 28, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
 });

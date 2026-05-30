@@ -11,6 +11,7 @@ import { C } from '../theme';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 
 // ── Shared screens ────────────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
@@ -365,7 +366,14 @@ export default function AppNavigator() {
             {() => <MainNavigator user={user} />}
           </RootStack.Screen>
         ) : (
-          <RootStack.Screen name="Login" component={LoginScreen} />
+          <RootStack.Screen name="Auth">
+            {() => (
+              <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+              </Stack.Navigator>
+            )}
+          </RootStack.Screen>
         )}
       </RootStack.Navigator>
     </NavigationContainer>

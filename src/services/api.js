@@ -85,6 +85,8 @@ export const authAPI = {
 
   changePassword: (currentPassword, newPassword) =>
     api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
+
+  register: (data) => api.post('/auth/register', data),
 };
 
 // ── Farmer API ────────────────────────────────────────────────────────────────

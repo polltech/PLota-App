@@ -33,6 +33,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (data) => {
+    const { authAPI } = require('../services/api');
+    try {
+      await authAPI.register(data);
+      // Auto-login after successful registration
+      return await login(data.email, data.password);
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e.message || 'Registration failed';
+      return { success: false, error: msg };
+    }
+  };
+
   const login = async (identifier, password) => {
     // Lazy import to avoid circular dep at module load time
     const { authAPI } = require('../services/api');
@@ -77,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, dbReady, authReady, login, logout, refreshSession }}>
+    <AuthContext.Provider value={{ user, dbReady, authReady, login, register, logout, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
