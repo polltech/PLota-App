@@ -198,22 +198,18 @@ export const satelliteAPI = {
   getEudrCheck: (parcelId) => api.get(`/satellite/eudr/${parcelId}`),
 };
 
-// ── Mobile provisioning API (no auth required) ────────────────────────────────
-const publicApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-  timeout: 20000,
-});
-
+// ── Polygon capture & mobile provisioning (same authenticated instance) ──────
+// Using `api` so Bearer token is sent automatically — farms are created under
+// the logged-in user's account in the web app database.
 export const polygonAPI = {
-  getFarm: (farmId) => publicApi.get(`/farms/${farmId}`),
-  submit: (data) => publicApi.post('/parcels/polygon', data),
-  syncBatch: (body) => publicApi.post('/sync/batch', body),
+  getFarm: (farmId) => api.get(`/farms/${farmId}`),
+  submit: (data) => api.post('/parcels/polygon', data),
+  syncBatch: (body) => api.post('/sync/batch', body),
 };
 
 export const mobileAPI = {
-  setup: () => publicApi.post('/mobile/setup', {}),
-  createFarm: (data) => publicApi.post('/mobile/farms/create', data),
+  setup: () => api.post('/mobile/setup', {}),
+  createFarm: (data) => api.post('/mobile/farms/create', data),
 };
 
 // ── Device ID helper ──────────────────────────────────────────────────────────
