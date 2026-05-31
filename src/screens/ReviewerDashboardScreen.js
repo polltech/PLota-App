@@ -65,7 +65,7 @@ export default function ReviewerDashboardScreen() {
           <View style={s.heroRow}>
             <View>
               <Text style={s.heroGreet}>{greeting}, {user?.first_name || 'Reviewer'}</Text>
-              <Text style={s.heroSub}>EUDR Due Diligence Review</Text>
+              <Text style={s.heroSub}>Sustainability Compliance Review</Text>
             </View>
             <View style={s.reviewerBadge}>
               <Ionicons name="eye-outline" size={15} color={C.white} />
@@ -144,7 +144,7 @@ export default function ReviewerDashboardScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.menuLabel}>Farm Compliance</Text>
-                    <Text style={s.menuSub}>Browse farm-level EUDR risk assessments</Text>
+                    <Text style={s.menuSub}>Browse farm-level compliance risk assessments</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={C.subtle} />
                 </TouchableOpacity>
@@ -156,7 +156,7 @@ export default function ReviewerDashboardScreen() {
               <Text style={s.sectionTitle}>Regulation Reference</Text>
               <View style={s.card}>
                 {[
-                  { icon: 'shield-checkmark-outline', title: 'EUDR Regulation (EU) 2023/1115', desc: 'Zero-deforestation due diligence requirements for commodities.' },
+                  { icon: 'shield-checkmark-outline', title: 'Sustainability Standards & Compliance', desc: 'Zero-deforestation due diligence requirements for commodities.' },
                   { icon: 'earth-outline', title: 'Hansen GFC v1.10', desc: 'Tree cover loss data derived from Landsat imagery (2000–2023).' },
                   { icon: 'satellite-outline', title: 'Copernicus Sentinel-2', desc: 'NDVI, BSI, NBR indices from CDSE free-tier API.' },
                   { icon: 'hardware-chip-outline', title: 'XGBoost Classifier', desc: '32-feature ML model scoring deforestation & farming risk.' },

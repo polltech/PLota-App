@@ -128,7 +128,7 @@ const FarmConfirmationScreen = () => {
               <Text style={s.infoIcon}>🛡</Text>
             </View>
             <View style={s.infoContent}>
-               <Text style={s.infoTitle}>EUDR Compliance Notice</Text>
+               <Text style={s.infoTitle}>Sustainability Compliance Notice</Text>
                <Text style={s.infoText}>
                  Data collected will be verified against historical satellite imagery to ensure zero-deforestation.
                </Text>

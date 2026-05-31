@@ -78,7 +78,7 @@ export default function LandingScreen() {
           <Animated.View style={[s.footer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <View style={s.badge}>
               <View style={s.badgeDot} />
-              <Text style={s.badgeText}>EUDR COMPLIANT FARM CAPTURE</Text>
+              <Text style={s.badgeText}>SUSTAINABLE FARM CAPTURE</Text>
             </View>
 
             <TouchableOpacity

@@ -40,7 +40,7 @@ import AdminComplianceScreen from '../screens/AdminComplianceScreen';
 import AdminCoopsScreen from '../screens/AdminCoopsScreen';
 import AdminMLScreen from '../screens/AdminMLScreen';
 
-// ── EUDR Reviewer screens ─────────────────────────────────────────────────────
+// ── Sustainability Reviewer screens ─────────────────────────────────────────────
 import ReviewerDashboardScreen from '../screens/ReviewerDashboardScreen';
 import ReviewerDDSScreen from '../screens/ReviewerDDSScreen';
 
