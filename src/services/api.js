@@ -87,6 +87,21 @@ export const authAPI = {
     api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
 
   register: (data) => api.post('/auth/register', data),
+
+  sendOtp: (phone) => {
+    const body = new URLSearchParams({ phone });
+    return api.post('/auth/send-otp', body.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  },
+
+  verifyOtp: (phone, code) => {
+    const body = new URLSearchParams({ phone, code });
+    return api.post('/auth/verify-otp', body.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  },
+
+  forgotPasswordOtp: (phone) => {
+    const body = new URLSearchParams({ phone });
+    return api.post('/auth/forgot-password-otp', body.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  },
 };
 
 // ── Farmer API ────────────────────────────────────────────────────────────────
