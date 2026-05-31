@@ -125,8 +125,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, [logout]);
 
+  const updateUser = async (updatedData) => {
+    const merged = { ...user, ...updatedData };
+    await SecureStore.setItemAsync('user_data', JSON.stringify(merged));
+    setUser(merged);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, dbReady, authReady, login, register, logout, refreshSession }}>
+    <AuthContext.Provider value={{ user, dbReady, authReady, login, register, logout, refreshSession, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
