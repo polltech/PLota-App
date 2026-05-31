@@ -103,7 +103,8 @@ export const authAPI = {
     return api.post('/auth/forgot-password-otp', body.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
   },
 
-  searchCooperatives: (q) => api.get('/coop/cooperatives/search', { params: { q } }),
+  // Send both `code` (original param) and `q` (new param) so it works regardless of backend version
+  searchCooperatives: (term) => api.get('/coop/cooperatives/search', { params: { code: term, q: term } }),
 
   validateCoopCode: (code) => api.get('/coop/cooperatives/validate-code', { params: { code } }),
 };
