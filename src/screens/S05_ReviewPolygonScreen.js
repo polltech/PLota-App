@@ -168,7 +168,7 @@ const ReviewPolygonScreen = () => {
 
         <View style={s.alertBox}>
           <Text style={s.alertText}>
-            Submitting this data will link it to the farmer's profile for EUDR compliance verification.
+            Submitting this data will link it to the farmer's profile for sustainability compliance verification.
           </Text>
         </View>
       </ScrollView>

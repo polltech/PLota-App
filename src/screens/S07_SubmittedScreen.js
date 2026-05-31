@@ -69,7 +69,7 @@ const SubmittedScreen = () => {
           </View>
 
           <View style={s.footer}>
-            <Text style={s.footerText}>Sustainability data verified for EUDR compliance.</Text>
+            <Text style={s.footerText}>Sustainability data verified and stored securely.</Text>
           </View>
         </SafeAreaView>
       </ImageBackground>

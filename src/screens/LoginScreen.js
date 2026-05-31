@@ -166,7 +166,9 @@ export default function LoginScreen({ navigation }) {
 
                 <View style={s.footer}>
                   <View style={s.dot} />
-                  <Text style={s.footText}>EUDR Certified Platform</Text>
+                  <Text style={s.footText}>
+                    Digital Farming Solutions for Sustainable Growth
+                  </Text>
                 </View>
               </Animated.View>
 

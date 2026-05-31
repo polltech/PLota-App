@@ -132,7 +132,7 @@ export default function AdminDashboardScreen() {
                 />
                 <StatCard
                   icon="shield-checkmark"
-                  label="EUDR Compliant"
+                  label="Verified Farms"
                   value={stats?.compliant_farms != null ? `${stats.compliant_farms}` : '—'}
                   sub={stats?.compliance_rate != null ? `${(stats.compliance_rate * 100).toFixed(0)}% rate` : null}
                   color={C.eudrLow}
