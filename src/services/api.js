@@ -102,6 +102,10 @@ export const authAPI = {
     const body = new URLSearchParams({ phone });
     return api.post('/auth/forgot-password-otp', body.toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
   },
+
+  searchCooperatives: (q) => api.get('/cooperatives/search', { params: { q } }),
+
+  validateCoopCode: (code) => api.get('/cooperatives/validate-code', { params: { code } }),
 };
 
 // ── Farmer API ────────────────────────────────────────────────────────────────
