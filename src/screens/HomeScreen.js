@@ -217,7 +217,7 @@ export default function HomeScreen() {
               <Text style={s.name}>{firstName}</Text>
             </View>
             <View style={s.logoCircle}>
-              <Image source={require('../../assets/logo.jpeg')} style={s.logo} />
+              <Image source={require('../../assets/logo-plotra.png')} style={s.logo} resizeMode="contain" />
             </View>
           </View>
           {pendingSync > 0 && (
