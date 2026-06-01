@@ -177,8 +177,16 @@ export default function HomeScreen() {
   const getTimeData = () => {
     const now = new Date();
     const h = now.getHours();
+    let greeting;
+    if      (h <  5) greeting = 'Good night';
+    else if (h <  8) greeting = 'Good dawn';
+    else if (h < 12) greeting = 'Good morning';
+    else if (h < 13) greeting = 'Good noon';
+    else if (h < 17) greeting = 'Good afternoon';
+    else if (h < 20) greeting = 'Good evening';
+    else             greeting = 'Good night';
     return {
-      greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening',
+      greeting,
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
   };
