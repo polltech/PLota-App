@@ -81,7 +81,7 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'EUDR', 'Consent', 'Advanced'];
+const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'Compliance', 'Consent', 'Advanced'];
 
 const INTERCROP_SPECIES = ['Avocado','Macadamia','Banana','Tea','Citrus','Other'];
 const PREVIOUS_LAND_USE = [
@@ -92,12 +92,11 @@ const PREVIOUS_LAND_USE = [
 ];
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-function Field({ label, required, hint, eudr, children }) {
+function Field({ label, required, hint, children }) {
   return (
     <View style={s.fieldWrap}>
       <View style={s.labelRow}>
         <Text style={s.label}>{label}{required && <Text style={s.req}> *</Text>}</Text>
-        {eudr && <Text style={s.eudrBadge}>★ EUDR</Text>}
       </View>
       {children}
       {hint ? <Text style={s.fieldHint}>{hint}</Text> : null}
@@ -226,7 +225,7 @@ export default function AddFarmScreen() {
   const [irrigationType,  setIrrigationType]  = useState('');
   const [annualYield,     setAnnualYield]     = useState('');
 
-  // ── Step 4: EUDR Declarations ──────────────────────────────────────────────
+  // ── Step 4: Sustainability Declarations ────────────────────────────────────
   const [mixedFarming,      setMixedFarming]      = useState(null);
   const [otherCrops,        setOtherCrops]        = useState([]);
   const [livestock,         setLivestock]         = useState(null);
@@ -439,7 +438,7 @@ export default function AddFarmScreen() {
                 <PreviewRow label="Varieties"   value={created.coffee_varieties} />
 
                 <View style={s.divider} />
-                <Text style={s.previewSection}>EUDR</Text>
+                <Text style={s.previewSection}>Compliance</Text>
                 <PreviewRow label="Certifications"  value={created.certifications} />
                 <PreviewRow label="Satellite Consent" value={created.satellite_consent ? 'Granted' : 'Not granted'} />
                 {created.trees_cleared_last_5y && (
@@ -599,7 +598,7 @@ export default function AddFarmScreen() {
                       </View>
                       <View style={s.consentText}>
                         <Text style={s.consentTitle}>I consent to data collection & processing *</Text>
-                        <Text style={s.consentDesc}>Required to register and link this farm to the EUDR platform.</Text>
+                        <Text style={s.consentDesc}>Required to register and link this farm to the sustainability platform.</Text>
                       </View>
                     </TouchableOpacity>
                     {touched && !dataConsent && <Text style={s.errText}>Data consent is required</Text>}
@@ -713,11 +712,11 @@ export default function AddFarmScreen() {
                   </>
                 )}
 
-                {/* ── STEP 4: EUDR DECLARATIONS ──────────────────────────── */}
+                {/* ── STEP 4: SUSTAINABILITY DECLARATIONS ──────────────────────────── */}
                 {step === 3 && (
                   <>
-                    <SectionHeader icon="⚠️" title="EUDR Declarations" />
-                    <Text style={s.eudrNote}>Your answers are required for EUDR compliance verification.</Text>
+                    <SectionHeader icon="⚠️" title="Sustainability Declarations" />
+                    <Text style={s.eudrNote}>Your answers are required for sustainability compliance verification.</Text>
 
                     <View style={s.eudrSection}>
                       <Text style={s.eudrSectionTitle}>🌾 Mixed Farming</Text>
@@ -772,15 +771,15 @@ export default function AddFarmScreen() {
                     </View>
 
                     <View style={[s.eudrSection, s.eudrHighRisk]}>
-                      <Text style={s.eudrSectionTitle}>🔴 Deforestation Declaration</Text>
-                      <Text style={s.riskNote}>Trees cleared in last 5 years? — HIGH EUDR RISK</Text>
-                      <Field label="Did you clear trees in the last 5 years?" eudr>
+                      <Text style={s.eudrSectionTitle}>🔴 Land Stewardship Declaration</Text>
+                      <Text style={s.riskNote}>Trees cleared in last 5 years? — Action Required</Text>
+                      <Field label="Did you clear trees in the last 5 years?">
                         <YesNo value={treesCleared} onChange={setTreesCleared} />
                       </Field>
                       {treesCleared && (
                         <>
                           <View style={s.riskAlert}>
-                            <Text style={s.riskAlertText}>⚠ Your answer will flag this farm for mandatory satellite review before approval.</Text>
+                            <Text style={s.riskAlertText}>⚠ Your answer will flag this farm for mandatory compliance review before approval.</Text>
                           </View>
                           <Field label="Reason for Clearing">
                             <ChipGroup options={CLEARING_REASONS} value={clearingReason} onChange={setClearingReason} />
@@ -810,7 +809,7 @@ export default function AddFarmScreen() {
                       </View>
                       <View style={s.consentText}>
                         <Text style={s.consentTitle}>I consent to Parcel Satellite Monitoring *</Text>
-                        <Text style={s.consentDesc}>Required to proceed with EUDR compliance verification.</Text>
+                        <Text style={s.consentDesc}>Required to proceed with sustainability compliance verification.</Text>
                       </View>
                     </TouchableOpacity>
                     {touched && !satelliteConsent && <Text style={s.errText}>Required</Text>}
@@ -821,7 +820,7 @@ export default function AddFarmScreen() {
                       </View>
                       <View style={s.consentText}>
                         <Text style={s.consentTitle}>I consent to Historical Imagery Analysis (2020–present) *</Text>
-                        <Text style={s.consentDesc}>Aligns with EUDR deforestation baseline of December 31, 2020.</Text>
+                        <Text style={s.consentDesc}>Aligns with sustainable farming deforestation baseline of December 31, 2020.</Text>
                       </View>
                     </TouchableOpacity>
                     {touched && !historicalConsent && <Text style={s.errText}>Required</Text>}

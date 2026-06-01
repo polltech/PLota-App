@@ -345,7 +345,7 @@ export default function RegisterScreen({ navigation }) {
                 {step === 0 && (
                   <>
                     <Text style={s.title}>Create Account</Text>
-                    <Text style={s.subtitle}>Join the EUDR Compliance Platform</Text>
+                    <Text style={s.subtitle}>Join the Sustainability Mapping Platform</Text>
 
                     <View style={s.row}>
                       <View style={s.half}>
