@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, RefreshControl, StatusBar, Image,
@@ -173,8 +173,22 @@ export default function HomeScreen() {
   const [refreshing,  setRefreshing]  = useState(false);
 
   const firstName = user?.first_name || user?.email?.split('@')[0] || 'Agent';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const getTimeData = () => {
+    const now = new Date();
+    const h = now.getHours();
+    return {
+      greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening',
+      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+  };
+  const [timeData, setTimeData] = useState(getTimeData);
+  useEffect(() => {
+    const tick = () => setTimeData(getTimeData());
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, []);
+  const { greeting, time } = timeData;
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -235,6 +249,7 @@ export default function HomeScreen() {
             <View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
+              <Text style={s.heroTime}>{time}</Text>
             </View>
             <View style={s.logoCircle}>
               <Image source={require('../../assets/logo-plotra.png')} style={s.logo} resizeMode="contain" />
@@ -556,6 +571,7 @@ const s = StyleSheet.create({
   heroInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
   greet: { fontSize: 14, color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
   name: { fontSize: 24, fontWeight: '800', color: C.white },
+  heroTime: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '500', marginTop: 2 },
   logoCircle: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' },
   logo: { width: '100%', height: '100%' },
   syncBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
