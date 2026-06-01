@@ -21,6 +21,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 // ── Shared detail screens ─────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
+import ComplianceScreen from '../screens/ComplianceScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -84,11 +85,11 @@ function FarmerTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            Dashboard:  focused ? 'grid'        : 'grid-outline',
-            Farms:      focused ? 'leaf'        : 'leaf-outline',
-            Capture:    focused ? 'add-circle'  : 'add-circle-outline',
-            Deliveries: focused ? 'cube'        : 'cube-outline',
-            Profile:    focused ? 'person'      : 'person-outline',
+            Dashboard:  focused ? 'grid'               : 'grid-outline',
+            Farms:      focused ? 'leaf'               : 'leaf-outline',
+            Deliveries: focused ? 'cube'               : 'cube-outline',
+            Compliance: focused ? 'shield-checkmark'   : 'shield-checkmark-outline',
+            Profile:    focused ? 'person'             : 'person-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -106,28 +107,27 @@ function FarmerTabs() {
         )}
       </Tab.Screen>
 
-      {/* Farms */}
-      <Tab.Screen name="Farms" options={{ tabBarLabel: 'Farms' }}>
+      {/* Farms — includes full capture flow accessible via FAB */}
+      <Tab.Screen name="Farms" options={{ tabBarLabel: 'My Farms' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="FarmsList"   component={FarmsListScreen} />
-            <Stack.Screen name="FarmDetail"  component={FarmDetailScreen} />
-            <Stack.Screen name="ParcelDetail" component={ParcelDetailScreen} />
-            <Stack.Screen name="AddFarm"     component={AddFarmScreen} />
-            <Stack.Screen name="WalkBoundary" component={WalkBoundaryScreen} />
-            <Stack.Screen name="ReviewPolygon" component={ReviewPolygonScreen} />
-            <Stack.Screen name="OfflineSaved"  component={OfflineSavedScreen} />
-            <Stack.Screen name="Submitted"     component={SubmittedScreen} />
+            <Stack.Screen name="FarmsList"      component={FarmsListScreen} />
+            <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
+            {/* Capture flow accessible from FAB */}
+            <Stack.Screen name="CaptureLanding" component={LandingScreen}
+              options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }} />
+            <Stack.Screen name="FarmIDEntry"    component={FarmIDEntryScreen} />
+            <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
+            <Stack.Screen name="AddFarm"        component={AddFarmScreen} />
+            <Stack.Screen name="WalkBoundary"   component={WalkBoundaryScreen} />
+            <Stack.Screen name="ReviewPolygon"  component={ReviewPolygonScreen} />
+            <Stack.Screen name="OfflineSaved"   component={OfflineSavedScreen} />
+            <Stack.Screen name="Submitted"      component={SubmittedScreen} />
+            <Stack.Screen name="QueueList"      component={QueueListScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
-
-      {/* Add / Capture (full S00–S08 flow) */}
-      <Tab.Screen
-        name="Capture"
-        component={CaptureStack}
-        options={{ tabBarLabel: 'Add Farm' }}
-      />
 
       {/* Deliveries */}
       <Tab.Screen
@@ -135,6 +135,17 @@ function FarmerTabs() {
         component={DeliveriesScreen}
         options={{ tabBarLabel: 'Deliveries' }}
       />
+
+      {/* Compliance — KYC Documents + EUDR (matches web sidebar) */}
+      <Tab.Screen name="Compliance" options={{ tabBarLabel: 'Compliance' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="ComplianceMain" component={ComplianceScreen} />
+            <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
 
       {/* Profile */}
       <Tab.Screen

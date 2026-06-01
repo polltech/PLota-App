@@ -129,6 +129,10 @@ export const farmerAPI = {
     api.get(`/farmer/farm/${farmId}/deforestation-history`, { params: parcelId ? { parcel_id: parcelId } : {} }),
 
   getSatelliteHistory: (farmId) => api.get(`/farmer/farm/${farmId}/satellite-history`),
+
+  getDocuments: (farmId) => api.get('/farmer/documents', farmId ? { params: { farm_id: farmId } } : {}),
+
+  getComplianceOverview: () => api.get('/farmer/stats'),
 };
 
 // ── EUDR API ──────────────────────────────────────────────────────────────────

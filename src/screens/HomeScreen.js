@@ -257,7 +257,7 @@ export default function HomeScreen() {
         <SectionHeader title="Quick Actions" />
         <View style={s.actionsRow}>
           {[
-            { icon: 'location-outline',     label: 'Capture\nBoundary',  color: C.c700,    onPress: () => navigation.navigate('Capture', { screen: 'CaptureLanding' }) },
+            { icon: 'location-outline',     label: 'Capture\nBoundary',  color: C.c700,    onPress: () => navigation.navigate('Farms', { screen: 'CaptureLanding' }) },
             { icon: 'leaf-outline',          label: 'My\nFarms',          color: '#6366f1', onPress: () => navigation.navigate('Farms') },
             { icon: 'cube-outline',          label: 'Deliveries',         color: '#0ea5e9', onPress: () => navigation.navigate('Deliveries') },
             { icon: 'document-text-outline', label: 'Documents',          color: '#f59e0b', onPress: () => navigation.navigate('Profile') },

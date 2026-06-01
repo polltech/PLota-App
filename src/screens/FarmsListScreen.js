@@ -184,7 +184,7 @@ export default function FarmsListScreen() {
       {/* FAB — capture new boundary */}
       <TouchableOpacity
         style={s.fab}
-        onPress={() => navigation.navigate('Capture', { screen: 'CaptureLanding' })}
+        onPress={() => navigation.navigate('CaptureLanding')}
         activeOpacity={0.85}
       >
         <Ionicons name="add" size={28} color={C.white} />
