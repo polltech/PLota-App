@@ -79,23 +79,43 @@ const eudrColor = (s) => {
   return C.eudrHigh;
 };
 
-const verifyInfo = (status) => {
-  if (!status) return { label: 'Pending Review', color: '#f59e0b', bg: '#fffbeb', icon: 'time-outline' };
-  const s = status.toLowerCase();
-  if (s.includes('approved') || s === 'verified') return { label: 'Fully Approved', color: '#15803d', bg: '#f0fdf4', icon: 'checkmark-circle' };
-  if (s.includes('rejected'))                     return { label: 'Rejected',       color: '#dc2626', bg: '#fef2f2', icon: 'close-circle' };
-  if (s.includes('pending'))                      return { label: 'Pending Review', color: '#f59e0b', bg: '#fffbeb', icon: 'time-outline' };
-  return { label: status, color: C.muted, bg: C.steel100, icon: 'ellipse-outline' };
+const verifyInfo = (user) => {
+  const uCoopStatus  = user?.coop_status || '';
+  const uAdminStatus = user?.verification_status || user?.status || 'pending';
+  const coopApproved  = uCoopStatus === 'coop_approved' || uAdminStatus === 'verified';
+  const adminApproved = uAdminStatus === 'verified';
+  const coopRejected  = uCoopStatus === 'coop_rejected';
+  const adminRejected = uAdminStatus === 'rejected' && !coopRejected;
+
+  if (adminApproved && coopApproved) {
+    const by = [user?.coop_verified_by_name, user?.admin_verified_by_name].filter(Boolean).join(' & ') || 'Cooperative & Plotra';
+    return { label: 'Fully Approved', sub: `By ${by}`, color: '#15803d', bg: '#f0fdf4', icon: 'checkmark-circle' };
+  }
+  if (coopRejected) {
+    const reason = user?.coop_notes ? `Reason: ${user.coop_notes}` : (user?.coop_verified_by_name || 'By Cooperative');
+    return { label: 'Rejected by Cooperative', sub: reason, color: '#dc2626', bg: '#fef2f2', icon: 'close-circle' };
+  }
+  if (adminRejected) {
+    const reason = user?.admin_notes ? `Reason: ${user.admin_notes}` : (user?.admin_verified_by_name || 'By Plotra');
+    return { label: 'Rejected by Plotra', sub: reason, color: '#dc2626', bg: '#fef2f2', icon: 'close-circle' };
+  }
+  if (coopApproved && !adminApproved) {
+    const by = user?.coop_verified_by_name || 'Cooperative';
+    return { label: 'Cooperative Approved', sub: `By ${by} — Pending Plotra Review`, color: '#0891b2', bg: '#ecfeff', icon: 'checkmark-circle-outline' };
+  }
+  return { label: 'Pending Verification', sub: 'Awaiting Cooperative approval', color: '#f59e0b', bg: '#fffbeb', icon: 'time-outline' };
 };
 
-const statusBadge = (vs) => {
-  if (!vs) return { label: 'Draft', color: C.steel600, bg: C.steel100 };
-  const s = vs.toLowerCase();
-  if (s === 'admin_approved') return { label: 'Approved', color: '#15803d', bg: '#dcfce7' };
-  if (s === 'coop_approved')  return { label: 'Coop ✓',   color: '#1d4ed8', bg: '#dbeafe' };
-  if (s === 'pending')        return { label: 'Pending',  color: '#b45309', bg: '#fef3c7' };
-  if (s === 'rejected')       return { label: 'Rejected', color: '#dc2626', bg: '#fee2e2' };
-  return { label: 'Draft', color: C.steel600, bg: C.steel100 };
+const statusBadge = (vs, cs) => {
+  const s = (vs || '').toLowerCase();
+  const c = (cs || '').toLowerCase();
+  if (s === 'verified' || s === 'admin_approved') return { label: 'Approved', byWho: 'by Plotra',              color: '#15803d', bg: '#dcfce7' };
+  if (s === 'rejected' && c === 'coop_rejected')  return { label: 'Rejected', byWho: 'by Cooperative',         color: '#dc2626', bg: '#fee2e2' };
+  if (s === 'rejected')                           return { label: 'Rejected', byWho: 'by Plotra',              color: '#dc2626', bg: '#fee2e2' };
+  if (c === 'coop_approved')                      return { label: 'Coop ✓',   byWho: 'Pending Plotra Review',  color: '#1d4ed8', bg: '#dbeafe' };
+  if (c === 'coop_rejected')                      return { label: 'Coop ✗',   byWho: 'Rejected by Cooperative',color: '#dc2626', bg: '#fee2e2' };
+  if (s === 'pending')                            return { label: 'Pending',  byWho: 'Awaiting Cooperative',   color: '#b45309', bg: '#fef3c7' };
+  return { label: 'Draft', byWho: 'Not submitted', color: C.steel600, bg: C.steel100 };
 };
 
 const deliveryStatus = (s) => {
@@ -194,7 +214,7 @@ export default function HomeScreen() {
   const farmPending  = farms.filter(f => !f.verification_status || f.verification_status === 'pending').length;
   const farmDraft    = farms.filter(f => f.verification_status === 'draft').length;
 
-  const vi = verifyInfo(user?.verification_status || user?.status);
+  const vi = verifyInfo(user);
 
   if (loading) {
     return (
@@ -242,8 +262,9 @@ export default function HomeScreen() {
         <View style={[s.verifyCard, { backgroundColor: vi.bg, borderColor: vi.color + '40' }]}>
           <Ionicons name={vi.icon} size={22} color={vi.color} />
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.verifyLabel}>Account Status</Text>
+            <Text style={s.verifyLabel}>Your Verification Status</Text>
             <Text style={[s.verifyValue, { color: vi.color }]}>{vi.label}</Text>
+            {!!vi.sub && <Text style={s.verifySub}>{vi.sub}</Text>}
           </View>
           {user?.cooperative_name && (
             <View style={s.coopBadge}>
@@ -272,17 +293,20 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('Deliveries')}
           />
           <StatCard
-            icon="map-outline"
-            label="Parcels"
-            value={stats?.parcels_count ?? '—'}
-            color="#6366f1"
+            icon="wallet-outline"
+            label="Wallet Balance"
+            value={stats?.mbt_balance != null ? `$${Number(stats.mbt_balance).toFixed(2)}` : '$0.00'}
+            sub={stats?.returns_trend || null}
+            color="#10b981"
+            onPress={() => navigation.navigate('Profile')}
           />
           <StatCard
             icon="shield-checkmark-outline"
-            label="EUDR"
-            value={stats?.eudr_risk_level ? stats.eudr_risk_level.split(' ')[0] : '—'}
-            sub={stats?.eudr_risk_level ? 'Risk Level' : null}
-            color={eudrColor(stats?.eudr_risk_level)}
+            label="Compliance"
+            value={stats?.compliance_score != null ? `${stats.compliance_score}%` : 'N/A'}
+            sub="EUDR Readiness Score"
+            color="#f59e0b"
+            onPress={() => navigation.navigate('Compliance')}
           />
         </View>
 
@@ -325,6 +349,44 @@ export default function HomeScreen() {
             emptyMsg="No deliveries recorded yet"
           />
           <Text style={s.chartNote}>Delivery weight (kg) per month</Text>
+        </View>
+
+        {/* ── Wallet & Payments ───────────────────────────────────────── */}
+        <SectionHeader title="Wallet & Payments" />
+        <View style={s.walletCard}>
+          <View style={s.walletRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.walletRowLabel}>Staked MBT</Text>
+              <Text style={s.walletRowValue}>${stats?.staked_mbt != null ? Number(stats.staked_mbt).toFixed(2) : '0.00'}</Text>
+            </View>
+            {!!stats?.staked_trend && (
+              <View style={[s.trendBadge, { backgroundColor: '#dcfce7' }]}>
+                <Text style={[s.trendBadgeText, { color: '#15803d' }]}>{stats.staked_trend}</Text>
+              </View>
+            )}
+          </View>
+          <View style={[s.walletDivider]} />
+          <View style={s.walletRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.walletRowLabel}>Annual Interest</Text>
+              <Text style={s.walletRowValue}>${stats?.annual_interest != null ? Number(stats.annual_interest).toFixed(2) : '0.00'}</Text>
+            </View>
+            {!!stats?.interest_trend && (
+              <View style={[s.trendBadge, { backgroundColor: '#dbeafe' }]}>
+                <Text style={[s.trendBadgeText, { color: '#1d4ed8' }]}>{stats.interest_trend}</Text>
+              </View>
+            )}
+          </View>
+          <View style={s.walletActions}>
+            <TouchableOpacity style={s.walletBtn} activeOpacity={0.8}>
+              <Ionicons name="add-circle-outline" size={16} color={C.white} />
+              <Text style={s.walletBtnText}>Add Funds</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.walletBtn, s.walletBtnOutline]} activeOpacity={0.8}>
+              <Ionicons name="arrow-up-outline" size={16} color={C.c700} />
+              <Text style={[s.walletBtnText, { color: C.c700 }]}>Withdraw</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── Farms Status Chart ───────────────────────────────────────── */}
@@ -386,7 +448,7 @@ export default function HomeScreen() {
                 <Text style={[s.thText, { flex: 1, textAlign: 'right' }]}>Status</Text>
               </View>
               {recentFarms.map((farm, i) => {
-                const sb = statusBadge(farm.verification_status);
+                const sb = statusBadge(farm.verification_status, farm.coop_status);
                 return (
                   <TouchableOpacity
                     key={farm.id || i}
@@ -401,10 +463,11 @@ export default function HomeScreen() {
                     <Text style={[s.tdText, { flex: 1, textAlign: 'center' }]}>
                       {farm.total_area_ha != null ? `${Number(farm.total_area_ha).toFixed(1)} ha` : '—'}
                     </Text>
-                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    <View style={{ flex: 1.3, alignItems: 'flex-end' }}>
                       <View style={[s.statusBadge, { backgroundColor: sb.bg }]}>
                         <Text style={[s.statusBadgeText, { color: sb.color }]}>{sb.label}</Text>
                       </View>
+                      {!!sb.byWho && <Text style={s.tdByWho} numberOfLines={1}>{sb.byWho}</Text>}
                     </View>
                   </TouchableOpacity>
                 );
@@ -424,6 +487,7 @@ export default function HomeScreen() {
               <View style={s.tableHeader}>
                 <Text style={[s.thText, { flex: 2 }]}>Reference</Text>
                 <Text style={[s.thText, { flex: 1, textAlign: 'center' }]}>Weight</Text>
+                <Text style={[s.thText, { flex: 0.8, textAlign: 'center' }]}>Grade</Text>
                 <Text style={[s.thText, { flex: 1, textAlign: 'right' }]}>Date</Text>
               </View>
               {recentDeliveries.map((d, i) => {
@@ -434,14 +498,19 @@ export default function HomeScreen() {
                     style={[s.tableRow, i < recentDeliveries.length - 1 && s.tableRowBorder]}
                   >
                     <View style={{ flex: 2 }}>
-                      <Text style={s.tdFarmName} numberOfLines={1}>{d.batch_number || d.reference || `DEL-${i + 1}`}</Text>
+                      <Text style={s.tdFarmName} numberOfLines={1}>{d.batch_number || d.reference || d.delivery_number || `DEL-${i + 1}`}</Text>
                       <View style={[s.statusBadge, { backgroundColor: ds.bg, alignSelf: 'flex-start', marginTop: 2 }]}>
                         <Text style={[s.statusBadgeText, { color: ds.color }]}>{ds.label}</Text>
                       </View>
                     </View>
                     <Text style={[s.tdText, { flex: 1, textAlign: 'center' }]}>
-                      {d.weight_kg != null ? `${fmt(d.weight_kg)} kg` : '—'}
+                      {d.weight_kg != null ? `${fmt(d.weight_kg)} kg` : d.net_weight_kg != null ? `${fmt(d.net_weight_kg)} kg` : '—'}
                     </Text>
+                    <View style={{ flex: 0.8, alignItems: 'center' }}>
+                      <View style={[s.statusBadge, { backgroundColor: '#dbeafe' }]}>
+                        <Text style={[s.statusBadgeText, { color: '#1d4ed8' }]}>{d.quality_grade || 'PB'}</Text>
+                      </View>
+                    </View>
                     <Text style={[s.tdText, { flex: 1, textAlign: 'right' }]}>
                       {fmtDate(d.delivered_at || d.created_at)}
                     </Text>
@@ -499,6 +568,7 @@ const s = StyleSheet.create({
   verifyCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 16, marginBottom: 20, borderWidth: 1.5 },
   verifyLabel: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
   verifyValue: { fontSize: 15, fontWeight: '800', marginTop: 2 },
+  verifySub: { fontSize: 11, color: C.muted, marginTop: 3, fontWeight: '500' },
   coopBadge: { backgroundColor: C.c100, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   coopBadgeText: { fontSize: 10, fontWeight: '800', color: C.c700, letterSpacing: 0.5 },
 
@@ -537,11 +607,25 @@ const s = StyleSheet.create({
   tableRowBorder: { borderBottomWidth: 1, borderBottomColor: C.steel100 },
   tdFarmName: { fontSize: 14, fontWeight: '700', color: C.ink },
   tdMeta: { fontSize: 11, color: C.muted, marginTop: 1 },
+  tdByWho: { fontSize: 10, color: C.muted, marginTop: 2, textAlign: 'right' },
   tdText: { fontSize: 13, color: C.ink, fontWeight: '600' },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusBadgeText: { fontSize: 10, fontWeight: '800' },
   tableFooter: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.steel100 },
   tableFooterText: { fontSize: 13, color: C.c700, fontWeight: '700' },
+
+  // Wallet & Payments
+  walletCard: { backgroundColor: C.white, borderRadius: 18, padding: 18, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  walletRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  walletRowLabel: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  walletRowValue: { fontSize: 22, fontWeight: '800', color: C.ink },
+  walletDivider: { height: 1, backgroundColor: C.steel100, marginVertical: 14 },
+  trendBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  trendBadgeText: { fontSize: 11, fontWeight: '800' },
+  walletActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  walletBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.c700, borderRadius: 12, paddingVertical: 12 },
+  walletBtnOutline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.c700 },
+  walletBtnText: { fontSize: 13, fontWeight: '700', color: C.white },
 
   // Chart card
   chartCard: { backgroundColor: C.white, borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
