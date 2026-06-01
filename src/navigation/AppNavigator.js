@@ -84,7 +84,7 @@ function FarmerTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            Home:       focused ? 'home'        : 'home-outline',
+            Dashboard:  focused ? 'grid'        : 'grid-outline',
             Farms:      focused ? 'leaf'        : 'leaf-outline',
             Capture:    focused ? 'add-circle'  : 'add-circle-outline',
             Deliveries: focused ? 'cube'        : 'cube-outline',
@@ -94,14 +94,14 @@ function FarmerTabs() {
         },
       })}
     >
-      {/* Home */}
-      <Tab.Screen name="Home" options={{ tabBarLabel: 'Home' }}>
+      {/* Dashboard */}
+      <Tab.Screen name="Dashboard" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="HomeMain"    component={HomeScreen} />
-            <Stack.Screen name="FarmDetail"  component={FarmDetailScreen} />
+            <Stack.Screen name="HomeMain"     component={HomeScreen} />
+            <Stack.Screen name="FarmDetail"   component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail" component={ParcelDetailScreen} />
-            <Stack.Screen name="QueueList"   component={QueueListScreen} />
+            <Stack.Screen name="QueueList"    component={QueueListScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>

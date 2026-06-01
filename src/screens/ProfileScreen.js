@@ -208,37 +208,41 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* App actions */}
+            {/* App navigation */}
             <View style={s.section}>
               <Text style={s.sectionTitle}>App</Text>
               <View style={s.card}>
+                <MenuItem icon="grid-outline"       label="Dashboard"              onPress={() => navigation.navigate('Dashboard')} />
+                <MenuItem icon="leaf-outline"       label="My Farms"               onPress={() => navigation.navigate('Farms')} />
+                <MenuItem icon="add-circle-outline" label="Add Farm / Capture Boundary" onPress={() => navigation.navigate('Capture')} />
+                <MenuItem icon="cube-outline"       label="My Deliveries"          onPress={() => navigation.navigate('Deliveries')} />
+                <MenuItem icon="cloud-upload-outline" label="Sync Queue"           onPress={() => navigation.navigate('Dashboard', { screen: 'QueueList' })} />
+              </View>
+            </View>
+
+            {/* Documents */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Documents & Compliance</Text>
+              <View style={s.card}>
                 <MenuItem
-                  icon="leaf-outline"
-                  label="My Farms"
+                  icon="document-text-outline"
+                  label="KYC Documents"
+                  onPress={() => Alert.alert('KYC Documents', 'Upload and manage your identity verification documents via the Plotra web dashboard at dev.plotra.eu')}
+                />
+                <MenuItem
+                  icon="shield-checkmark-outline"
+                  label="EUDR Compliance"
+                  onPress={() => Alert.alert('EUDR Compliance', 'View detailed EUDR compliance reports, generate Due Diligence Statements, and review satellite findings for your farms.')}
+                />
+                <MenuItem
+                  icon="analytics-outline"
+                  label="Satellite Reports"
                   onPress={() => navigation.navigate('Farms')}
-                />
-                <MenuItem
-                  icon="add-circle-outline"
-                  label="Add Farm / Capture Boundary"
-                  onPress={() => navigation.navigate('Capture')}
-                />
-                <MenuItem
-                  icon="cube-outline"
-                  label="My Deliveries"
-                  onPress={() => navigation.navigate('Deliveries')}
-                />
-                <MenuItem
-                  icon="cloud-upload-outline"
-                  label="Sync Queue"
-                  onPress={() => navigation.navigate('Home', { screen: 'QueueList' })}
                 />
                 <MenuItem
                   icon="information-circle-outline"
                   label="About Plotra"
-                  onPress={() => Alert.alert(
-                    'Plotra v1.1.0',
-                    'EUDR-compliant agricultural intelligence platform.\n\nCopernicus Sentinel-2 · Hansen GFC · XGBoost ML\n\nAll spatial data encrypted at rest.',
-                  )}
+                  onPress={() => Alert.alert('Plotra v1.1.0', 'EUDR-compliant agricultural intelligence platform.\n\nCopernicus Sentinel-2 · Hansen GFC · XGBoost ML\n\nAll spatial data encrypted at rest.')}
                 />
               </View>
             </View>

@@ -21,8 +21,18 @@ const eudrChip = (status) => {
   return { bg, fg };
 };
 
+const verifyBadge = (vs) => {
+  if (!vs || vs === 'draft') return { label: 'Draft',    color: C.steel600,  bg: C.steel100 };
+  if (vs === 'admin_approved') return { label: 'Approved', color: '#15803d',   bg: '#dcfce7' };
+  if (vs === 'coop_approved')  return { label: 'Coop ✓',  color: '#1d4ed8',   bg: '#dbeafe' };
+  if (vs === 'pending')        return { label: 'Pending',  color: '#b45309',   bg: '#fef3c7' };
+  if (vs === 'rejected')       return { label: 'Rejected', color: '#dc2626',   bg: '#fee2e2' };
+  return { label: vs, color: C.steel600, bg: C.steel100 };
+};
+
 const FarmCard = ({ farm, onPress }) => {
   const chip = eudrChip(farm.eudr_risk_level || farm.compliance_status);
+  const vb   = verifyBadge(farm.verification_status);
   return (
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
       <View style={s.cardLeft}>
@@ -33,11 +43,9 @@ const FarmCard = ({ farm, onPress }) => {
       <View style={s.cardContent}>
         <View style={s.cardTop}>
           <Text style={s.farmName} numberOfLines={1}>{farm.farm_name || farm.name || 'Unnamed Farm'}</Text>
-          {chip && (
-            <View style={[s.chip, { backgroundColor: chip.bg }]}>
-              <Text style={[s.chipText, { color: chip.fg }]}>{farm.eudr_risk_level || farm.compliance_status}</Text>
-            </View>
-          )}
+          <View style={[s.chip, { backgroundColor: vb.bg }]}>
+            <Text style={[s.chipText, { color: vb.color }]}>{vb.label}</Text>
+          </View>
         </View>
         <Text style={s.farmMeta} numberOfLines={1}>
           {[
@@ -46,11 +54,18 @@ const FarmCard = ({ farm, onPress }) => {
             farm.county || farm.district || farm.subcounty,
           ].filter(Boolean).join(' • ')}
         </Text>
-        {farm.crop_types && (
-          <Text style={s.crops} numberOfLines={1}>
-            {Array.isArray(farm.crop_types) ? farm.crop_types.join(', ') : farm.crop_types}
-          </Text>
-        )}
+        <View style={s.chipRow}>
+          {chip && (
+            <View style={[s.chip, { backgroundColor: chip.bg }]}>
+              <Text style={[s.chipText, { color: chip.fg }]}>EUDR: {farm.eudr_risk_level || farm.compliance_status}</Text>
+            </View>
+          )}
+          {farm.crop_types && (
+            <Text style={s.crops} numberOfLines={1}>
+              {Array.isArray(farm.crop_types) ? farm.crop_types.join(', ') : farm.crop_types}
+            </Text>
+          )}
+        </View>
       </View>
       <Ionicons name="chevron-forward" size={18} color={C.subtle} style={{ marginLeft: 4 }} />
     </TouchableOpacity>
@@ -198,7 +213,8 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   chipText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   farmMeta: { fontSize: 12, color: C.muted, fontWeight: '500' },
-  crops: { fontSize: 11, color: C.c600, fontWeight: '600', marginTop: 4 },
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
+  crops: { fontSize: 11, color: C.c600, fontWeight: '600' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingVertical: 60 },
   loadText: { marginTop: 12, color: C.muted, fontSize: 14 },
