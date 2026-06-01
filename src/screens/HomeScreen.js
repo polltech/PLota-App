@@ -10,6 +10,66 @@ import { useAuth } from '../context/AuthContext';
 import { farmerAPI } from '../services/api';
 import { C } from '../theme';
 
+// ── Chart helpers ─────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const groupDeliveriesByMonth = (deliveries) => {
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return { label: MONTHS[d.getMonth()], year: d.getFullYear(), month: d.getMonth(), kg: 0, count: 0 };
+  });
+  (deliveries || []).forEach((d) => {
+    const date = new Date(d.delivered_at || d.created_at);
+    if (isNaN(date)) return;
+    const slot = months.find(m => m.month === date.getMonth() && m.year === date.getFullYear());
+    if (slot) { slot.kg += d.weight_kg || d.net_weight_kg || 0; slot.count++; }
+  });
+  return months;
+};
+
+const BarChart = ({ data, valueKey, labelKey, color, unit, emptyMsg }) => {
+  const max = Math.max(...data.map(d => d[valueKey] || 0), 1);
+  const hasData = data.some(d => (d[valueKey] || 0) > 0);
+  if (!hasData) return (
+    <View style={ch.empty}>
+      <Ionicons name="bar-chart-outline" size={32} color={C.steel300} />
+      <Text style={ch.emptyText}>{emptyMsg || 'No data yet'}</Text>
+    </View>
+  );
+  return (
+    <View style={ch.barChart}>
+      {data.map((item, i) => {
+        const pct = max > 0 ? (item[valueKey] || 0) / max : 0;
+        return (
+          <View key={i} style={ch.barCol}>
+            <Text style={ch.barVal} numberOfLines={1}>
+              {item[valueKey] > 0 ? (item[valueKey] >= 1000 ? `${(item[valueKey]/1000).toFixed(1)}k` : String(Math.round(item[valueKey]))) : ''}
+            </Text>
+            <View style={ch.barTrack}>
+              <View style={[ch.barFill, { height: `${Math.max(pct * 100, pct > 0 ? 4 : 0)}%`, backgroundColor: color }]} />
+            </View>
+            <Text style={ch.barLabel}>{item[labelKey]}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
+const HorizBar = ({ label, value, max, color, bg }) => {
+  const pct = max > 0 ? Math.min(value / max, 1) : 0;
+  return (
+    <View style={ch.horizRow}>
+      <Text style={ch.horizLabel}>{label}</Text>
+      <View style={ch.horizTrack}>
+        <View style={[ch.horizFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+      </View>
+      <Text style={ch.horizVal}>{value}</Text>
+    </View>
+  );
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const eudrColor = (s) => {
   if (!s) return C.subtle;
@@ -253,6 +313,50 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ── Delivery Trend Chart ────────────────────────────────────── */}
+        <SectionHeader title="Delivery Trend (6 months)" />
+        <View style={s.chartCard}>
+          <BarChart
+            data={groupDeliveriesByMonth(deliveries)}
+            valueKey="kg"
+            labelKey="label"
+            color="#0ea5e9"
+            unit="kg"
+            emptyMsg="No deliveries recorded yet"
+          />
+          <Text style={s.chartNote}>Delivery weight (kg) per month</Text>
+        </View>
+
+        {/* ── Farms Status Chart ───────────────────────────────────────── */}
+        {farms.length > 0 && (
+          <>
+            <SectionHeader title="Farms by Status" />
+            <View style={s.chartCard}>
+              <HorizBar label="Approved"  value={farmApproved} max={farms.length} color="#15803d" />
+              <HorizBar label="Pending"   value={farmPending}  max={farms.length} color="#f59e0b" />
+              <HorizBar label="Draft"     value={farmDraft}    max={farms.length} color={C.steel400} />
+              {(() => {
+                const compliant = farms.filter(f => {
+                  const r = (f.eudr_risk_level || '').toLowerCase();
+                  return r.includes('low') || r.includes('compliant');
+                }).length;
+                const nonCompliant = farms.filter(f => {
+                  const r = (f.eudr_risk_level || '').toLowerCase();
+                  return r.includes('high') || r.includes('risk');
+                }).length;
+                return (
+                  <>
+                    <View style={s.chartDivider} />
+                    <HorizBar label="EUDR Compliant"     value={compliant}    max={farms.length} color={C.eudrLow} />
+                    <HorizBar label="EUDR Non-Compliant" value={nonCompliant} max={farms.length} color={C.eudrHigh} />
+                  </>
+                );
+              })()}
+              <Text style={s.chartNote}>Total: {farms.length} farm{farms.length !== 1 ? 's' : ''}</Text>
+            </View>
+          </>
+        )}
+
         {/* ── Quick Actions ───────────────────────────────────────────── */}
         <SectionHeader title="Quick Actions" />
         <View style={s.actionsRow}>
@@ -439,9 +543,34 @@ const s = StyleSheet.create({
   tableFooter: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.steel100 },
   tableFooterText: { fontSize: 13, color: C.c700, fontWeight: '700' },
 
+  // Chart card
+  chartCard: { backgroundColor: C.white, borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  chartNote: { fontSize: 11, color: C.subtle, textAlign: 'center', marginTop: 10, fontStyle: 'italic' },
+  chartDivider: { height: 1, backgroundColor: C.steel100, marginVertical: 8 },
+
   // Notifications
   notifCard: { backgroundColor: C.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.c600, marginTop: 5 },
   notifTitle: { fontSize: 14, fontWeight: '700', color: C.ink },
   notifMsg: { fontSize: 12, color: C.muted, marginTop: 2, lineHeight: 17 },
+});
+
+// ── Chart styles ───────────────────────────────────────────────────────────────
+const ch = StyleSheet.create({
+  // Vertical bar chart
+  barChart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 6 },
+  barCol: { flex: 1, alignItems: 'center' },
+  barVal: { fontSize: 9, fontWeight: '700', color: C.muted, marginBottom: 2, height: 12 },
+  barTrack: { width: '80%', flex: 1, backgroundColor: C.steel100, borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden' },
+  barFill: { borderRadius: 6, minHeight: 2 },
+  barLabel: { fontSize: 9, color: C.muted, fontWeight: '600', marginTop: 4 },
+  // Horizontal bar chart
+  horizRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  horizLabel: { fontSize: 12, fontWeight: '600', color: C.ink, width: 110 },
+  horizTrack: { flex: 1, height: 10, backgroundColor: C.steel100, borderRadius: 6, overflow: 'hidden' },
+  horizFill: { height: '100%', borderRadius: 6 },
+  horizVal: { fontSize: 12, fontWeight: '800', color: C.ink, width: 28, textAlign: 'right' },
+  // Empty
+  empty: { height: 100, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  emptyText: { fontSize: 13, color: C.subtle, fontWeight: '500' },
 });

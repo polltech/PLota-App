@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, StatusBar,
+  ActivityIndicator, TextInput, RefreshControl, StatusBar, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -72,6 +72,30 @@ const FarmCard = ({ farm, onPress }) => {
   );
 };
 
+// ── Summary card config ───────────────────────────────────────────────────────
+const FILTERS = [
+  { key: 'all',           label: 'Total',        icon: 'leaf-outline',              color: C.c700,    bg: C.c050 },
+  { key: 'pending',       label: 'Pending',       icon: 'time-outline',              color: '#b45309', bg: '#fef3c7' },
+  { key: 'approved',      label: 'Verified',      icon: 'checkmark-circle-outline',  color: '#15803d', bg: '#dcfce7' },
+  { key: 'compliant',     label: 'Compliant',     icon: 'shield-checkmark-outline',  color: '#1d4ed8', bg: '#dbeafe' },
+  { key: 'non_compliant', label: 'Non-Compliant', icon: 'warning-outline',           color: '#dc2626', bg: '#fee2e2' },
+];
+
+const matchFilter = (farm, key) => {
+  if (key === 'all') return true;
+  if (key === 'pending')       return !farm.verification_status || farm.verification_status === 'pending' || farm.verification_status === 'draft';
+  if (key === 'approved')      return farm.verification_status === 'admin_approved' || farm.verification_status === 'coop_approved';
+  if (key === 'compliant') {
+    const r = (farm.eudr_risk_level || '').toLowerCase();
+    return r.includes('low') || r.includes('compliant');
+  }
+  if (key === 'non_compliant') {
+    const r = (farm.eudr_risk_level || '').toLowerCase();
+    return r.includes('high') || r.includes('risk') || r.includes('medium');
+  }
+  return true;
+};
+
 export default function FarmsListScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
@@ -80,6 +104,7 @@ export default function FarmsListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [error, setError] = useState(null);
 
   const load = useCallback(async (isRefresh = false) => {
@@ -101,7 +126,12 @@ export default function FarmsListScreen() {
 
   const onRefresh = () => { setRefreshing(true); load(true); };
 
+  const counts = Object.fromEntries(
+    FILTERS.map(f => [f.key, f.key === 'all' ? farms.length : farms.filter(fm => matchFilter(fm, f.key)).length])
+  );
+
   const filtered = farms.filter((f) => {
+    if (!matchFilter(f, activeFilter)) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -125,8 +155,28 @@ export default function FarmsListScreen() {
       {/* Header */}
       <SafeAreaView style={s.header}>
         <Text style={s.headerTitle}>My Farms</Text>
-        <Text style={s.headerSub}>{farms.length} farm{farms.length !== 1 ? 's' : ''} registered</Text>
+        <Text style={s.headerSub}>
+          {activeFilter === 'all'
+            ? `${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`
+            : `${filtered.length} of ${farms.length} farms · ${FILTERS.find(f => f.key === activeFilter)?.label}`}
+        </Text>
       </SafeAreaView>
+
+      {/* Summary cards */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.cardScroll} contentContainerStyle={s.cardRow}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[s.summaryCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent', borderWidth: 2 }]}
+            onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={f.icon} size={18} color={f.color} />
+            <Text style={[s.summaryCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
+            <Text style={[s.summaryLabel, { color: f.color }]}>{f.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Search */}
       <View style={s.searchWrap}>
@@ -223,6 +273,13 @@ const s = StyleSheet.create({
   retryText: { color: C.white, fontWeight: '700', fontSize: 14 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.steel700, marginTop: 16 },
   emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+
+  // Summary cards
+  cardScroll: { maxHeight: 100 },
+  cardRow: { paddingHorizontal: 20, paddingVertical: 12, gap: 10 },
+  summaryCard: { alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, minWidth: 80, gap: 2 },
+  summaryCount: { fontSize: 20, fontWeight: '900' },
+  summaryLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center' },
 
   fab: { position: 'absolute', bottom: 28, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
 });
