@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, StatusBar,
+  ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -141,7 +141,6 @@ export default function FarmsListScreen() {
   const [farms,        setFarms]        = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
-  const [query,        setQuery]        = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [error,        setError]        = useState(null);
 
@@ -174,16 +173,7 @@ export default function FarmsListScreen() {
     FILTERS.map(f => [f.key, f.key === 'all' ? farms.length : farms.filter(fm => matchFilter(fm, f.key)).length])
   );
 
-  const filtered = farms.filter(f => {
-    if (!matchFilter(f, activeFilter)) return false;
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (
-      (f.farm_name || f.name || '').toLowerCase().includes(q) ||
-      (f.county || '').toLowerCase().includes(q) ||
-      (f.district || '').toLowerCase().includes(q)
-    );
-  });
+  const filtered = farms.filter(f => matchFilter(f, activeFilter));
 
   const renderItem = ({ item }) => (
     <FarmCard
@@ -251,24 +241,6 @@ export default function FarmsListScreen() {
         </View>
       )}
 
-      {/* Search */}
-      <View style={s.searchWrap}>
-        <Ionicons name="search" size={18} color={C.subtle} style={s.searchIcon} />
-        <TextInput
-          style={s.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search by name or location..."
-          placeholderTextColor={C.subtle}
-          returnKeyType="search"
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')}>
-            <Ionicons name="close-circle" size={18} color={C.subtle} />
-          </TouchableOpacity>
-        )}
-      </View>
-
       {loading ? (
         <View style={s.center}>
           <ActivityIndicator color={C.c700} size="large" />
@@ -304,13 +276,14 @@ export default function FarmsListScreen() {
         />
       )}
 
-      {/* FAB — add new farm / capture */}
+      {/* FAB — Add Farm */}
       <TouchableOpacity
         style={s.fab}
         onPress={() => navigation.navigate('CaptureLanding')}
         activeOpacity={0.85}
       >
-        <Ionicons name="add" size={28} color={C.white} />
+        <Ionicons name="add" size={20} color={C.white} />
+        <Text style={s.fabLabel}>Add Farm</Text>
       </TouchableOpacity>
     </View>
   );
@@ -330,11 +303,6 @@ const s = StyleSheet.create({
   gridCardWide: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 6, gap: 4, borderWidth: 2 },
   gridCount: { fontSize: 22, fontWeight: '900' },
   gridLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 12 },
-
-  // Search
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.white, marginHorizontal: 20, marginTop: 14, marginBottom: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.steel200 },
-  searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: C.ink, fontWeight: '500' },
 
   // Farm card (web-style)
   list: { padding: 16, paddingBottom: 100 },
@@ -366,5 +334,6 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.steel700, marginTop: 16 },
   emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 8, lineHeight: 20 },
 
-  fab: { position: 'absolute', bottom: 28, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
+  fab: { position: 'absolute', bottom: 28, right: 20, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.c700, borderRadius: 28, paddingHorizontal: 20, paddingVertical: 14, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
+  fabLabel: { fontSize: 14, fontWeight: '800', color: C.white },
 });
