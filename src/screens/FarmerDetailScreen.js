@@ -159,7 +159,7 @@ export default function FarmerDetailScreen() {
               <Ionicons name="information-circle-outline" size={16} color={C.eudrMedium} />
               <Text style={s.noteText}>
                 Update requested{farmer.update_requested_by_name ? ` by ${farmer.update_requested_by_name}` : ''}.
-                {farmer.update_request_notes ? `\n"${farmer.update_request_notes}"` : ''}
+                {farmer.update_request_notes ? ` "${farmer.update_request_notes}"` : ''}
               </Text>
             </View>
           )}

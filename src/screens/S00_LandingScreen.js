@@ -70,7 +70,7 @@ export default function LandingScreen() {
               <Text style={s.brandName}>PLOTRA</Text>
               <View style={s.divider} />
               <Text style={s.tagline}>
-                Mapping Sustainability,{"\n"}Empowering Farmers
+                Mapping Sustainability, Empowering Farmers
               </Text>
             </Animated.View>
           </View>

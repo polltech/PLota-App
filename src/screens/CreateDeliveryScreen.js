@@ -87,7 +87,7 @@ export default function CreateDeliveryScreen() {
 
     Alert.alert(
       'Confirm Delivery',
-      `Record ${netWeight} kg net from ${selectedFarm.farm_name || selectedFarm.name}?\n\nGrade: ${qualityGrade || 'Ungraded'}`,
+      `Record ${netWeight} kg net from ${selectedFarm.farm_name || selectedFarm.name}? Grade: ${qualityGrade || 'Ungraded'}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {

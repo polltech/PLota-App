@@ -242,7 +242,7 @@ export default function ProfileScreen() {
                 <MenuItem
                   icon="information-circle-outline"
                   label="About Plotra"
-                  onPress={() => Alert.alert('Plotra v1.1.0', 'EUDR-compliant agricultural intelligence platform.\n\nCopernicus Sentinel-2 · Hansen GFC · XGBoost ML\n\nAll spatial data encrypted at rest.')}
+                  onPress={() => Alert.alert('Plotra v1.1.0', 'EUDR-compliant agricultural intelligence platform. Copernicus Sentinel-2 · Hansen GFC · XGBoost ML. All spatial data encrypted at rest.')}
                 />
               </View>
             </View>
