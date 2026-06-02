@@ -7,9 +7,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+import { divisionsForCountry } from '../data/adminDivisions';
 
-// ── Kenya Counties + Sub-Counties ─────────────────────────────────────────────
-const KENYA_COUNTIES = {
+// ── Kept only for legacy reference — actual data lives in adminDivisions.js ──
+const _UNUSED = {
   'Mombasa':        ['Changamwe','Jomvu','Kisauni','Likoni','Mvita','Nyali'],
   'Kwale':          ['Kinango','Lungalunga','Matuga','Msambweni'],
   'Kilifi':         ['Ganze','Kaloleni','Kilifi North','Kilifi South','Magarini','Malindi','Rabai'],
@@ -58,8 +59,6 @@ const KENYA_COUNTIES = {
   'Nyamira':        ['Borabu','Manga','Masaba North','Nyamira North','Nyamira South'],
   'Nairobi':        ['Dagoretti North','Dagoretti South','Embakasi Central','Embakasi East','Embakasi North','Embakasi South','Embakasi West','Kamukunji','Kasarani','Kibra','Lang\'ata','Makadara','Mathare','Roysambu','Ruaraka','Starehe','Westlands'],
 };
-const ALL_COUNTIES = Object.keys(KENYA_COUNTIES).sort();
-
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COUNTRY_OPTIONS = [
   { flag: '🇰🇪', code: '+254', name: 'Kenya' },
@@ -165,7 +164,9 @@ export default function RegisterScreen({ navigation }) {
   // ── Step 3: Location & Cooperative ───────────────────────────────────────
   const [county,       setCounty]       = useState('');
   const [subcounty,    setSubcounty]    = useState('');
-  const subCountyOptions = county ? (KENYA_COUNTIES[county] || []) : [];
+  const divisions = divisionsForCountry(country.name);
+  const allL1Options = Object.keys(divisions.data).sort();
+  const subOptions = county ? (divisions.data[county] || []) : [];
   const [coopQuery,    setCoopQuery]    = useState('');
   const [coopResults,  setCoopResults]  = useState([]);
   const [selectedCoop, setSelectedCoop] = useState(null);  // {id, code, name, county}
@@ -375,9 +376,11 @@ export default function RegisterScreen({ navigation }) {
       last_name:        lastName.trim(),
       phone_number:     fullPhone,
       email:            email.trim().toLowerCase() || undefined,
+      country:          country.name,
       county:           county.trim(),
       subcounty:        subcounty.trim(),
       cooperative_code: selectedCoop?.code || undefined,
+      cooperative_id:   selectedCoop?.id   || undefined,
       gender:           gender || undefined,
       id_type:          idType || undefined,
       id_number:        idNumber.trim() || undefined,
@@ -502,8 +505,7 @@ export default function RegisterScreen({ navigation }) {
                   <>
                     <Text style={s.title}>Verify Phone</Text>
                     <Text style={s.subtitle}>
-                      We sent a 6-digit code to{'\n'}
-                      <Text style={s.phoneHighlight}>{fullPhone}</Text>
+                      We sent a 6-digit code to <Text style={s.phoneHighlight}>{fullPhone}</Text>
                     </Text>
 
                     {/* OTP boxes */}
@@ -584,26 +586,26 @@ export default function RegisterScreen({ navigation }) {
                     <Text style={s.title}>Your Location</Text>
                     <Text style={s.subtitle}>Enter your location and find your cooperative.</Text>
 
-                    <Text style={s.label}>County *</Text>
+                    <Text style={s.label}>{divisions.l1} *</Text>
                     <Dropdown
                       value={county}
-                      options={ALL_COUNTIES}
+                      options={allL1Options}
                       onChange={(val) => { setCounty(val); setSubcounty(''); }}
-                      placeholder="Select County"
+                      placeholder={`Select ${divisions.l1}`}
                       error={touched && !county.trim()}
                     />
-                    {touched && !county.trim() && <Text style={s.errText}>County is required</Text>}
+                    {touched && !county.trim() && <Text style={s.errText}>{divisions.l1} is required</Text>}
 
-                    <Text style={s.label}>Sub-County *</Text>
+                    <Text style={s.label}>{divisions.l2} *</Text>
                     <Dropdown
                       value={subcounty}
-                      options={subCountyOptions}
+                      options={subOptions}
                       onChange={setSubcounty}
-                      placeholder={county ? 'Select Sub-County' : 'Select County first'}
+                      placeholder={county ? `Select ${divisions.l2}` : `Select ${divisions.l1} first`}
                       disabled={!county}
                       error={touched && !subcounty.trim()}
                     />
-                    {touched && !subcounty.trim() && <Text style={s.errText}>Sub-County is required</Text>}
+                    {touched && !subcounty.trim() && <Text style={s.errText}>{divisions.l2} is required</Text>}
 
                     {/* Cooperative search */}
                     <Text style={s.label}>Cooperative *</Text>

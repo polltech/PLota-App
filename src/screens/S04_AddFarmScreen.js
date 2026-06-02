@@ -10,9 +10,10 @@ import * as Network from 'expo-network';
 import { mobileAPI, farmerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+import { divisionsForCountry } from '../data/adminDivisions';
 
-// ── Kenya Counties + Sub-Counties ─────────────────────────────────────────────
-const KENYA_COUNTIES = {
+// ── Replaced by shared adminDivisions.js — kept as placeholder ───────────────
+const _UNUSED2 = {
   'Mombasa':        ['Changamwe','Jomvu','Kisauni','Likoni','Mvita','Nyali'],
   'Kwale':          ['Kinango','Lungalunga','Matuga','Msambweni'],
   'Kilifi':         ['Ganze','Kaloleni','Kilifi North','Kilifi South','Magarini','Malindi','Rabai'],
@@ -61,7 +62,6 @@ const KENYA_COUNTIES = {
   'Nyamira':        ['Borabu','Manga','Masaba North','Nyamira North','Nyamira South'],
   'Nairobi':        ['Dagoretti North','Dagoretti South','Embakasi Central','Embakasi East','Embakasi North','Embakasi South','Embakasi West','Kamukunji','Kasarani','Kibra','Lang\'ata','Makadara','Mathare','Roysambu','Ruaraka','Starehe','Westlands'],
 };
-const ALL_COUNTIES = Object.keys(KENYA_COUNTIES).sort();
 const LAND_USE = [
   { value: 'agroforestry', label: 'Agroforestry' },
   { value: 'monocrop', label: 'Monocrop' },
@@ -279,35 +279,31 @@ export default function AddFarmScreen() {
   const [step, setStep] = useState(0);
 
   // ── Step 1: Farmer Details — pre-filled from registration ─────────────────
-  const [firstName,    setFirstName]    = useState(user?.first_name  || '');
-  const [lastName,     setLastName]     = useState(user?.last_name   || '');
-  const [phone,        setPhone]        = useState(user?.phone       || '');
-  const [nationalId,   setNationalId]   = useState(user?.national_id || '');
-  const [gender,       setGender]       = useState(user?.gender      || '');
-  const [county,       setCounty]       = useState(user?.county      || '');
-  const [subCounty,    setSubCounty]    = useState(user?.sub_county  || '');
-  const [inCoop,       setInCoop]       = useState(user?.cooperative_name ? true : null);
-  const [coopName,     setCoopName]     = useState(user?.cooperative_name || '');
-  const [coopMemberNo, setCoopMemberNo] = useState(user?.cooperative_member_no || user?.coop_member_no || '');
-  const [dataConsent,  setDataConsent]  = useState(false);
+  const [firstName,   setFirstName]   = useState(user?.first_name  || '');
+  const [lastName,    setLastName]    = useState(user?.last_name   || '');
+  const [phone,       setPhone]       = useState(user?.phone       || '');
+  const [nationalId,  setNationalId]  = useState(user?.national_id || '');
+  const [gender,      setGender]      = useState(user?.gender      || '');
+  const [county,      setCounty]      = useState(user?.county      || '');
+  const [subCounty,   setSubCounty]   = useState(user?.sub_county  || '');
+  const [dataConsent, setDataConsent] = useState(false);
 
-  // Sub-counties for selected county
-  const subCountyOptions = county ? (KENYA_COUNTIES[county] || []) : [];
+  // Location divisions based on user's country
+  const divisions    = divisionsForCountry(user?.country || 'Kenya');
+  const allL1Options = Object.keys(divisions.data).sort();
+  const subOptions   = county ? (divisions.data[county] || []) : [];
 
-  // Fetch full profile on mount to fill any fields not in the auth token
+  // Fetch full profile on mount to fill any missing fields
   useEffect(() => {
     farmerAPI.getProfile().then(res => {
       const p = res.data;
-      if (!firstName  && p.first_name)        setFirstName(p.first_name);
-      if (!lastName   && p.last_name)         setLastName(p.last_name);
-      if (!phone      && p.phone)             setPhone(p.phone);
-      if (!nationalId && p.national_id)       setNationalId(p.national_id);
-      if (!gender     && p.gender)            setGender(p.gender);
-      if (!county     && p.county)            setCounty(p.county);
-      if (!subCounty  && p.sub_county)        setSubCounty(p.sub_county);
-      if (!coopName   && p.cooperative_name)  { setCoopName(p.cooperative_name); setInCoop(true); }
-      if (!coopMemberNo && (p.cooperative_member_no || p.coop_member_no))
-        setCoopMemberNo(p.cooperative_member_no || p.coop_member_no);
+      if (!firstName  && p.first_name)  setFirstName(p.first_name);
+      if (!lastName   && p.last_name)   setLastName(p.last_name);
+      if (!phone      && p.phone)       setPhone(p.phone);
+      if (!nationalId && p.national_id) setNationalId(p.national_id);
+      if (!gender     && p.gender)      setGender(p.gender);
+      if (!county     && p.county)      setCounty(p.county);
+      if (!subCounty  && p.sub_county)  setSubCounty(p.sub_county);
     }).catch(() => {});
   }, []);
 
@@ -374,7 +370,7 @@ export default function AddFarmScreen() {
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const stepValid = [
-    !!firstName.trim() && !!phone.trim() && !!county.trim() && dataConsent,  // step 0
+    !!firstName.trim() && !!phone.trim() && !!county.trim() && dataConsent, // step 0
     !!farmName.trim() && !!totalArea,                                         // step 1
     varieties.length > 0,                                                     // step 2
     canopyCover !== '',                                                        // step 3
@@ -424,8 +420,8 @@ export default function AddFarmScreen() {
         gender:               gender || null,
         county:               county.trim(),
         sub_county:           subCounty.trim() || null,
-        cooperative_name:     inCoop ? coopName.trim() || null : null,
-        cooperative_member_no: inCoop && coopMemberNo.trim() ? coopMemberNo.trim() : null,
+        cooperative_name:     user?.cooperative_name || null,
+        cooperative_member_no: user?.cooperative_member_no || user?.coop_member_no || null,
         data_consent:         dataConsent,
         // Step 2
         farm_name:         farmName.trim(),
@@ -656,41 +652,37 @@ export default function AddFarmScreen() {
 
                     <View style={s.subHeader}><Text style={s.subHeaderText}>📍 Address</Text></View>
 
-                    <Field label="County" required>
+                    <Field label={divisions.l1} required>
                       <Dropdown
                         value={county}
-                        options={ALL_COUNTIES}
+                        options={allL1Options}
                         onChange={(val) => { setCounty(val); setSubCounty(''); }}
-                        placeholder="Select County"
+                        placeholder={`Select ${divisions.l1}`}
                       />
                       {touched && !county.trim() && <Text style={s.errText}>Required</Text>}
                     </Field>
 
-                    <Field label="Sub-County">
+                    <Field label={divisions.l2}>
                       <Dropdown
                         value={subCounty}
-                        options={subCountyOptions}
+                        options={subOptions}
                         onChange={setSubCounty}
-                        placeholder={county ? 'Select Sub-County' : 'Select County first'}
+                        placeholder={county ? `Select ${divisions.l2}` : `Select ${divisions.l1} first`}
                         disabled={!county}
                       />
                     </Field>
 
-                    <View style={s.subHeader}><Text style={s.subHeaderText}>🤝 Cooperative Membership</Text></View>
-
-                    <Field label="Member of a Cooperative?">
-                      <YesNo value={inCoop} onChange={setInCoop} />
-                    </Field>
-
-                    {inCoop && (
-                      <>
-                        <Field label="Cooperative Name">
-                          <Input value={coopName} onChangeText={setCoopName} placeholder="e.g. Mwea Coffee Coop" returnKeyType="next" />
-                        </Field>
-                        <Field label="Cooperative Membership No." hint="Your member number from the cooperative">
-                          <Input value={coopMemberNo} onChangeText={setCoopMemberNo} placeholder="e.g. MCW-0042" returnKeyType="done" />
-                        </Field>
-                      </>
+                    {!!user?.cooperative_name && (
+                      <View style={s.coopInfoCard}>
+                        <Ionicons name="people-outline" size={18} color={C.c700} />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={s.coopInfoLabel}>Linked Cooperative</Text>
+                          <Text style={s.coopInfoName}>{user.cooperative_name}</Text>
+                        </View>
+                        <View style={s.coopInfoBadge}>
+                          <Text style={s.coopInfoBadgeText}>Linked</Text>
+                        </View>
+                      </View>
                     )}
 
                     <TouchableOpacity style={s.consentCard} onPress={() => setDataConsent(v => !v)} activeOpacity={0.8}>
@@ -1194,6 +1186,13 @@ const s = StyleSheet.create({
   codeBoxCode:  { fontSize: 26, fontWeight: '900', color: C.c700, letterSpacing: 3 },
   secondaryBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#E8DDD5', marginTop: 10 },
   secondaryBtnText: { color: '#6B6B6B', fontSize: 15, fontWeight: '700' },
+
+  // Cooperative info (read-only, linked from registration)
+  coopInfoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#bbf7d0', marginBottom: 18 },
+  coopInfoLabel: { fontSize: 10, fontWeight: '700', color: '#15803d', textTransform: 'uppercase', letterSpacing: 0.5 },
+  coopInfoName: { fontSize: 14, fontWeight: '800', color: '#14532d', marginTop: 2 },
+  coopInfoBadge: { backgroundColor: '#dcfce7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  coopInfoBadgeText: { fontSize: 10, fontWeight: '800', color: '#15803d' },
 
   // Dropdown
   dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F0EC', borderRadius: 14, borderWidth: 1.5, borderColor: '#E8DDD5', paddingHorizontal: 16, paddingVertical: 14 },
