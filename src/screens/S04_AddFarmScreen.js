@@ -555,7 +555,7 @@ export default function AddFarmScreen() {
                 </View>
 
                 <TouchableOpacity style={s.primaryBtn} onPress={handleCaptureBoundary} activeOpacity={0.8}>
-                  <Text style={s.primaryBtnText}>Capture Boundary Now →</Text>
+                  <Text style={s.primaryBtnText}>Capture Boundary Now</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('FarmsList')} activeOpacity={0.7}>
                   <Text style={s.secondaryBtnText}>Done — Capture Later</Text>
@@ -587,7 +587,7 @@ export default function AddFarmScreen() {
               {/* Top bar */}
               <View style={s.topBar}>
                 <TouchableOpacity onPress={step === 0 ? () => navigation.goBack() : handleBack} style={s.backBtn}>
-                  <Text style={s.backText}>← {step === 0 ? 'Back' : STEPS[step - 1]}</Text>
+                  <Text style={s.backText}>{step === 0 ? 'Back' : STEPS[step - 1]}</Text>
                 </TouchableOpacity>
                 <Text style={s.appTitle}>PLOTRA</Text>
                 <View style={{ width: 60 }} />
@@ -1043,7 +1043,7 @@ export default function AddFarmScreen() {
                 <View style={s.btnRow}>
                   {step > 0 && (
                     <TouchableOpacity style={s.outlineBtn} onPress={handleBack} activeOpacity={0.8}>
-                      <Text style={s.outlineBtnText}>← Back</Text>
+                      <Text style={s.outlineBtnText}>Back</Text>
                     </TouchableOpacity>
                   )}
                   {!isLastStep ? (
@@ -1052,7 +1052,7 @@ export default function AddFarmScreen() {
                       onPress={handleNext}
                       activeOpacity={0.8}
                     >
-                      <Text style={s.primaryBtnText}>Next: {STEPS[step + 1]} →</Text>
+                      <Text style={s.primaryBtnText}>Next: {STEPS[step + 1]}</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity

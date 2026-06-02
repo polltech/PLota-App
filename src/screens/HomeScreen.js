@@ -537,7 +537,7 @@ export default function HomeScreen() {
                 );
               })}
               <TouchableOpacity style={s.tableFooter} onPress={() => navigation.navigate('Farms')} activeOpacity={0.8}>
-                <Text style={s.tableFooterText}>Manage all farms →</Text>
+                <Text style={s.tableFooterText}>Manage all farms</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -582,7 +582,7 @@ export default function HomeScreen() {
                 );
               })}
               <TouchableOpacity style={s.tableFooter} onPress={() => navigation.navigate('Deliveries')} activeOpacity={0.8}>
-                <Text style={s.tableFooterText}>View all deliveries →</Text>
+                <Text style={s.tableFooterText}>View all deliveries</Text>
               </TouchableOpacity>
             </View>
           </>

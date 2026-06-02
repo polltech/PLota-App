@@ -764,7 +764,7 @@ export default function RegisterScreen({ navigation }) {
                 <View style={s.btnRow}>
                   {step > 0 && (
                     <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.8}>
-                      <Text style={s.backBtnText}>← Back</Text>
+                      <Text style={s.backBtnText}>Back</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
@@ -778,8 +778,8 @@ export default function RegisterScreen({ navigation }) {
                     ) : (
                       <Text style={s.btnText}>
                         {step === 4 ? 'Create Account ✓'
-                          : step === 1 && otpVerified ? 'Next: Location →'
-                          : `Next →`}
+                          : step === 1 && otpVerified ? 'Next: Location'
+                          : 'Next'}
                       </Text>
                     )}
                   </TouchableOpacity>
