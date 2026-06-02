@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-  StatusBar, ImageBackground, Alert, Switch,
+  StatusBar, ImageBackground, Alert, Switch, Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -11,12 +11,57 @@ import { mobileAPI, farmerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
-// ── Static data ───────────────────────────────────────────────────────────────
-const COUNTIES = [
-  'Nairobi','Kiambu','Nakuru','Nyandarua','Nyeri','Muranga','Kisii',
-  'Kericho','Bomet','Elgeyo-Marakwet','Uasin-Gishu','Trans-Nzoia','Meru',
-  'Embu','Tharaka-Nithi','Kirinyaga','Machakos','Makueni','Other',
-];
+// ── Kenya Counties + Sub-Counties ─────────────────────────────────────────────
+const KENYA_COUNTIES = {
+  'Mombasa':        ['Changamwe','Jomvu','Kisauni','Likoni','Mvita','Nyali'],
+  'Kwale':          ['Kinango','Lungalunga','Matuga','Msambweni'],
+  'Kilifi':         ['Ganze','Kaloleni','Kilifi North','Kilifi South','Magarini','Malindi','Rabai'],
+  'Tana River':     ['Bura','Garsen','Galole'],
+  'Lamu':           ['Lamu East','Lamu West'],
+  'Taita-Taveta':   ['Mwatate','Taveta','Voi','Wundanyi'],
+  'Garissa':        ['Balambala','Dadaab','Fafi','Garissa Township','Hulugho','Ijara','Lagdera'],
+  'Wajir':          ['Eldas','Tarbaj','Wajir East','Wajir North','Wajir South','Wajir West'],
+  'Mandera':        ['Banissa','Lafey','Mandera East','Mandera North','Mandera South','Mandera West'],
+  'Marsabit':       ['Laisamis','Moyale','North Horr','Saku'],
+  'Isiolo':         ['Garbatulla','Isiolo','Merti'],
+  'Meru':           ['Buuri','Igembe Central','Igembe North','Igembe South','Imenti Central','Imenti North','Imenti South','Tigania East','Tigania West'],
+  'Tharaka-Nithi':  ['Chuka/Igambang\'ombe','Maara','Tharaka North','Tharaka South'],
+  'Embu':           ['Manyatta','Mbeere North','Mbeere South','Runyenjes'],
+  'Kitui':          ['Kitui Central','Kitui East','Kitui Rural','Kitui South','Kitui West','Mwingi Central','Mwingi North','Mwingi West'],
+  'Machakos':       ['Kathiani','Machakos Town','Masinga','Matungulu','Mavoko','Mwala','Yatta'],
+  'Makueni':        ['Kaiti','Kibwezi East','Kibwezi West','Kilome','Makueni','Mbooni'],
+  'Nyandarua':      ['Kipipiri','Kinangop','Ndaragwa','Ol Kalou','Ol Joro Orok'],
+  'Nyeri':          ['Kieni East','Kieni West','Mathira East','Mathira West','Mukurwe-ini','Nyeri Town','Othaya','Tetu'],
+  'Kirinyaga':      ['Gichugu','Kirinyaga Central','Mwea East','Mwea West','Ndia'],
+  'Murang\'a':      ['Gatanga','Kahuro','Kandara','Kangema','Kigumo','Kiharu','Mathioya','Murang\'a South'],
+  'Kiambu':         ['Gatundu North','Gatundu South','Githunguri','Juja','Kabete','Kiambaa','Kiambu','Kikuyu','Lari','Limuru','Ruiru','Thika Town'],
+  'Turkana':        ['Kibish','Loima','Turkana Central','Turkana East','Turkana North','Turkana South','Turkana West'],
+  'West Pokot':     ['Central Pokot','Kacheliba','Pokot North','Pokot South'],
+  'Samburu':        ['Samburu Central','Samburu East','Samburu North'],
+  'Trans-Nzoia':    ['Cherangany','Endebess','Kiminini','Kwanza','Trans-Nzoia East'],
+  'Uasin Gishu':    ['Ainabkoi','Kapseret','Kesses','Moiben','Soy','Turbo'],
+  'Elgeyo-Marakwet':['Keiyo North','Keiyo South','Marakwet East','Marakwet West'],
+  'Nandi':          ['Aldai','Chesumei','Emgwen','Mosop','Nandi Hills','Tindiret'],
+  'Baringo':        ['Baringo Central','Baringo North','Baringo South','Eldama Ravine','Mogotio','Tiaty'],
+  'Laikipia':       ['Laikipia Central','Laikipia East','Laikipia North','Laikipia West','Nyahururu'],
+  'Nakuru':         ['Bahati','Gilgil','Kuresoi North','Kuresoi South','Molo','Naivasha','Nakuru Town East','Nakuru Town West','Njoro','Rongai','Subukia'],
+  'Narok':          ['Narok East','Narok North','Narok South','Narok West','Transmara East','Transmara West'],
+  'Kajiado':        ['Kajiado Central','Kajiado East','Kajiado North','Kajiado South','Kajiado West'],
+  'Kericho':        ['Ainamoi','Belgut','Bureti','Kipkelion East','Kipkelion West','Soin/Sigowet'],
+  'Bomet':          ['Bomet Central','Bomet East','Chepalungu','Konoin','Sotik'],
+  'Kakamega':       ['Butere','Ikolomani','Khwisero','Likuyani','Lugari','Lurambi','Malava','Matungu','Mumias East','Mumias West','Navakholo','Shinyalu'],
+  'Vihiga':         ['Emuhaya','Hamisi','Luanda','Sabatia','Vihiga'],
+  'Bungoma':        ['Bumula','Kabuchai','Kanduyi','Kimilili','Mt Elgon','Sirisia','Tongaren','Webuye East','Webuye West'],
+  'Busia':          ['Budalang\'i','Butula','Funyula','Nambale','Samia','Teso North','Teso South'],
+  'Siaya':          ['Alego Usonga','Bondo','Gem','Rarieda','Ugenya','Ugunja'],
+  'Kisumu':         ['Kisumu Central','Kisumu East','Kisumu West','Muhoroni','Nyakach','Nyando','Seme'],
+  'Homa Bay':       ['Kabondo Kasipul','Karachuonyo','Kasipul','Mbita','Ndhiwa','Rangwe','Suba North','Suba South'],
+  'Migori':         ['Awendo','Kuria East','Kuria West','Mabera','Ntimaru','Rongo','Suna East','Suna West','Uriri'],
+  'Kisii':          ['Bomachoge Borabu','Bomachoge Chache','Bonchari','Kitutu Chache North','Kitutu Chache South','Kitutu Masaba','Nyaribari Chache','Nyaribari Masaba','South Mugirango'],
+  'Nyamira':        ['Borabu','Manga','Masaba North','Nyamira North','Nyamira South'],
+  'Nairobi':        ['Dagoretti North','Dagoretti South','Embakasi Central','Embakasi East','Embakasi North','Embakasi South','Embakasi West','Kamukunji','Kasarani','Kibra','Lang\'ata','Makadara','Mathare','Roysambu','Ruaraka','Starehe','Westlands'],
+};
+const ALL_COUNTIES = Object.keys(KENYA_COUNTIES).sort();
 const LAND_USE = [
   { value: 'agroforestry', label: 'Agroforestry' },
   { value: 'monocrop', label: 'Monocrop' },
@@ -185,6 +230,48 @@ function SectionHeader({ icon, title }) {
   );
 }
 
+function Dropdown({ value, options, onChange, placeholder, disabled }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <TouchableOpacity
+        style={[s.dropdownBtn, disabled && { opacity: 0.5 }]}
+        onPress={() => !disabled && setOpen(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={[s.dropdownBtnText, !value && { color: C.subtle }]} numberOfLines={1}>
+          {value || placeholder || 'Select…'}
+        </Text>
+        <Text style={s.dropdownArrow}>▾</Text>
+      </TouchableOpacity>
+
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={s.ddOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={s.ddSheet}>
+            <View style={s.ddHandle} />
+            <Text style={s.ddTitle}>{placeholder || 'Select'}</Text>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[s.ddItem, item === value && s.ddItemActive]}
+                  onPress={() => { onChange(item); setOpen(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[s.ddItemText, item === value && s.ddItemTextActive]}>{item}</Text>
+                  {item === value && <Text style={s.ddCheck}>✓</Text>}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function AddFarmScreen() {
   const navigation = useNavigation();
@@ -197,32 +284,28 @@ export default function AddFarmScreen() {
   const [phone,        setPhone]        = useState(user?.phone       || '');
   const [nationalId,   setNationalId]   = useState(user?.national_id || '');
   const [gender,       setGender]       = useState(user?.gender      || '');
-  const [dob,          setDob]          = useState(user?.date_of_birth ? String(user.date_of_birth).split('T')[0] : '');
   const [county,       setCounty]       = useState(user?.county      || '');
   const [subCounty,    setSubCounty]    = useState(user?.sub_county  || '');
-  const [ward,         setWard]         = useState(user?.ward        || '');
   const [inCoop,       setInCoop]       = useState(user?.cooperative_name ? true : null);
   const [coopName,     setCoopName]     = useState(user?.cooperative_name || '');
   const [coopMemberNo, setCoopMemberNo] = useState(user?.cooperative_member_no || user?.coop_member_no || '');
   const [dataConsent,  setDataConsent]  = useState(false);
 
+  // Sub-counties for selected county
+  const subCountyOptions = county ? (KENYA_COUNTIES[county] || []) : [];
+
   // Fetch full profile on mount to fill any fields not in the auth token
   useEffect(() => {
     farmerAPI.getProfile().then(res => {
       const p = res.data;
-      if (!firstName && p.first_name)             setFirstName(p.first_name);
-      if (!lastName  && p.last_name)              setLastName(p.last_name);
-      if (!phone     && p.phone)                  setPhone(p.phone);
-      if (!nationalId && p.national_id)           setNationalId(p.national_id);
-      if (!gender    && p.gender)                 setGender(p.gender);
-      if (!dob       && p.date_of_birth)          setDob(String(p.date_of_birth).split('T')[0]);
-      if (!county    && p.county)                 setCounty(p.county);
-      if (!subCounty && p.sub_county)             setSubCounty(p.sub_county);
-      if (!ward      && p.ward)                   setWard(p.ward);
-      if (!coopName  && p.cooperative_name) {
-        setCoopName(p.cooperative_name);
-        setInCoop(true);
-      }
+      if (!firstName  && p.first_name)        setFirstName(p.first_name);
+      if (!lastName   && p.last_name)         setLastName(p.last_name);
+      if (!phone      && p.phone)             setPhone(p.phone);
+      if (!nationalId && p.national_id)       setNationalId(p.national_id);
+      if (!gender     && p.gender)            setGender(p.gender);
+      if (!county     && p.county)            setCounty(p.county);
+      if (!subCounty  && p.sub_county)        setSubCounty(p.sub_county);
+      if (!coopName   && p.cooperative_name)  { setCoopName(p.cooperative_name); setInCoop(true); }
       if (!coopMemberNo && (p.cooperative_member_no || p.coop_member_no))
         setCoopMemberNo(p.cooperative_member_no || p.coop_member_no);
     }).catch(() => {});
@@ -339,10 +422,8 @@ export default function AddFarmScreen() {
         farmer_phone:         phone.trim() || null,
         national_id:          nationalId.trim() || null,
         gender:               gender || null,
-        date_of_birth:        dob.trim() || null,
         county:               county.trim(),
         sub_county:           subCounty.trim() || null,
-        ward:                 ward.trim() || null,
         cooperative_name:     inCoop ? coopName.trim() || null : null,
         cooperative_member_no: inCoop && coopMemberNo.trim() ? coopMemberNo.trim() : null,
         data_consent:         dataConsent,
@@ -573,31 +654,27 @@ export default function AddFarmScreen() {
                       <ChipGroup options={GENDER_OPTIONS} value={gender} onChange={setGender} />
                     </Field>
 
-                    <Field label="Date of Birth" hint="Format: YYYY-MM-DD">
-                      <Input value={dob} onChangeText={setDob} placeholder="e.g. 1980-06-15"
-                        keyboardType="numbers-and-punctuation" returnKeyType="next" />
-                    </Field>
-
                     <View style={s.subHeader}><Text style={s.subHeaderText}>📍 Address</Text></View>
 
                     <Field label="County" required>
-                      <ChipGroup options={COUNTIES} value={county} onChange={setCounty} />
+                      <Dropdown
+                        value={county}
+                        options={ALL_COUNTIES}
+                        onChange={(val) => { setCounty(val); setSubCounty(''); }}
+                        placeholder="Select County"
+                      />
                       {touched && !county.trim() && <Text style={s.errText}>Required</Text>}
                     </Field>
 
-                    <View style={s.row}>
-                      <View style={s.half}>
-                        <Field label="Sub-County">
-                          <Input value={subCounty} onChangeText={setSubCounty} placeholder="e.g. Mwea" returnKeyType="next" />
-                        </Field>
-                      </View>
-                      <View style={s.rowSpacer} />
-                      <View style={s.half}>
-                        <Field label="Ward">
-                          <Input value={ward} onChangeText={setWard} placeholder="e.g. Tebere" returnKeyType="next" />
-                        </Field>
-                      </View>
-                    </View>
+                    <Field label="Sub-County">
+                      <Dropdown
+                        value={subCounty}
+                        options={subCountyOptions}
+                        onChange={setSubCounty}
+                        placeholder={county ? 'Select Sub-County' : 'Select County first'}
+                        disabled={!county}
+                      />
+                    </Field>
 
                     <View style={s.subHeader}><Text style={s.subHeaderText}>🤝 Cooperative Membership</Text></View>
 
@@ -1117,4 +1194,18 @@ const s = StyleSheet.create({
   codeBoxCode:  { fontSize: 26, fontWeight: '900', color: C.c700, letterSpacing: 3 },
   secondaryBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#E8DDD5', marginTop: 10 },
   secondaryBtnText: { color: '#6B6B6B', fontSize: 15, fontWeight: '700' },
+
+  // Dropdown
+  dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F0EC', borderRadius: 14, borderWidth: 1.5, borderColor: '#E8DDD5', paddingHorizontal: 16, paddingVertical: 14 },
+  dropdownBtnText: { fontSize: 15, color: '#1a1a1a', fontWeight: '600', flex: 1 },
+  dropdownArrow: { fontSize: 14, color: C.c600, marginLeft: 8 },
+  ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  ddSheet: { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, maxHeight: '70%' },
+  ddHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginBottom: 12 },
+  ddTitle: { fontSize: 14, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
+  ddItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  ddItemActive: { backgroundColor: C.c050, marginHorizontal: -20, paddingHorizontal: 20 },
+  ddItemText: { fontSize: 15, color: C.ink, fontWeight: '500' },
+  ddItemTextActive: { color: C.c700, fontWeight: '800' },
+  ddCheck: { fontSize: 14, color: C.c700, fontWeight: '900' },
 });
