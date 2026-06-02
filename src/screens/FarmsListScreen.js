@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, StatusBar, ScrollView,
+  ActivityIndicator, TextInput, RefreshControl, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -208,53 +208,46 @@ export default function FarmsListScreen() {
         </Text>
       </SafeAreaView>
 
-      {/* Top summary stat cards (matching web) */}
-      {!loading && farms.length > 0 && (
+      {/* 5 Stat cards grid */}
+      {!loading && (
         <View style={s.summaryWrap}>
-          {/* Row 1: counts */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
-            {FILTERS.map((f) => (
+          {/* Row 1: Total, Verified, Pending — 3 equal cards */}
+          <View style={s.cardRow}>
+            {[
+              { key: 'all',     icon: 'leaf-outline',             label: 'Total Farms',          color: C.c700,    bg: C.c050 },
+              { key: 'approved',icon: 'checkmark-circle-outline', label: 'Verified',             color: '#15803d', bg: '#dcfce7' },
+              { key: 'pending', icon: 'time-outline',             label: 'Pending Verification', color: '#b45309', bg: '#fef3c7' },
+            ].map((f) => (
               <TouchableOpacity
                 key={f.key}
-                style={[s.filterCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent', borderWidth: 2 }]}
+                style={[s.gridCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
                 onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
                 activeOpacity={0.8}
               >
-                <Ionicons name={f.icon} size={18} color={f.color} />
-                <Text style={[s.filterCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
-                <Text style={[s.filterLabel, { color: f.color }]}>{f.label}</Text>
+                <Ionicons name={f.icon} size={20} color={f.color} />
+                <Text style={[s.gridCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
+                <Text style={[s.gridLabel, { color: f.color }]}>{f.label}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
-
-          {/* Row 2: area + compliance stats (matching web calculations cards) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statRow}>
-            <View style={s.statCard}>
-              <Ionicons name="expand-outline" size={20} color="#15803d" />
-              <Text style={s.statVal}>{totalArea > 0 ? `${totalArea.toFixed(1)} ha` : '—'}</Text>
-              <Text style={s.statLabel}>Total Area</Text>
-            </View>
-            <View style={s.statCard}>
-              <Ionicons name="leaf-outline" size={20} color={C.c700} />
-              <Text style={s.statVal}>{coffeeArea > 0 ? `${coffeeArea.toFixed(1)} ha` : '—'}</Text>
-              <Text style={s.statLabel}>Coffee Area</Text>
-            </View>
-            <View style={s.statCard}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#15803d" />
-              <Text style={s.statVal}>{verified}</Text>
-              <Text style={s.statLabel}>Verified</Text>
-            </View>
-            <View style={s.statCard}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#1d4ed8" />
-              <Text style={s.statVal}>{compliant}</Text>
-              <Text style={s.statLabel}>EUDR Compliant</Text>
-            </View>
-            <View style={s.statCard}>
-              <Ionicons name="warning-outline" size={20} color="#dc2626" />
-              <Text style={s.statVal}>{nonCompliant}</Text>
-              <Text style={s.statLabel}>Non-Compliant</Text>
-            </View>
-          </ScrollView>
+          </View>
+          {/* Row 2: Compliant, Non-Compliant — 2 wider cards */}
+          <View style={s.cardRow}>
+            {[
+              { key: 'compliant',     icon: 'shield-checkmark-outline', label: 'Compliant',     color: '#1d4ed8', bg: '#dbeafe' },
+              { key: 'non_compliant', icon: 'warning-outline',           label: 'Non-Compliant', color: '#dc2626', bg: '#fee2e2' },
+            ].map((f) => (
+              <TouchableOpacity
+                key={f.key}
+                style={[s.gridCardWide, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
+                onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={f.icon} size={20} color={f.color} />
+                <Text style={[s.gridCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
+                <Text style={[s.gridLabel, { color: f.color }]}>{f.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       )}
 
@@ -330,17 +323,13 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
 
-  // Summary area
-  summaryWrap: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  filterRow: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 10 },
-  filterCard: { alignItems: 'center', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 78, gap: 2 },
-  filterCount: { fontSize: 20, fontWeight: '900' },
-  filterLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center' },
-
-  statRow: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12, gap: 10 },
-  statCard: { alignItems: 'center', backgroundColor: C.steel100, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 90, gap: 4 },
-  statVal: { fontSize: 16, fontWeight: '900', color: C.ink },
-  statLabel: { fontSize: 10, fontWeight: '600', color: C.muted, textAlign: 'center' },
+  // 5-card summary grid
+  summaryWrap: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
+  cardRow: { flexDirection: 'row', gap: 10 },
+  gridCard: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, gap: 4, borderWidth: 2 },
+  gridCardWide: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 6, gap: 4, borderWidth: 2 },
+  gridCount: { fontSize: 22, fontWeight: '900' },
+  gridLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 12 },
 
   // Search
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.white, marginHorizontal: 20, marginTop: 14, marginBottom: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.steel200 },
