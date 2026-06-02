@@ -133,6 +133,9 @@ export const farmerAPI = {
   getDocuments: (farmId) => api.get('/farmer/documents', farmId ? { params: { farm_id: farmId } } : {}),
 
   getComplianceOverview: () => api.get('/farmer/stats'),
+
+  getPayments:       () => api.get('/farmer/payments'),
+  requestWithdrawal: (data) => api.post('/farmer/wallet/withdraw', data),
 };
 
 // ── EUDR API ──────────────────────────────────────────────────────────────────

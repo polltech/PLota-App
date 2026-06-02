@@ -22,6 +22,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
 import ComplianceScreen from '../screens/ComplianceScreen';
+import WalletScreen from '../screens/WalletScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -100,6 +101,7 @@ function FarmerTabs() {
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="HomeMain"     component={HomeScreen} />
+            <Stack.Screen name="Wallet"       component={WalletScreen} />
             <Stack.Screen name="FarmDetail"   component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail" component={ParcelDetailScreen} />
             <Stack.Screen name="QueueList"    component={QueueListScreen} />

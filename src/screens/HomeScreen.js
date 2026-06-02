@@ -318,10 +318,10 @@ export default function HomeScreen() {
           <StatCard
             icon="wallet-outline"
             label="Wallet Balance"
-            value={stats?.mbt_balance != null ? `$${Number(stats.mbt_balance).toFixed(2)}` : '$0.00'}
-            sub={stats?.returns_trend || null}
+            value={stats?.mbt_balance != null ? `KES ${Number(stats.mbt_balance).toLocaleString()}` : 'KES 0'}
+            sub={stats?.returns_trend || 'View wallet'}
             color="#10b981"
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => navigation.navigate('Wallet')}
           />
           <StatCard
             icon="shield-checkmark-outline"
@@ -375,12 +375,12 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Wallet & Payments ───────────────────────────────────────── */}
-        <SectionHeader title="Wallet & Payments" />
+        <SectionHeader title="Wallet & Payments" onSeeAll={() => navigation.navigate('Wallet')} />
         <View style={s.walletCard}>
           <View style={s.walletRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.walletRowLabel}>Staked MBT</Text>
-              <Text style={s.walletRowValue}>${stats?.staked_mbt != null ? Number(stats.staked_mbt).toFixed(2) : '0.00'}</Text>
+              <Text style={s.walletRowValue}>KES {stats?.staked_mbt != null ? Number(stats.staked_mbt).toLocaleString() : '0'}</Text>
             </View>
             {!!stats?.staked_trend && (
               <View style={[s.trendBadge, { backgroundColor: '#dcfce7' }]}>
@@ -388,11 +388,11 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-          <View style={[s.walletDivider]} />
+          <View style={s.walletDivider} />
           <View style={s.walletRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.walletRowLabel}>Annual Interest</Text>
-              <Text style={s.walletRowValue}>${stats?.annual_interest != null ? Number(stats.annual_interest).toFixed(2) : '0.00'}</Text>
+              <Text style={s.walletRowValue}>KES {stats?.annual_interest != null ? Number(stats.annual_interest).toLocaleString() : '0'}</Text>
             </View>
             {!!stats?.interest_trend && (
               <View style={[s.trendBadge, { backgroundColor: '#dbeafe' }]}>
@@ -401,13 +401,13 @@ export default function HomeScreen() {
             )}
           </View>
           <View style={s.walletActions}>
-            <TouchableOpacity style={s.walletBtn} activeOpacity={0.8}>
-              <Ionicons name="add-circle-outline" size={16} color={C.white} />
-              <Text style={s.walletBtnText}>Add Funds</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.walletBtn, s.walletBtnOutline]} activeOpacity={0.8}>
-              <Ionicons name="arrow-up-outline" size={16} color={C.c700} />
-              <Text style={[s.walletBtnText, { color: C.c700 }]}>Withdraw</Text>
+            <TouchableOpacity
+              style={s.walletBtn}
+              onPress={() => navigation.navigate('Wallet')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-up-outline" size={16} color={C.white} />
+              <Text style={s.walletBtnText}>Withdraw</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -646,9 +646,8 @@ const s = StyleSheet.create({
   walletDivider: { height: 1, backgroundColor: C.steel100, marginVertical: 14 },
   trendBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   trendBadgeText: { fontSize: 11, fontWeight: '800' },
-  walletActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  walletBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.c700, borderRadius: 12, paddingVertical: 12 },
-  walletBtnOutline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.c700 },
+  walletActions: { marginTop: 16 },
+  walletBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.c700, borderRadius: 12, paddingVertical: 13 },
   walletBtnText: { fontSize: 13, fontWeight: '700', color: C.white },
 
   // Chart card
