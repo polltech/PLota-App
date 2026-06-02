@@ -442,24 +442,6 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ── Quick Actions ───────────────────────────────────────────── */}
-        <SectionHeader title="Quick Actions" />
-        <View style={s.actionsRow}>
-          {[
-            { icon: 'location-outline',     label: 'Capture\nBoundary',  color: C.c700,    onPress: () => navigation.navigate('Farms', { screen: 'CaptureLanding' }) },
-            { icon: 'leaf-outline',          label: 'My\nFarms',          color: '#6366f1', onPress: () => navigation.navigate('Farms') },
-            { icon: 'cube-outline',          label: 'Deliveries',         color: '#0ea5e9', onPress: () => navigation.navigate('Deliveries') },
-            { icon: 'document-text-outline', label: 'Documents',          color: '#f59e0b', onPress: () => navigation.navigate('Profile') },
-          ].map(({ icon, label, color, onPress }) => (
-            <TouchableOpacity key={label} style={s.actionBtn} onPress={onPress} activeOpacity={0.75}>
-              <View style={[s.actionIcon, { backgroundColor: color + '18' }]}>
-                <Ionicons name={icon} size={24} color={color} />
-              </View>
-              <Text style={s.actionLabel}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* ── My Farms Table (web-style) ──────────────────────────────── */}
         {recentFarms.length > 0 && (
           <>
@@ -616,12 +598,6 @@ const s = StyleSheet.create({
   breakdownItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   breakdownDot: { width: 8, height: 8, borderRadius: 4 },
   breakdownLabel: { fontSize: 12, fontWeight: '700', color: C.ink },
-
-  // Quick actions
-  actionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
-  actionBtn: { alignItems: 'center', flex: 1 },
-  actionIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  actionLabel: { fontSize: 11, fontWeight: '700', color: C.steel700, textAlign: 'center', lineHeight: 14 },
 
   // Table card (farms + deliveries)
   tableCard: { backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
