@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
@@ -7,7 +7,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import { mobileAPI } from '../services/api';
+import { mobileAPI, farmerAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
 // ── Static data ───────────────────────────────────────────────────────────────
@@ -187,22 +188,45 @@ function SectionHeader({ icon, title }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function AddFarmScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
 
-  // ── Step 1: Farmer Details ─────────────────────────────────────────────────
-  const [firstName,        setFirstName]        = useState('');
-  const [lastName,         setLastName]         = useState('');
-  const [phone,            setPhone]            = useState('');
-  const [nationalId,       setNationalId]       = useState('');
-  const [gender,           setGender]           = useState('');
-  const [dob,              setDob]              = useState('');
-  const [county,           setCounty]           = useState('');
-  const [subCounty,        setSubCounty]        = useState('');
-  const [ward,             setWard]             = useState('');
-  const [inCoop,           setInCoop]           = useState(null);
-  const [coopName,         setCoopName]         = useState('');
-  const [coopMemberNo,     setCoopMemberNo]     = useState('');
-  const [dataConsent,      setDataConsent]      = useState(false);
+  // ── Step 1: Farmer Details — pre-filled from registration ─────────────────
+  const [firstName,    setFirstName]    = useState(user?.first_name  || '');
+  const [lastName,     setLastName]     = useState(user?.last_name   || '');
+  const [phone,        setPhone]        = useState(user?.phone       || '');
+  const [nationalId,   setNationalId]   = useState(user?.national_id || '');
+  const [gender,       setGender]       = useState(user?.gender      || '');
+  const [dob,          setDob]          = useState(user?.date_of_birth ? String(user.date_of_birth).split('T')[0] : '');
+  const [county,       setCounty]       = useState(user?.county      || '');
+  const [subCounty,    setSubCounty]    = useState(user?.sub_county  || '');
+  const [ward,         setWard]         = useState(user?.ward        || '');
+  const [inCoop,       setInCoop]       = useState(user?.cooperative_name ? true : null);
+  const [coopName,     setCoopName]     = useState(user?.cooperative_name || '');
+  const [coopMemberNo, setCoopMemberNo] = useState(user?.cooperative_member_no || user?.coop_member_no || '');
+  const [dataConsent,  setDataConsent]  = useState(false);
+
+  // Fetch full profile on mount to fill any fields not in the auth token
+  useEffect(() => {
+    farmerAPI.getProfile().then(res => {
+      const p = res.data;
+      if (!firstName && p.first_name)             setFirstName(p.first_name);
+      if (!lastName  && p.last_name)              setLastName(p.last_name);
+      if (!phone     && p.phone)                  setPhone(p.phone);
+      if (!nationalId && p.national_id)           setNationalId(p.national_id);
+      if (!gender    && p.gender)                 setGender(p.gender);
+      if (!dob       && p.date_of_birth)          setDob(String(p.date_of_birth).split('T')[0]);
+      if (!county    && p.county)                 setCounty(p.county);
+      if (!subCounty && p.sub_county)             setSubCounty(p.sub_county);
+      if (!ward      && p.ward)                   setWard(p.ward);
+      if (!coopName  && p.cooperative_name) {
+        setCoopName(p.cooperative_name);
+        setInCoop(true);
+      }
+      if (!coopMemberNo && (p.cooperative_member_no || p.coop_member_no))
+        setCoopMemberNo(p.cooperative_member_no || p.coop_member_no);
+    }).catch(() => {});
+  }, []);
 
   // ── Step 2: Land & Farm ────────────────────────────────────────────────────
   const [farmName,        setFarmName]        = useState('');
@@ -456,7 +480,7 @@ export default function AddFarmScreen() {
                 <TouchableOpacity style={s.primaryBtn} onPress={handleCaptureBoundary} activeOpacity={0.8}>
                   <Text style={s.primaryBtnText}>Capture Boundary Now →</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('FarmIDEntry')} activeOpacity={0.7}>
+                <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('FarmsList')} activeOpacity={0.7}>
                   <Text style={s.secondaryBtnText}>Done — Capture Later</Text>
                 </TouchableOpacity>
               </View>
