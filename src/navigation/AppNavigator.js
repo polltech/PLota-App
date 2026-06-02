@@ -17,12 +17,12 @@ import HomeScreen from '../screens/HomeScreen';
 import FarmsListScreen from '../screens/FarmsListScreen';
 import DeliveriesScreen from '../screens/DeliveriesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import WalletScreen from '../screens/WalletScreen';
 
 // ── Shared detail screens ─────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
 import ComplianceScreen from '../screens/ComplianceScreen';
-import WalletScreen from '../screens/WalletScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -90,7 +90,7 @@ function FarmerTabs() {
             Farms:      focused ? 'leaf'               : 'leaf-outline',
             Deliveries: focused ? 'cube'               : 'cube-outline',
             Compliance: focused ? 'shield-checkmark'   : 'shield-checkmark-outline',
-            Profile:    focused ? 'person'             : 'person-outline',
+            Wallet:     focused ? 'wallet'             : 'wallet-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -102,6 +102,7 @@ function FarmerTabs() {
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="HomeMain"     component={HomeScreen} />
             <Stack.Screen name="Wallet"       component={WalletScreen} />
+            <Stack.Screen name="Profile"      component={ProfileScreen} />
             <Stack.Screen name="FarmDetail"   component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail" component={ParcelDetailScreen} />
             <Stack.Screen name="QueueList"    component={QueueListScreen} />
@@ -149,11 +150,11 @@ function FarmerTabs() {
         )}
       </Tab.Screen>
 
-      {/* Profile */}
+      {/* Wallet */}
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarLabel: 'Profile' }}
+        name="Wallet"
+        component={WalletScreen}
+        options={{ tabBarLabel: 'Wallet' }}
       />
     </Tab.Navigator>
   );

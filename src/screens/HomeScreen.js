@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Image,
+  ActivityIndicator, RefreshControl, StatusBar, Image, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -9,6 +9,59 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { farmerAPI } from '../services/api';
 import { C } from '../theme';
+
+// ── Profile dropdown ──────────────────────────────────────────────────────────
+const ProfileMenu = ({ user, navigation, onClose, onSignOut }) => (
+  <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+    <TouchableOpacity style={pm.overlay} activeOpacity={1} onPress={onClose}>
+      <View style={pm.menu}>
+        <View style={pm.header}>
+          <View style={pm.avatar}>
+            <Text style={pm.avatarText}>
+              {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={pm.fullName} numberOfLines={1}>
+              {[user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Farmer'}
+            </Text>
+            <Text style={pm.email} numberOfLines={1}>{user?.email || ''}</Text>
+          </View>
+        </View>
+        <View style={pm.divider} />
+        <TouchableOpacity style={pm.item} activeOpacity={0.8}
+          onPress={() => { onClose(); navigation.navigate('Dashboard', { screen: 'Profile' }); }}>
+          <Ionicons name="person-outline" size={18} color={C.steel700} />
+          <Text style={pm.itemText}>My Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={pm.item} activeOpacity={0.8}
+          onPress={() => { onClose(); navigation.navigate('Wallet'); }}>
+          <Ionicons name="wallet-outline" size={18} color={C.steel700} />
+          <Text style={pm.itemText}>My Wallet</Text>
+        </TouchableOpacity>
+        <View style={pm.divider} />
+        <TouchableOpacity style={pm.item} activeOpacity={0.8}
+          onPress={() => { onClose(); onSignOut(); }}>
+          <Ionicons name="log-out-outline" size={18} color="#dc2626" />
+          <Text style={[pm.itemText, { color: '#dc2626' }]}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  </Modal>
+);
+
+const pm = StyleSheet.create({
+  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
+  menu:       { position: 'absolute', top: 88, right: 18, width: 230, backgroundColor: C.white, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 12, overflow: 'hidden' },
+  header:     { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  avatar:     { width: 38, height: 38, borderRadius: 19, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 16, fontWeight: '900', color: C.white },
+  fullName:   { fontSize: 13, fontWeight: '800', color: C.ink },
+  email:      { fontSize: 11, color: C.muted, marginTop: 1 },
+  divider:    { height: 1, backgroundColor: C.steel100 },
+  item:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  itemText:   { fontSize: 14, fontWeight: '600', color: C.ink },
+});
 
 // ── Chart helpers ─────────────────────────────────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -161,8 +214,9 @@ const SectionHeader = ({ title, onSeeAll }) => (
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigation = useNavigation();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const [stats,       setStats]       = useState(null);
   const [farms,       setFarms]       = useState([]);
@@ -259,10 +313,20 @@ export default function HomeScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.heroTime}>{time}</Text>
             </View>
-            <View style={s.logoCircle}>
-              <Image source={require('../../assets/logo-plotra.png')} style={s.logo} resizeMode="contain" />
-            </View>
+            <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
+              <Text style={s.avatarBtnText}>
+                {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+              </Text>
+            </TouchableOpacity>
           </View>
+          {profileOpen && (
+            <ProfileMenu
+              user={user}
+              navigation={navigation}
+              onClose={() => setProfileOpen(false)}
+              onSignOut={logout}
+            />
+          )}
           {pendingSync > 0 && (
             <TouchableOpacity
               style={s.syncBanner}
@@ -562,8 +626,8 @@ const s = StyleSheet.create({
   greet: { fontSize: 14, color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
   name: { fontSize: 24, fontWeight: '800', color: C.white },
   heroTime: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '500', marginTop: 2 },
-  logoCircle: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' },
-  logo: { width: '100%', height: '100%' },
+  avatarBtn:     { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' },
+  avatarBtnText: { fontSize: 18, fontWeight: '900', color: C.white },
   syncBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
   syncBannerText: { fontSize: 12, color: '#fbbf24', fontWeight: '700', flex: 1 },
 
