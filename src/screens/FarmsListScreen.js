@@ -198,46 +198,27 @@ export default function FarmsListScreen() {
         </Text>
       </SafeAreaView>
 
-      {/* 5 Stat cards grid */}
+      {/* 5 Stat cards — single row */}
       {!loading && (
         <View style={s.summaryWrap}>
-          {/* Row 1: Total, Verified, Pending — 3 equal cards */}
-          <View style={s.cardRow}>
-            {[
-              { key: 'all',     icon: 'leaf-outline',             label: 'Total Farms',          color: C.c700,    bg: C.c050 },
-              { key: 'approved',icon: 'checkmark-circle-outline', label: 'Verified',             color: '#15803d', bg: '#dcfce7' },
-              { key: 'pending', icon: 'time-outline',             label: 'Pending Verification', color: '#b45309', bg: '#fef3c7' },
-            ].map((f) => (
-              <TouchableOpacity
-                key={f.key}
-                style={[s.gridCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
-                onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={f.icon} size={20} color={f.color} />
-                <Text style={[s.gridCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
-                <Text style={[s.gridLabel, { color: f.color }]}>{f.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* Row 2: Compliant, Non-Compliant — 2 wider cards */}
-          <View style={s.cardRow}>
-            {[
-              { key: 'compliant',     icon: 'shield-checkmark-outline', label: 'Compliant',     color: '#1d4ed8', bg: '#dbeafe' },
-              { key: 'non_compliant', icon: 'warning-outline',           label: 'Non-Compliant', color: '#dc2626', bg: '#fee2e2' },
-            ].map((f) => (
-              <TouchableOpacity
-                key={f.key}
-                style={[s.gridCardWide, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
-                onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={f.icon} size={20} color={f.color} />
-                <Text style={[s.gridCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
-                <Text style={[s.gridLabel, { color: f.color }]}>{f.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {[
+            { key: 'all',           icon: 'leaf-outline',             label: 'Total',      color: C.c700,    bg: C.c050 },
+            { key: 'approved',      icon: 'checkmark-circle-outline', label: 'Verified',   color: '#15803d', bg: '#dcfce7' },
+            { key: 'pending',       icon: 'time-outline',             label: 'Pending',    color: '#b45309', bg: '#fef3c7' },
+            { key: 'compliant',     icon: 'shield-checkmark-outline', label: 'Compliant',  color: '#1d4ed8', bg: '#dbeafe' },
+            { key: 'non_compliant', icon: 'warning-outline',          label: 'Non-EUDR',   color: '#dc2626', bg: '#fee2e2' },
+          ].map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              style={[s.miniCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
+              onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name={f.icon} size={16} color={f.color} />
+              <Text style={[s.miniCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
+              <Text style={[s.miniLabel, { color: f.color }]}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       )}
 
@@ -296,13 +277,11 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
 
-  // 5-card summary grid
-  summaryWrap: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
-  cardRow: { flexDirection: 'row', gap: 10 },
-  gridCard: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, gap: 4, borderWidth: 2 },
-  gridCardWide: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 6, gap: 4, borderWidth: 2 },
-  gridCount: { fontSize: 22, fontWeight: '900' },
-  gridLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 12 },
+  // 5-card single row
+  summaryWrap: { flexDirection: 'row', backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, paddingHorizontal: 10, paddingVertical: 10, gap: 6 },
+  miniCard: { flex: 1, alignItems: 'center', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2, gap: 2, borderWidth: 1.5 },
+  miniCount: { fontSize: 16, fontWeight: '900' },
+  miniLabel: { fontSize: 8, fontWeight: '700', textAlign: 'center', lineHeight: 10 },
 
   // Farm card (web-style)
   list: { padding: 16, paddingBottom: 100 },
