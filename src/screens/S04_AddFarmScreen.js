@@ -313,10 +313,8 @@ export default function AddFarmScreen() {
   const [farmType,        setFarmType]        = useState('');
   const [landRegNumber,   setLandRegNumber]   = useState('');
   const [totalArea,       setTotalArea]       = useState('');
-  const [altitude,        setAltitude]        = useState('');
+
   const [landUse,         setLandUse]         = useState('agroforestry');
-  const [soilType,        setSoilType]        = useState('');
-  const [terrain,         setTerrain]         = useState('');
 
   // ── Step 3: Coffee ─────────────────────────────────────────────────────────
   const [varieties,       setVarieties]       = useState([]);
@@ -429,10 +427,8 @@ export default function AddFarmScreen() {
         farm_type:         farmType || null,
         land_reg_number:   landRegNumber.trim() || null,
         total_area_hectares: totalArea ? parseFloat(totalArea) : null,
-        altitude_m:        altitude ? parseFloat(altitude) : null,
+
         land_use_type:     landUse,
-        soil_type:         soilType || null,
-        terrain:           terrain || null,
         // Step 3
         coffee_varieties:  varieties.length > 0 ? varieties : null,
         year_coffee_planted: yearPlanted ? parseInt(yearPlanted) : null,
@@ -535,7 +531,6 @@ export default function AddFarmScreen() {
                 <PreviewRow label="Sub-County"  value={created.sub_county} />
                 <PreviewRow label="Land Use"    value={created.land_use_type} />
                 <PreviewRow label="Total Area"  value={created.total_area_hectares ? `${created.total_area_hectares} ha` : null} />
-                <PreviewRow label="Soil Type"   value={created.soil_type} />
                 <PreviewRow label="Varieties"   value={created.coffee_varieties} />
 
                 <View style={s.divider} />
@@ -723,33 +718,14 @@ export default function AddFarmScreen() {
                         placeholder="e.g. KIRINYAGA/23456" returnKeyType="next" />
                     </Field>
 
-                    <View style={s.row}>
-                      <View style={s.half}>
-                        <Field label="Total Area (ha)" required>
-                          <Input value={totalArea} onChangeText={setTotalArea} placeholder="e.g. 2.5"
-                            keyboardType="decimal-pad" error={touched && !totalArea} returnKeyType="next" />
-                          {touched && !totalArea && <Text style={s.errText}>Required</Text>}
-                        </Field>
-                      </View>
-                      <View style={s.rowSpacer} />
-                      <View style={s.half}>
-                        <Field label="Altitude (m)">
-                          <Input value={altitude} onChangeText={setAltitude} placeholder="e.g. 1600"
-                            keyboardType="numeric" returnKeyType="next" />
-                        </Field>
-                      </View>
-                    </View>
+                    <Field label="Total Area (ha)" required>
+                      <Input value={totalArea} onChangeText={setTotalArea} placeholder="e.g. 2.5"
+                        keyboardType="decimal-pad" error={touched && !totalArea} returnKeyType="next" />
+                      {touched && !totalArea && <Text style={s.errText}>Required</Text>}
+                    </Field>
 
                     <Field label="Land Use Type">
                       <ChipGroup options={LAND_USE} value={landUse} onChange={setLandUse} />
-                    </Field>
-
-                    <Field label="Terrain / Slope">
-                      <ChipGroup options={TERRAIN_OPTIONS} value={terrain} onChange={setTerrain} />
-                    </Field>
-
-                    <Field label="Soil Type">
-                      <ChipGroup options={SOIL_TYPES} value={soilType} onChange={setSoilType} />
                     </Field>
                   </>
                 )}
