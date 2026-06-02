@@ -2,11 +2,63 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, ImageBackground, Image, StatusBar,
-  KeyboardAvoidingView, Platform, ScrollView, Animated, FlatList,
+  KeyboardAvoidingView, Platform, ScrollView, Animated, FlatList, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+
+// ── Kenya Counties + Sub-Counties ─────────────────────────────────────────────
+const KENYA_COUNTIES = {
+  'Mombasa':        ['Changamwe','Jomvu','Kisauni','Likoni','Mvita','Nyali'],
+  'Kwale':          ['Kinango','Lungalunga','Matuga','Msambweni'],
+  'Kilifi':         ['Ganze','Kaloleni','Kilifi North','Kilifi South','Magarini','Malindi','Rabai'],
+  'Tana River':     ['Bura','Garsen','Galole'],
+  'Lamu':           ['Lamu East','Lamu West'],
+  'Taita-Taveta':   ['Mwatate','Taveta','Voi','Wundanyi'],
+  'Garissa':        ['Balambala','Dadaab','Fafi','Garissa Township','Hulugho','Ijara','Lagdera'],
+  'Wajir':          ['Eldas','Tarbaj','Wajir East','Wajir North','Wajir South','Wajir West'],
+  'Mandera':        ['Banissa','Lafey','Mandera East','Mandera North','Mandera South','Mandera West'],
+  'Marsabit':       ['Laisamis','Moyale','North Horr','Saku'],
+  'Isiolo':         ['Garbatulla','Isiolo','Merti'],
+  'Meru':           ['Buuri','Igembe Central','Igembe North','Igembe South','Imenti Central','Imenti North','Imenti South','Tigania East','Tigania West'],
+  'Tharaka-Nithi':  ['Chuka/Igambang\'ombe','Maara','Tharaka North','Tharaka South'],
+  'Embu':           ['Manyatta','Mbeere North','Mbeere South','Runyenjes'],
+  'Kitui':          ['Kitui Central','Kitui East','Kitui Rural','Kitui South','Kitui West','Mwingi Central','Mwingi North','Mwingi West'],
+  'Machakos':       ['Kathiani','Machakos Town','Masinga','Matungulu','Mavoko','Mwala','Yatta'],
+  'Makueni':        ['Kaiti','Kibwezi East','Kibwezi West','Kilome','Makueni','Mbooni'],
+  'Nyandarua':      ['Kipipiri','Kinangop','Ndaragwa','Ol Kalou','Ol Joro Orok'],
+  'Nyeri':          ['Kieni East','Kieni West','Mathira East','Mathira West','Mukurwe-ini','Nyeri Town','Othaya','Tetu'],
+  'Kirinyaga':      ['Gichugu','Kirinyaga Central','Mwea East','Mwea West','Ndia'],
+  'Murang\'a':      ['Gatanga','Kahuro','Kandara','Kangema','Kigumo','Kiharu','Mathioya','Murang\'a South'],
+  'Kiambu':         ['Gatundu North','Gatundu South','Githunguri','Juja','Kabete','Kiambaa','Kiambu','Kikuyu','Lari','Limuru','Ruiru','Thika Town'],
+  'Turkana':        ['Kibish','Loima','Turkana Central','Turkana East','Turkana North','Turkana South','Turkana West'],
+  'West Pokot':     ['Central Pokot','Kacheliba','Pokot North','Pokot South'],
+  'Samburu':        ['Samburu Central','Samburu East','Samburu North'],
+  'Trans-Nzoia':    ['Cherangany','Endebess','Kiminini','Kwanza','Trans-Nzoia East'],
+  'Uasin Gishu':    ['Ainabkoi','Kapseret','Kesses','Moiben','Soy','Turbo'],
+  'Elgeyo-Marakwet':['Keiyo North','Keiyo South','Marakwet East','Marakwet West'],
+  'Nandi':          ['Aldai','Chesumei','Emgwen','Mosop','Nandi Hills','Tindiret'],
+  'Baringo':        ['Baringo Central','Baringo North','Baringo South','Eldama Ravine','Mogotio','Tiaty'],
+  'Laikipia':       ['Laikipia Central','Laikipia East','Laikipia North','Laikipia West','Nyahururu'],
+  'Nakuru':         ['Bahati','Gilgil','Kuresoi North','Kuresoi South','Molo','Naivasha','Nakuru Town East','Nakuru Town West','Njoro','Rongai','Subukia'],
+  'Narok':          ['Narok East','Narok North','Narok South','Narok West','Transmara East','Transmara West'],
+  'Kajiado':        ['Kajiado Central','Kajiado East','Kajiado North','Kajiado South','Kajiado West'],
+  'Kericho':        ['Ainamoi','Belgut','Bureti','Kipkelion East','Kipkelion West','Soin/Sigowet'],
+  'Bomet':          ['Bomet Central','Bomet East','Chepalungu','Konoin','Sotik'],
+  'Kakamega':       ['Butere','Ikolomani','Khwisero','Likuyani','Lugari','Lurambi','Malava','Matungu','Mumias East','Mumias West','Navakholo','Shinyalu'],
+  'Vihiga':         ['Emuhaya','Hamisi','Luanda','Sabatia','Vihiga'],
+  'Bungoma':        ['Bumula','Kabuchai','Kanduyi','Kimilili','Mt Elgon','Sirisia','Tongaren','Webuye East','Webuye West'],
+  'Busia':          ['Budalang\'i','Butula','Funyula','Nambale','Samia','Teso North','Teso South'],
+  'Siaya':          ['Alego Usonga','Bondo','Gem','Rarieda','Ugenya','Ugunja'],
+  'Kisumu':         ['Kisumu Central','Kisumu East','Kisumu West','Muhoroni','Nyakach','Nyando','Seme'],
+  'Homa Bay':       ['Kabondo Kasipul','Karachuonyo','Kasipul','Mbita','Ndhiwa','Rangwe','Suba North','Suba South'],
+  'Migori':         ['Awendo','Kuria East','Kuria West','Mabera','Ntimaru','Rongo','Suna East','Suna West','Uriri'],
+  'Kisii':          ['Bomachoge Borabu','Bomachoge Chache','Bonchari','Kitutu Chache North','Kitutu Chache South','Kitutu Masaba','Nyaribari Chache','Nyaribari Masaba','South Mugirango'],
+  'Nyamira':        ['Borabu','Manga','Masaba North','Nyamira North','Nyamira South'],
+  'Nairobi':        ['Dagoretti North','Dagoretti South','Embakasi Central','Embakasi East','Embakasi North','Embakasi South','Embakasi West','Kamukunji','Kasarani','Kibra','Lang\'ata','Makadara','Mathare','Roysambu','Ruaraka','Starehe','Westlands'],
+};
+const ALL_COUNTIES = Object.keys(KENYA_COUNTIES).sort();
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COUNTRY_OPTIONS = [
@@ -50,6 +102,47 @@ function ChipGroup({ options, value, onChange }) {
   );
 }
 
+function Dropdown({ value, options, onChange, placeholder, disabled, error }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <TouchableOpacity
+        style={[s.dropdownBtn, error && s.dropdownBtnError, disabled && s.dropdownBtnDisabled]}
+        onPress={() => !disabled && setOpen(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={[s.dropdownBtnText, !value && { color: C.subtle }]} numberOfLines={1}>
+          {value || placeholder || 'Select…'}
+        </Text>
+        <Text style={s.dropdownArrow}>▾</Text>
+      </TouchableOpacity>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={s.ddOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={s.ddSheet}>
+            <View style={s.ddHandle} />
+            <Text style={s.ddTitle}>{placeholder || 'Select'}</Text>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[s.ddItem, item === value && s.ddItemActive]}
+                  onPress={() => { onChange(item); setOpen(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[s.ddItemText, item === value && s.ddItemTextActive]}>{item}</Text>
+                  {item === value && <Text style={s.ddCheck}>✓</Text>}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
 // ── Main screen ────────────────────────────────────────────────────────────────
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -72,6 +165,7 @@ export default function RegisterScreen({ navigation }) {
   // ── Step 3: Location & Cooperative ───────────────────────────────────────
   const [county,       setCounty]       = useState('');
   const [subcounty,    setSubcounty]    = useState('');
+  const subCountyOptions = county ? (KENYA_COUNTIES[county] || []) : [];
   const [coopQuery,    setCoopQuery]    = useState('');
   const [coopResults,  setCoopResults]  = useState([]);
   const [selectedCoop, setSelectedCoop] = useState(null);  // {id, code, name, county}
@@ -491,20 +585,25 @@ export default function RegisterScreen({ navigation }) {
                     <Text style={s.subtitle}>Enter your location and find your cooperative.</Text>
 
                     <Text style={s.label}>County *</Text>
-                    <TextInput
-                      style={[s.input, touched && !county.trim() && s.inputError]}
-                      value={county} onChangeText={setCounty}
-                      placeholder="e.g. Kirinyaga" placeholderTextColor={C.subtle}
-                      returnKeyType="next"
+                    <Dropdown
+                      value={county}
+                      options={ALL_COUNTIES}
+                      onChange={(val) => { setCounty(val); setSubcounty(''); }}
+                      placeholder="Select County"
+                      error={touched && !county.trim()}
                     />
+                    {touched && !county.trim() && <Text style={s.errText}>County is required</Text>}
 
                     <Text style={s.label}>Sub-County *</Text>
-                    <TextInput
-                      style={[s.input, touched && !subcounty.trim() && s.inputError]}
-                      value={subcounty} onChangeText={setSubcounty}
-                      placeholder="e.g. Mwea" placeholderTextColor={C.subtle}
-                      returnKeyType="next"
+                    <Dropdown
+                      value={subcounty}
+                      options={subCountyOptions}
+                      onChange={setSubcounty}
+                      placeholder={county ? 'Select Sub-County' : 'Select County first'}
+                      disabled={!county}
+                      error={touched && !subcounty.trim()}
                     />
+                    {touched && !subcounty.trim() && <Text style={s.errText}>Sub-County is required</Text>}
 
                     {/* Cooperative search */}
                     <Text style={s.label}>Cooperative *</Text>
@@ -843,4 +942,20 @@ const s = StyleSheet.create({
   signInText: { color: C.c700, fontSize: 16, fontWeight: '800' },
 
   version: { textAlign: 'center', marginTop: 28, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+
+  // Dropdown
+  dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 16 },
+  dropdownBtnError: { borderColor: '#dc2626', backgroundColor: '#fff5f5' },
+  dropdownBtnDisabled: { opacity: 0.5 },
+  dropdownBtnText: { fontSize: 15, color: C.ink, fontWeight: '600', flex: 1 },
+  dropdownArrow: { fontSize: 12, color: C.subtle, marginLeft: 8 },
+  ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  ddSheet: { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, maxHeight: '70%' },
+  ddHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginBottom: 12 },
+  ddTitle: { fontSize: 13, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
+  ddItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  ddItemActive: { backgroundColor: C.c050, marginHorizontal: -20, paddingHorizontal: 20 },
+  ddItemText: { fontSize: 15, color: C.ink, fontWeight: '500' },
+  ddItemTextActive: { color: C.c700, fontWeight: '800' },
+  ddCheck: { fontSize: 14, color: C.c700, fontWeight: '900' },
 });
