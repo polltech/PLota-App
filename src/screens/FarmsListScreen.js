@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar,
+  ActivityIndicator, RefreshControl, StatusBar, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { farmerAPI } from '../services/api';
+import * as Network from 'expo-network';
+import { farmerAPI, polygonAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
@@ -144,6 +145,39 @@ export default function FarmsListScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [error,        setError]        = useState(null);
 
+  // Farm code lookup (replaces S01 FarmIDEntry)
+  const [farmCode,     setFarmCode]     = useState('');
+  const [lookupLoading,setLookupLoading]= useState(false);
+  const [lookupError,  setLookupError]  = useState(null);
+
+  const handleFarmCodeLookup = async () => {
+    if (!farmCode.trim()) return;
+    setLookupError(null);
+    setLookupLoading(true);
+    try {
+      const net = await Network.getNetworkStateAsync();
+      if (net.isConnected && net.isInternetReachable !== false) {
+        try {
+          const res = await polygonAPI.getFarm(farmCode.trim());
+          if (res.status === 200) {
+            navigation.navigate('FarmConfirmation', { farmId: farmCode.trim(), farm: res.data });
+            setFarmCode('');
+            return;
+          }
+        } catch (e) {
+          if (e.response?.status === 404) {
+            setLookupError('Farm code not found. Check and try again.');
+            return;
+          }
+        }
+      }
+      navigation.navigate('WalkBoundary', { farmId: farmCode.trim() });
+      setFarmCode('');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError(null);
@@ -179,7 +213,7 @@ export default function FarmsListScreen() {
     <FarmCard
       farm={item}
       onPress={() => navigation.navigate('FarmDetail', { farm: item })}
-      onCapture={() => navigation.navigate('CaptureLanding')}
+      onCapture={() => navigation.navigate('WalkBoundary', { farmId: item.farm_code || item.id })}
       onAnalyse={() => navigation.navigate('FarmDetail', { farm: item, openTab: 'eudr' })}
     />
   );
@@ -190,12 +224,20 @@ export default function FarmsListScreen() {
 
       {/* Header */}
       <SafeAreaView style={s.header}>
-        <Text style={s.headerTitle}>My Farms</Text>
-        <Text style={s.headerSub}>
-          {activeFilter === 'all'
-            ? `${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`
-            : `${filtered.length} of ${farms.length} · ${FILTERS.find(f => f.key === activeFilter)?.label}`}
-        </Text>
+        <View style={s.headerRow}>
+          <View>
+            <Text style={s.headerTitle}>My Farms</Text>
+            <Text style={s.headerSub}>
+              {activeFilter === 'all'
+                ? `${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`
+                : `${filtered.length} of ${farms.length} · ${FILTERS.find(f => f.key === activeFilter)?.label}`}
+            </Text>
+          </View>
+          <TouchableOpacity style={s.queueBtn} onPress={() => navigation.navigate('QueueList')} activeOpacity={0.8}>
+            <Ionicons name="cloud-upload-outline" size={16} color={C.c700} />
+            <Text style={s.queueBtnText}>Offline Queue</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
 
       {/* 5 Stat cards — single row */}
@@ -221,6 +263,40 @@ export default function FarmsListScreen() {
           ))}
         </View>
       )}
+
+      {/* Farm Code Lookup */}
+      <View style={s.lookupWrap}>
+        <Text style={s.lookupTitle}>Capture Existing Farm Boundary</Text>
+        <View style={s.lookupRow}>
+          <View style={[s.lookupInputWrap, !!lookupError && { borderColor: '#dc2626' }]}>
+            <Text style={s.lookupHash}>#</Text>
+            <TextInput
+              style={s.lookupInput}
+              value={farmCode}
+              onChangeText={(v) => { setFarmCode(v); setLookupError(null); }}
+              placeholder="Enter Farm Code"
+              placeholderTextColor={C.subtle}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="default"
+              returnKeyType="go"
+              onSubmitEditing={handleFarmCodeLookup}
+            />
+          </View>
+          <TouchableOpacity
+            style={[s.lookupBtn, (!farmCode.trim() || lookupLoading) && s.lookupBtnDisabled]}
+            onPress={handleFarmCodeLookup}
+            disabled={!farmCode.trim() || lookupLoading}
+            activeOpacity={0.8}
+          >
+            {lookupLoading
+              ? <ActivityIndicator color={C.white} size="small" />
+              : <Ionicons name="arrow-forward" size={18} color={C.white} />
+            }
+          </TouchableOpacity>
+        </View>
+        {!!lookupError && <Text style={s.lookupError}>{lookupError}</Text>}
+      </View>
 
       {loading ? (
         <View style={s.center}>
@@ -260,7 +336,7 @@ export default function FarmsListScreen() {
       {/* FAB — Add Farm */}
       <TouchableOpacity
         style={s.fab}
-        onPress={() => navigation.navigate('CaptureLanding')}
+        onPress={() => navigation.navigate('AddFarm')}
         activeOpacity={0.85}
       >
         <Ionicons name="add" size={20} color={C.white} />
@@ -273,9 +349,23 @@ export default function FarmsListScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  header: { backgroundColor: C.white, paddingHorizontal: 24, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
+  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
+  queueBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c100, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 2 },
+  queueBtnText: { fontSize: 12, fontWeight: '700', color: C.c700 },
+
+  // Farm code lookup
+  lookupWrap: { backgroundColor: C.white, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  lookupTitle: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  lookupRow: { flexDirection: 'row', gap: 8 },
+  lookupInputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: C.steel100, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel200, paddingHorizontal: 12, height: 44 },
+  lookupHash: { fontSize: 16, fontWeight: '800', color: C.c400, marginRight: 8 },
+  lookupInput: { flex: 1, fontSize: 14, color: C.ink, fontWeight: '600' },
+  lookupBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center' },
+  lookupBtnDisabled: { backgroundColor: C.steel300 },
+  lookupError: { fontSize: 12, color: '#dc2626', fontWeight: '600', marginTop: 6 },
 
   // 5-card single row
   summaryWrap: { flexDirection: 'row', backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, paddingHorizontal: 10, paddingVertical: 10, gap: 6 },
