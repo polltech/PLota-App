@@ -269,7 +269,7 @@ export default function FarmsListScreen() {
               <Ionicons name="leaf-outline" size={52} color={C.steel300} />
               <Text style={s.emptyTitle}>No farms found</Text>
               <Text style={s.emptyMsg}>
-                {query ? 'Try a different search term.' : 'Farms linked to your account will appear here.'}
+                {'Farms linked to your account will appear here.'}
               </Text>
             </View>
           }
