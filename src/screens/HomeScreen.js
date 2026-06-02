@@ -34,11 +34,6 @@ const ProfileMenu = ({ user, navigation, onClose, onSignOut }) => (
           <Ionicons name="person-outline" size={18} color={C.steel700} />
           <Text style={pm.itemText}>My Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={pm.item} activeOpacity={0.8}
-          onPress={() => { onClose(); navigation.navigate('Wallet'); }}>
-          <Ionicons name="wallet-outline" size={18} color={C.steel700} />
-          <Text style={pm.itemText}>My Wallet</Text>
-        </TouchableOpacity>
         <View style={pm.divider} />
         <TouchableOpacity style={pm.item} activeOpacity={0.8}
           onPress={() => { onClose(); onSignOut(); }}>
