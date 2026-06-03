@@ -287,6 +287,15 @@ export default function HomeScreen() {
 
   const vi = verifyInfo(user);
 
+  if (loading) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={C.c700} size="large" />
+        <Text style={s.loadingText}>Loading your dashboard...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -298,10 +307,7 @@ export default function HomeScreen() {
             <View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={s.heroTime}>{time}</Text>
-                {loading && <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />}
-              </View>
+              <Text style={s.heroTime}>{time}</Text>
             </View>
             <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
               <Text style={s.avatarBtnText}>
@@ -609,6 +615,7 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.white },
+  loadingText: { marginTop: 14, fontSize: 13, color: C.muted, fontWeight: '600' },
 
   // Hero
   hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 28, paddingTop: 0 },
