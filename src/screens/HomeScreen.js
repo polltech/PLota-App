@@ -287,14 +287,6 @@ export default function HomeScreen() {
 
   const vi = verifyInfo(user);
 
-  if (loading) {
-    return (
-      <View style={s.center}>
-        <ActivityIndicator color={C.c700} size="large" />
-      </View>
-    );
-  }
-
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -306,7 +298,10 @@ export default function HomeScreen() {
             <View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
-              <Text style={s.heroTime}>{time}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={s.heroTime}>{time}</Text>
+                {loading && <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />}
+              </View>
             </View>
             <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
               <Text style={s.avatarBtnText}>
