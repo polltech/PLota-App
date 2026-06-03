@@ -144,7 +144,14 @@ const WalkBoundaryScreen = () => {
       const enabled = await Location.hasServicesEnabledAsync();
       if (!enabled) {
         setGpsStatus('GPS is disabled');
-        Alert.alert('GPS Disabled', 'Please enable location services (GPS) in your device settings to continue.');
+        Alert.alert(
+          'GPS / Location is Off',
+          'Please turn on Location Services in your device settings to capture the farm boundary.',
+          [
+            { text: 'Open Settings', onPress: () => { const { Linking } = require('react-native'); Linking.openSettings(); } },
+            { text: 'Go Back', style: 'cancel', onPress: () => navigation.goBack() },
+          ]
+        );
         return;
       }
 
@@ -152,7 +159,14 @@ const WalkBoundaryScreen = () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setGpsStatus('Permission denied');
-        Alert.alert('Permission Denied', 'Location access is required to capture farm boundaries.');
+        Alert.alert(
+          'Location Permission Required',
+          'Plotra needs location access to capture farm boundaries. Please allow it in Settings.',
+          [
+            { text: 'Open Settings', onPress: () => { const { Linking } = require('react-native'); Linking.openSettings(); } },
+            { text: 'Go Back', style: 'cancel', onPress: () => navigation.goBack() },
+          ]
+        );
         return;
       }
 
