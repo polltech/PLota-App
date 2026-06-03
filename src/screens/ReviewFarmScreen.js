@@ -312,7 +312,7 @@ export default function ReviewFarmScreen() {
             >
               {loading
                 ? <ActivityIndicator color={C.white} />
-                : <Text style={s.registerBtnText}>Register Farm</Text>
+                : <Text style={s.registerBtnText}>Add Farm</Text>
               }
             </TouchableOpacity>
           </View>

@@ -536,7 +536,7 @@ export default function AddFarmScreen() {
               </View>
 
               <View style={s.card}>
-                <Text style={s.title}>Register Farm</Text>
+                <Text style={s.title}>Add Farm</Text>
 
                 {/* Step progress */}
                 <View style={s.progressRow}>
@@ -895,7 +895,7 @@ export default function AddFarmScreen() {
                     >
                       {loading
                         ? <ActivityIndicator color={C.white} />
-                        : <Text style={s.primaryBtnText}>Register Farm ✓</Text>
+                        : <Text style={s.primaryBtnText}>Add Farm ✓</Text>
                       }
                     </TouchableOpacity>
                   )}
