@@ -767,10 +767,15 @@ export default function AddFarmScreen() {
                       </View>
                     </View>
 
-                    <View style={s.captureHint}>
-                      <Ionicons name="arrow-down-outline" size={14} color={C.muted} />
-                      <Text style={s.captureHintText}>Press Next to continue, or register the farm first then capture from My Farms.</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={s.captureNowBtn}
+                      onPress={() => navigation.navigate('CaptureMode', { farmId: farmCode.trim() || farmName.trim() })}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="location-outline" size={18} color={C.c700} />
+                      <Text style={s.captureNowBtnText}>Start Capture Now</Text>
+                    </TouchableOpacity>
+                    <Text style={s.captureSkipHint}>Or press Next to fill advanced details first and capture later from My Farms.</Text>
                   </>
                 )}
 
@@ -1008,8 +1013,9 @@ const s = StyleSheet.create({
   captureInfoRow:   { flexDirection: 'row', alignItems: 'flex-start' },
   captureInfoTitle: { fontSize: 13, fontWeight: '800', color: C.ink, marginBottom: 4 },
   captureInfoDesc:  { fontSize: 12, color: C.muted, lineHeight: 17 },
-  captureHint:     { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: C.steel100, borderRadius: 10, padding: 10, marginTop: 4 },
-  captureHintText: { flex: 1, fontSize: 11, color: C.muted, lineHeight: 16 },
+  captureNowBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, paddingVertical: 14, marginTop: 8, borderWidth: 2, borderColor: C.c700, backgroundColor: 'transparent' },
+  captureNowBtnText: { fontSize: 15, fontWeight: '800', color: C.c700 },
+  captureSkipHint:   { fontSize: 11, color: C.muted, textAlign: 'center', marginTop: 10, lineHeight: 16 },
 
   // Cooperative info (read-only, linked from registration)
   coopInfoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#bbf7d0', marginBottom: 18 },
