@@ -127,7 +127,7 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'Consent', 'Advanced'];
+const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'Capture', 'Advanced'];
 
 const INTERCROP_SPECIES = ['Avocado','Macadamia','Banana','Tea','Citrus','Other'];
 const PREVIOUS_LAND_USE = [
@@ -326,13 +326,6 @@ export default function AddFarmScreen() {
   const [irrigationType,  setIrrigationType]  = useState('');
   const [annualYield,     setAnnualYield]     = useState('');
 
-  // ── Step 4: Consent & Certs ────────────────────────────────────────────────
-  const [satelliteConsent,  setSatelliteConsent]  = useState(false);
-  const [historicalConsent, setHistoricalConsent] = useState(false);
-  const [certifications,    setCertifications]    = useState([]);
-  const [prevViolations,    setPrevViolations]    = useState(null);
-  const [violationDetails,  setViolationDetails]  = useState('');
-  const [notes,             setNotes]             = useState('');
 
   // ── Step 6: Advanced (optional) ──────────────────────────────────────────
   const [intercroppedSpecies, setIntercroppedSpecies] = useState([]);
@@ -354,11 +347,11 @@ export default function AddFarmScreen() {
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const stepValid = [
-    !!firstName.trim() && !!phone.trim() && !!county.trim() && dataConsent, // step 0
-    !!farmName.trim() && !!totalArea,                                        // step 1
-    varieties.length > 0,                                                    // step 2
-    satelliteConsent && historicalConsent,                                   // step 3
-    true,                                                                    // step 4 (advanced, all optional)
+    !!firstName.trim() && !!phone.trim() && !!county.trim() && dataConsent, // step 0 — Farmer
+    !!farmName.trim() && !!totalArea,                                        // step 1 — Land & Farm
+    varieties.length > 0,                                                    // step 2 — Coffee
+    true,                                                                    // step 3 — Capture (info only)
+    true,                                                                    // step 4 — Advanced (all optional)
   ];
 
   const handleNext = () => {
@@ -379,10 +372,6 @@ export default function AddFarmScreen() {
 
   const handleSubmit = async () => {
     setTouched(true);
-    if (!stepValid[3] || !stepValid[4]) {
-      setError('Please confirm both satellite consent checkboxes.');
-      return;
-    }
     setError(null);
     setLoading(true);
 
@@ -423,14 +412,9 @@ export default function AddFarmScreen() {
         irrigation_used:   irrigationUsed,
         irrigation_type:   irrigationUsed ? irrigationType || null : null,
         average_annual_production_kg: annualYield ? parseFloat(annualYield) : null,
-        // Step 4
-        satellite_consent:          satelliteConsent,
-        historical_imagery_consent: historicalConsent,
-        certifications:    certifications.length > 0 ? certifications : null,
-        previous_violations: prevViolations,
-        violation_details:  prevViolations ? violationDetails.trim() || null : null,
-        notes:             notes.trim() || null,
-        // Step 6 — Advanced (all optional)
+        satellite_consent:          dataConsent,
+        historical_imagery_consent: dataConsent,
+        // Step 5 — Advanced (all optional)
         intercropped_species:  intercroppedSpecies.length > 0 ? intercroppedSpecies : null,
         shade_trees:           shadeTrees,
         shade_canopy_percent:  shadeTrees && shadeCanopy ? parseInt(shadeCanopy) : null,
@@ -743,74 +727,59 @@ export default function AddFarmScreen() {
                   </>
                 )}
 
-                {/* ── STEP 4: CONSENT & CERTIFICATIONS ───────────────────── */}
+                {/* ── STEP 4: CAPTURE BOUNDARY ────────────────────────────── */}
                 {step === 3 && (
                   <>
-                    <SectionHeader icon="🛰️" title="Satellite Consent" />
+                    <SectionHeader icon="📍" title="Capture Farm Boundary" />
+                    <Text style={s.eudrNote}>
+                      Your data consent covers satellite monitoring and historical imagery analysis.
+                      You are ready to capture the farm boundary.
+                    </Text>
 
-                    <TouchableOpacity style={s.consentCard} onPress={() => setSatelliteConsent(v => !v)} activeOpacity={0.8}>
-                      <View style={[s.checkbox, satelliteConsent && s.checkboxChecked]}>
-                        {satelliteConsent && <Text style={s.checkmark}>✓</Text>}
+                    <View style={s.captureInfoCard}>
+                      <View style={s.captureInfoRow}>
+                        <Ionicons name="location-outline" size={22} color={C.c700} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={s.captureInfoTitle}>Walk the Farm Boundary</Text>
+                          <Text style={s.captureInfoDesc}>Go to your farm and walk along its edges. The app records your GPS path to map the boundary.</Text>
+                        </View>
                       </View>
-                      <View style={s.consentText}>
-                        <Text style={s.consentTitle}>I consent to Parcel Satellite Monitoring *</Text>
-                        <Text style={s.consentDesc}>Required to proceed with sustainability compliance verification.</Text>
+                    </View>
+
+                    <View style={s.captureInfoCard}>
+                      <View style={s.captureInfoRow}>
+                        <Ionicons name="wifi-outline" size={22} color="#10b981" />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={s.captureInfoTitle}>Works Offline</Text>
+                          <Text style={s.captureInfoDesc}>Boundary capture works without internet. Data syncs automatically when you reconnect.</Text>
+                        </View>
                       </View>
+                    </View>
+
+                    <View style={s.captureInfoCard}>
+                      <View style={s.captureInfoRow}>
+                        <Ionicons name="time-outline" size={22} color="#f59e0b" />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={s.captureInfoTitle}>Capture Later</Text>
+                          <Text style={s.captureInfoDesc}>You can skip now and capture the boundary later from My Farms using the Capture button on your farm.</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={s.captureNowBtn}
+                      onPress={() => {
+                        navigation.navigate('WalkBoundary', { farmId: farmCode.trim() || farmName.trim() });
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="location" size={18} color={C.white} />
+                      <Text style={s.captureNowBtnText}>Start Capture Now</Text>
                     </TouchableOpacity>
-                    {touched && !satelliteConsent && <Text style={s.errText}>Required</Text>}
-
-                    <TouchableOpacity style={s.consentCard} onPress={() => setHistoricalConsent(v => !v)} activeOpacity={0.8}>
-                      <View style={[s.checkbox, historicalConsent && s.checkboxChecked]}>
-                        {historicalConsent && <Text style={s.checkmark}>✓</Text>}
-                      </View>
-                      <View style={s.consentText}>
-                        <Text style={s.consentTitle}>I consent to Historical Imagery Analysis (2020–present) *</Text>
-                        <Text style={s.consentDesc}>Aligns with sustainable farming deforestation baseline of December 31, 2020.</Text>
-                      </View>
-                    </TouchableOpacity>
-                    {touched && !historicalConsent && <Text style={s.errText}>Required</Text>}
-
-                    <SectionHeader icon="🏆" title="Certifications" />
-
-                    <Field label="Existing Certifications" hint="Select all that apply">
-                      <ChipGroup options={CERTIFICATIONS} value={certifications} onChange={setCertifications} multi />
-                    </Field>
-
-                    <Field label="Previously Flagged for Violations?">
-                      <YesNo value={prevViolations} onChange={setPrevViolations} />
-                    </Field>
-
-                    {prevViolations && (
-                      <Field label="Violation Details">
-                        <TextInput
-                          style={[s.input, s.textarea, { borderColor: '#dc2626' }]}
-                          value={violationDetails}
-                          onChangeText={setViolationDetails}
-                          placeholder="Please describe the violations..."
-                          placeholderTextColor={C.subtle}
-                          multiline
-                          numberOfLines={3}
-                          textAlignVertical="top"
-                        />
-                      </Field>
-                    )}
-
-                    <Field label="Additional Notes">
-                      <TextInput
-                        style={[s.input, s.textarea]}
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholder="Any additional observations..."
-                        placeholderTextColor={C.subtle}
-                        multiline
-                        numberOfLines={3}
-                        textAlignVertical="top"
-                      />
-                    </Field>
                   </>
                 )}
 
-                {/* ── STEP 6: ADVANCED (optional) ────────────────────────── */}
+                {/* ── STEP 5: ADVANCED (optional) ────────────────────────── */}
                 {step === 4 && (
                   <>
                     <SectionHeader icon="🌿" title="Advanced Details" />
@@ -1038,6 +1007,14 @@ const s = StyleSheet.create({
   codeBoxCode:  { fontSize: 26, fontWeight: '900', color: C.c700, letterSpacing: 3 },
   secondaryBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#E8DDD5', marginTop: 10 },
   secondaryBtnText: { color: '#6B6B6B', fontSize: 15, fontWeight: '700' },
+
+  // Capture step
+  captureInfoCard:  { backgroundColor: C.steel100, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.steel200 },
+  captureInfoRow:   { flexDirection: 'row', alignItems: 'flex-start' },
+  captureInfoTitle: { fontSize: 13, fontWeight: '800', color: C.ink, marginBottom: 4 },
+  captureInfoDesc:  { fontSize: 12, color: C.muted, lineHeight: 17 },
+  captureNowBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.c700, borderRadius: 16, paddingVertical: 15, marginTop: 8 },
+  captureNowBtnText:{ fontSize: 15, fontWeight: '800', color: C.white },
 
   // Cooperative info (read-only, linked from registration)
   coopInfoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#bbf7d0', marginBottom: 18 },
