@@ -127,7 +127,7 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'Compliance', 'Consent', 'Advanced'];
+const STEPS = ['Farmer', 'Land & Farm', 'Coffee', 'Consent', 'Advanced'];
 
 const INTERCROP_SPECIES = ['Avocado','Macadamia','Banana','Tea','Citrus','Other'];
 const PREVIOUS_LAND_USE = [
@@ -326,21 +326,7 @@ export default function AddFarmScreen() {
   const [irrigationType,  setIrrigationType]  = useState('');
   const [annualYield,     setAnnualYield]     = useState('');
 
-  // ── Step 4: Sustainability Declarations ────────────────────────────────────
-  const [mixedFarming,      setMixedFarming]      = useState(null);
-  const [otherCrops,        setOtherCrops]        = useState([]);
-  const [livestock,         setLivestock]         = useState(null);
-  const [livestockTypes,    setLivestockTypes]    = useState([]);
-  const [cropRotation,      setCropRotation]      = useState(null);
-  const [treesPlanted,      setTreesPlanted]      = useState(null);
-  const [treeSpecies,       setTreeSpecies]       = useState([]);
-  const [treesPlantedCount, setTreesPlantedCount] = useState('');
-  const [treePlantReasons,  setTreePlantReasons]  = useState([]);
-  const [treesCleared,      setTreesCleared]      = useState(null);
-  const [clearingReason,    setClearingReason]    = useState('');
-  const [canopyCover,       setCanopyCover]       = useState('');
-
-  // ── Step 5: Consent & Certs ────────────────────────────────────────────────
+  // ── Step 4: Consent & Certs ────────────────────────────────────────────────
   const [satelliteConsent,  setSatelliteConsent]  = useState(false);
   const [historicalConsent, setHistoricalConsent] = useState(false);
   const [certifications,    setCertifications]    = useState([]);
@@ -369,11 +355,10 @@ export default function AddFarmScreen() {
   // ── Validation ─────────────────────────────────────────────────────────────
   const stepValid = [
     !!firstName.trim() && !!phone.trim() && !!county.trim() && dataConsent, // step 0
-    !!farmName.trim() && !!totalArea,                                         // step 1
-    varieties.length > 0,                                                     // step 2
-    canopyCover !== '',                                                        // step 3
-    satelliteConsent && historicalConsent,                                    // step 4
-    true,                                                                     // step 5 (advanced, all optional)
+    !!farmName.trim() && !!totalArea,                                        // step 1
+    varieties.length > 0,                                                    // step 2
+    satelliteConsent && historicalConsent,                                   // step 3
+    true,                                                                    // step 4 (advanced, all optional)
   ];
 
   const handleNext = () => {
@@ -394,7 +379,7 @@ export default function AddFarmScreen() {
 
   const handleSubmit = async () => {
     setTouched(true);
-    if (!stepValid[4] || !stepValid[5]) {
+    if (!stepValid[3] || !stepValid[4]) {
       setError('Please confirm both satellite consent checkboxes.');
       return;
     }
@@ -439,19 +424,6 @@ export default function AddFarmScreen() {
         irrigation_type:   irrigationUsed ? irrigationType || null : null,
         average_annual_production_kg: annualYield ? parseFloat(annualYield) : null,
         // Step 4
-        mixed_farming:     mixedFarming,
-        other_crops:       mixedFarming ? otherCrops : null,
-        livestock:         mixedFarming ? livestock : null,
-        livestock_types:   mixedFarming && livestock ? livestockTypes : null,
-        crop_rotation:     mixedFarming ? cropRotation : null,
-        trees_planted_last_5y:  treesPlanted,
-        tree_species:      treesPlanted ? treeSpecies : null,
-        trees_planted_count: treesPlanted && treesPlantedCount ? parseInt(treesPlantedCount) : null,
-        tree_planting_reasons: treesPlanted ? treePlantReasons : null,
-        trees_cleared_last_5y: treesCleared,
-        reason_for_clearing:   treesCleared ? clearingReason || null : null,
-        current_canopy_cover:  canopyCover || null,
-        // Step 5
         satellite_consent:          satelliteConsent,
         historical_imagery_consent: historicalConsent,
         certifications:    certifications.length > 0 ? certifications : null,
@@ -532,16 +504,6 @@ export default function AddFarmScreen() {
                 <PreviewRow label="Land Use"    value={created.land_use_type} />
                 <PreviewRow label="Total Area"  value={created.total_area_hectares ? `${created.total_area_hectares} ha` : null} />
                 <PreviewRow label="Varieties"   value={created.coffee_varieties} />
-
-                <View style={s.divider} />
-                <Text style={s.previewSection}>Compliance</Text>
-                <PreviewRow label="Certifications"  value={created.certifications} />
-                <PreviewRow label="Satellite Consent" value={created.satellite_consent ? 'Granted' : 'Not granted'} />
-                {created.trees_cleared_last_5y && (
-                  <View style={s.riskBadge}>
-                    <Text style={s.riskText}>⚠ Trees cleared declared — satellite review will be triggered</Text>
-                  </View>
-                )}
 
                 <View style={s.divider} />
                 <View style={s.codeBox}>
@@ -781,94 +743,8 @@ export default function AddFarmScreen() {
                   </>
                 )}
 
-                {/* ── STEP 4: SUSTAINABILITY DECLARATIONS ──────────────────────────── */}
+                {/* ── STEP 4: CONSENT & CERTIFICATIONS ───────────────────── */}
                 {step === 3 && (
-                  <>
-                    <SectionHeader icon="⚠️" title="Sustainability Declarations" />
-                    <Text style={s.eudrNote}>Your answers are required for sustainability compliance verification.</Text>
-
-                    <View style={s.eudrSection}>
-                      <Text style={s.eudrSectionTitle}>🌾 Mixed Farming</Text>
-                      <Field label="Do you practice mixed farming on this parcel?">
-                        <YesNo value={mixedFarming} onChange={setMixedFarming} />
-                      </Field>
-
-                      {mixedFarming && (
-                        <>
-                          <Field label="Other Crops Grown" hint="Select all that apply">
-                            <ChipGroup options={OTHER_CROPS} value={otherCrops} onChange={setOtherCrops} multi />
-                          </Field>
-                          <Field label="Livestock on Parcel?">
-                            <YesNo value={livestock} onChange={setLivestock} />
-                          </Field>
-                          {livestock && (
-                            <Field label="Livestock Types">
-                              <ChipGroup options={LIVESTOCK_TYPES} value={livestockTypes} onChange={setLivestockTypes} multi />
-                            </Field>
-                          )}
-                          <Field label="Crop Rotation Practiced?">
-                            <YesNo value={cropRotation} onChange={setCropRotation} />
-                          </Field>
-                        </>
-                      )}
-                    </View>
-
-                    <View style={s.eudrSection}>
-                      <Text style={s.eudrSectionTitle}>🌳 Tree Cover</Text>
-                      <Field label="Trees planted in last 5 years?" hint="Triggers satellite cross-check">
-                        <YesNo value={treesPlanted} onChange={setTreesPlanted} />
-                      </Field>
-
-                      {treesPlanted && (
-                        <>
-                          <Field label="Tree Species Planted">
-                            <ChipGroup options={TREE_SPECIES} value={treeSpecies} onChange={setTreeSpecies} multi />
-                          </Field>
-                          <View style={s.row}>
-                            <View style={s.half}>
-                              <Field label="Number of Trees">
-                                <Input value={treesPlantedCount} onChangeText={setTreesPlantedCount}
-                                  placeholder="Approx." keyboardType="numeric" returnKeyType="next" />
-                              </Field>
-                            </View>
-                          </View>
-                          <Field label="Reason for Planting">
-                            <ChipGroup options={TREE_REASONS} value={treePlantReasons} onChange={setTreePlantReasons} multi />
-                          </Field>
-                        </>
-                      )}
-                    </View>
-
-                    <View style={[s.eudrSection, s.eudrHighRisk]}>
-                      <Text style={s.eudrSectionTitle}>🔴 Land Stewardship Declaration</Text>
-                      <Text style={s.riskNote}>Trees cleared in last 5 years? — Action Required</Text>
-                      <Field label="Did you clear trees in the last 5 years?">
-                        <YesNo value={treesCleared} onChange={setTreesCleared} />
-                      </Field>
-                      {treesCleared && (
-                        <>
-                          <View style={s.riskAlert}>
-                            <Text style={s.riskAlertText}>⚠ Your answer will flag this farm for mandatory compliance review before approval.</Text>
-                          </View>
-                          <Field label="Reason for Clearing">
-                            <ChipGroup options={CLEARING_REASONS} value={clearingReason} onChange={setClearingReason} />
-                          </Field>
-                        </>
-                      )}
-                    </View>
-
-                    <View style={s.eudrSection}>
-                      <Text style={s.eudrSectionTitle}>🌿 Current Tree Canopy Cover</Text>
-                      <Field label="Select canopy coverage" required>
-                        <ChipGroup options={CANOPY_COVER} value={canopyCover} onChange={setCanopyCover} />
-                        {touched && !canopyCover && <Text style={s.errText}>Required</Text>}
-                      </Field>
-                    </View>
-                  </>
-                )}
-
-                {/* ── STEP 5: CONSENT & CERTIFICATIONS ───────────────────── */}
-                {step === 4 && (
                   <>
                     <SectionHeader icon="🛰️" title="Satellite Consent" />
 
@@ -935,7 +811,7 @@ export default function AddFarmScreen() {
                 )}
 
                 {/* ── STEP 6: ADVANCED (optional) ────────────────────────── */}
-                {step === 5 && (
+                {step === 4 && (
                   <>
                     <SectionHeader icon="🌿" title="Advanced Details" />
                     <Text style={s.eudrNote}>All fields on this step are optional but improve your compliance score.</Text>
