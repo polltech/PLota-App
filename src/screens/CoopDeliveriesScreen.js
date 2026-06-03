@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar,
+  View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity,
+  ActivityIndicator, TextInput, RefreshControl, StatusBar, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -9,75 +9,113 @@ import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
 
-const STATUS_STYLE = {
-  pending: { bg: C.pendingBg, fg: C.pendingText },
-  received: { bg: '#e0f2fe', fg: '#0369a1' },
-  weighed: { bg: '#ede9fe', fg: '#6d28d9' },
-  quality_checked: { bg: '#dcfce7', fg: '#15803d' },
-  processed: { bg: C.eudrLowBg, fg: C.eudrLow },
-  rejected: { bg: C.eudrHighBg, fg: C.eudrHigh },
-};
-
-const statusStyle = (s) => STATUS_STYLE[(s || 'pending').toLowerCase()] || { bg: C.steel200, fg: C.steel700 };
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
 const fmtKg = (v) => v != null ? `${Number(v).toFixed(1)} kg` : '—';
 
-const DeliveryCard = ({ item, onPress }) => {
+const statusStyle = (s) => {
+  const u = (s || '').toLowerCase();
+  if (u === 'received')            return { color: '#0369a1', bg: '#e0f2fe' };
+  if (u === 'in_processing')       return { color: '#6d28d9', bg: '#ede9fe' };
+  if (u === 'quality_checked')     return { color: '#15803d', bg: '#dcfce7' };
+  if (u === 'ready_for_batching')  return { color: '#1d4ed8', bg: '#dbeafe' };
+  if (u === 'batched')             return { color: '#7c3aed', bg: '#ede9fe' };
+  if (u === 'processed')           return { color: '#15803d', bg: '#dcfce7' };
+  if (u === 'rejected')            return { color: '#dc2626', bg: '#fee2e2' };
+  return { color: '#b45309', bg: '#fef3c7' };
+};
+
+const FILTERS = [
+  { key: 'all',              label: 'All' },
+  { key: 'pending',          label: 'Pending' },
+  { key: 'received',         label: 'Received' },
+  { key: 'in_processing',    label: 'Processing' },
+  { key: 'ready_for_batching', label: 'Ready' },
+  { key: 'batched',          label: 'Batched' },
+  { key: 'rejected',         label: 'Rejected' },
+];
+
+const StatChip = ({ value, label, color }) => (
+  <View style={[s.statChip, { borderTopColor: color }]}>
+    <Text style={[s.statChipVal, { color }]}>{value ?? '—'}</Text>
+    <Text style={s.statChipLabel}>{label}</Text>
+  </View>
+);
+
+const DeliveryRow = ({ item, onPress }) => {
   const ss = statusStyle(item.status);
+  const lastStep = item.processing_log?.slice(-1)?.[0]?.step_type;
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={s.cardLeft}>
-        <Ionicons name="cube-outline" size={20} color={C.c600} />
-      </View>
-      <View style={s.cardContent}>
-        <View style={s.cardTop}>
-          <Text style={s.delivNo} numberOfLines={1}>{item.delivery_number || `#${item.id}`}</Text>
-          <View style={[s.chip, { backgroundColor: ss.bg }]}>
-            <Text style={[s.chipText, { color: ss.fg }]}>{(item.status || 'PENDING').replace(/_/g,' ').toUpperCase()}</Text>
+    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.8}>
+      {/* Delivery # + Farmer */}
+      <View style={s.rowMain}>
+        <View style={s.rowTop}>
+          <Text style={s.delivNo} numberOfLines={1}>{item.delivery_number || `D-${item.id}`}</Text>
+          <View style={[s.badge, { backgroundColor: ss.bg }]}>
+            <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.status || 'Pending')}</Text>
           </View>
         </View>
-        <Text style={s.farmName} numberOfLines={1}>{item.farm?.farm_name || item.farm_name || `Farm ${item.farm_id}`}</Text>
-        <View style={s.metaRow}>
-          <View style={s.metaItem}>
+        <View style={s.rowMeta}>
+          {item.farmer_name && (
+            <Text style={s.rowMetaText} numberOfLines={1}>
+              <Text style={s.rowMetaLabel}>Farmer: </Text>{item.farmer_name}
+            </Text>
+          )}
+          {item.farm_name && (
+            <Text style={s.rowMetaText} numberOfLines={1}>
+              <Text style={s.rowMetaLabel}>Farm: </Text>{item.farm_name || `Farm #${item.farm_id}`}
+            </Text>
+          )}
+        </View>
+        <View style={s.rowCols}>
+          <View style={s.rowCol}>
             <Ionicons name="scale-outline" size={12} color={C.muted} />
-            <Text style={s.metaText}>{fmtKg(item.net_weight_kg)}</Text>
+            <Text style={s.rowColText}>{fmtKg(item.net_weight_kg)}</Text>
           </View>
           {item.quality_grade && (
-            <View style={s.metaItem}>
+            <View style={s.rowCol}>
               <Ionicons name="ribbon-outline" size={12} color={C.muted} />
-              <Text style={s.metaText}>{item.quality_grade}</Text>
+              <Text style={s.rowColText}>{item.quality_grade}</Text>
             </View>
           )}
-          <View style={s.metaItem}>
+          {item.moisture_content != null && (
+            <View style={s.rowCol}>
+              <Ionicons name="water-outline" size={12} color={C.muted} />
+              <Text style={s.rowColText}>{item.moisture_content}%</Text>
+            </View>
+          )}
+          {lastStep && (
+            <View style={[s.rowCol, { backgroundColor: '#e0f2fe', borderRadius: 6, paddingHorizontal: 6 }]}>
+              <Text style={[s.rowColText, { color: '#0369a1' }]}>{cap(lastStep)}</Text>
+            </View>
+          )}
+          <View style={s.rowCol}>
             <Ionicons name="calendar-outline" size={12} color={C.muted} />
-            <Text style={s.metaText}>{fmtDate(item.created_at)}</Text>
+            <Text style={s.rowColText}>{fmtDate(item.created_at)}</Text>
           </View>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={C.subtle} />
+      <Ionicons name="chevron-forward" size={16} color={C.subtle} style={{ marginLeft: 8 }} />
     </TouchableOpacity>
   );
 };
-
-const FILTERS = ['ALL', 'PENDING', 'RECEIVED', 'PROCESSED'];
 
 export default function CoopDeliveriesScreen() {
   const navigation = useNavigation();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('ALL');
-  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
-    setError(null);
     try {
       const res = await coopAPI.getDeliveries();
       const d = res.data;
-      setDeliveries(Array.isArray(d) ? d : d?.deliveries || []);
+      setDeliveries(Array.isArray(d) ? d : (d?.deliveries || []));
     } catch (e) {
-      setError(e.response?.data?.detail || 'Failed to load deliveries');
+      console.warn('CoopDeliveries load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,15 +123,26 @@ export default function CoopDeliveriesScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
-
   const onRefresh = () => { setRefreshing(true); load(true); };
 
-  const filtered = filter === 'ALL'
-    ? deliveries
-    : deliveries.filter((d) => (d.status || 'pending').toUpperCase() === filter);
+  // Stats
+  const totalKg     = deliveries.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  const received    = deliveries.filter(d => ['received', 'pending'].includes((d.status || '').toLowerCase())).length;
+  const inProcess   = deliveries.filter(d => d.status === 'in_processing').length;
+  const ready       = deliveries.filter(d => ['ready_for_batching', 'batched'].includes(d.status)).length;
+  const rejected    = deliveries.filter(d => d.status === 'rejected').length;
 
-  const totalKg = deliveries.reduce((sum, d) => sum + (d.net_weight_kg || 0), 0);
-  const pendingCount = deliveries.filter((d) => (d.status || 'pending') === 'pending').length;
+  // Filter + search
+  let filtered = filter === 'all' ? deliveries
+    : deliveries.filter(d => (d.status || 'pending').toLowerCase() === filter);
+  if (query.trim()) {
+    const q = query.toLowerCase();
+    filtered = filtered.filter(d =>
+      (d.delivery_number || '').toLowerCase().includes(q) ||
+      (d.farmer_name || '').toLowerCase().includes(q) ||
+      (d.farm_name || '').toLowerCase().includes(q)
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -103,58 +152,86 @@ export default function CoopDeliveriesScreen() {
         <View style={s.headerRow}>
           <View>
             <Text style={s.headerTitle}>Deliveries</Text>
-            <Text style={s.headerSub}>
-              {deliveries.length} total · {fmtKg(totalKg)}
-            </Text>
+            <Text style={s.headerSub}>{deliveries.length} total · {fmtKg(totalKg)}</Text>
           </View>
-          <View style={s.headerActions}>
-            <TouchableOpacity
-              style={s.batchBtn}
-              onPress={() => navigation.navigate('Batches')}
-            >
-              <Ionicons name="layers-outline" size={18} color={C.c700} />
-              <Text style={s.batchBtnText}>Batches</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={s.newBtn}
+            onPress={() => navigation.navigate('CreateDelivery')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={18} color={C.white} />
+            <Text style={s.newBtnText}>Record</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
 
-      {/* Filter row */}
-      <View style={s.filterRow}>
-        {FILTERS.map((f) => {
-          const cnt = f === 'ALL' ? deliveries.length : deliveries.filter((d) => (d.status || 'pending').toUpperCase() === f).length;
+      {/* 6 stat chips — matching web app */}
+      {!loading && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={s.statsScroll}
+          contentContainerStyle={s.statsRow}
+        >
+          <StatChip value={deliveries.length} label="Total"       color={C.c700} />
+          <StatChip value={fmtKg(totalKg)}   label="Total kg"    color="#15803d" />
+          <StatChip value={received}          label="Received"    color="#0369a1" />
+          <StatChip value={inProcess}         label="Processing"  color="#7c3aed" />
+          <StatChip value={ready}             label="Ready/Batched" color="#1d4ed8" />
+          <StatChip value={rejected}          label="Rejected"    color="#dc2626" />
+        </ScrollView>
+      )}
+
+      {/* Filter tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.filterScroll}
+        contentContainerStyle={s.filterRow}
+      >
+        {FILTERS.map(f => {
+          const cnt = f.key === 'all'
+            ? deliveries.length
+            : deliveries.filter(d => (d.status || 'pending').toLowerCase() === f.key).length;
           return (
             <TouchableOpacity
-              key={f}
-              style={[s.filterBtn, filter === f && s.filterBtnActive]}
-              onPress={() => setFilter(f)}
+              key={f.key}
+              style={[s.filterBtn, filter === f.key && s.filterBtnActive]}
+              onPress={() => setFilter(f.key)}
             >
-              <Text style={[s.filterText, filter === f && s.filterTextActive]}>
-                {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()} ({cnt})
+              <Text style={[s.filterText, filter === f.key && s.filterTextActive]}>
+                {f.label} ({cnt})
               </Text>
             </TouchableOpacity>
           );
         })}
+      </ScrollView>
+
+      {/* Search */}
+      <View style={s.searchWrap}>
+        <Ionicons name="search" size={15} color={C.subtle} style={{ marginRight: 7 }} />
+        <TextInput
+          style={s.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search delivery #, farmer, farm..."
+          placeholderTextColor={C.subtle}
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')}>
+            <Ionicons name="close-circle" size={16} color={C.subtle} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator color={C.c700} size="large" />
-        </View>
-      ) : error ? (
-        <View style={s.center}>
-          <Ionicons name="cloud-offline-outline" size={48} color={C.subtle} />
-          <Text style={s.errText}>{error}</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={() => load()}>
-            <Text style={s.retryText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={item => String(item.id)}
           renderItem={({ item }) => (
-            <DeliveryCard
+            <DeliveryRow
               item={item}
               onPress={() => navigation.navigate('DeliveryDetail', { deliveryId: item.id, delivery: item })}
             />
@@ -164,62 +241,59 @@ export default function CoopDeliveriesScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Ionicons name="cube-outline" size={52} color={C.steel300} />
+              <Ionicons name="cube-outline" size={48} color={C.steel300} />
               <Text style={s.emptyTitle}>No deliveries</Text>
-              <Text style={s.emptyMsg}>Record the first delivery using the button below.</Text>
+              <Text style={s.emptyMsg}>{query ? 'No results for your search.' : filter !== 'all' ? `No ${filter} deliveries.` : 'Record the first delivery.'}</Text>
             </View>
           }
         />
       )}
-
-      {/* FAB — create delivery */}
-      <TouchableOpacity
-        style={s.fab}
-        onPress={() => navigation.navigate('CreateDelivery')}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color={C.white} />
-      </TouchableOpacity>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  header: { backgroundColor: C.white, paddingHorizontal: 24, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
-  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  headerActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  batchBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderColor: C.c700, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
-  batchBtnText: { fontSize: 13, fontWeight: '700', color: C.c700 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  filterRow: { flexDirection: 'row', backgroundColor: C.white, paddingHorizontal: 12, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  filterBtn: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 10, backgroundColor: C.steel100 },
+  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8 },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
+  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
+  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
+  newBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
+
+  statsScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  statsRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  statChip: { minWidth: 72, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: C.steel100, borderRadius: 10, alignItems: 'center', borderTopWidth: 3 },
+  statChipVal: { fontSize: 16, fontWeight: '900' },
+  statChipLabel: { fontSize: 9, fontWeight: '700', color: C.muted, marginTop: 2, textAlign: 'center' },
+
+  filterScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 9, gap: 7 },
+  filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: C.steel100 },
   filterBtnActive: { backgroundColor: C.c700 },
   filterText: { fontSize: 12, fontWeight: '700', color: C.steel700 },
   filterTextActive: { color: C.white },
 
-  list: { padding: 16, paddingBottom: 100 },
-  card: { backgroundColor: C.white, borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
-  cardLeft: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.c050, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  cardContent: { flex: 1 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.white, margin: 12, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: C.steel200 },
+  searchInput: { flex: 1, fontSize: 14, color: C.ink },
+
+  list: { paddingHorizontal: 12, paddingBottom: 24 },
+  row: { backgroundColor: C.white, borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  rowMain: { flex: 1 },
+  rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   delivNo: { fontSize: 14, fontWeight: '800', color: C.ink, flex: 1, marginRight: 8 },
-  chip: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7 },
-  chipText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
-  farmName: { fontSize: 12, color: C.muted, marginBottom: 8 },
-  metaRow: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 12, color: C.muted, fontWeight: '500' },
+  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7 },
+  badgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
+  rowMeta: { marginBottom: 6, gap: 2 },
+  rowMetaText: { fontSize: 12, color: C.muted },
+  rowMetaLabel: { fontWeight: '700', color: C.steel700 },
+  rowCols: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 2 },
+  rowCol: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rowColText: { fontSize: 12, color: C.muted, fontWeight: '600' },
 
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  errText: { fontSize: 14, color: C.muted, textAlign: 'center', marginTop: 12 },
-  retryBtn: { marginTop: 14, backgroundColor: C.c700, paddingHorizontal: 22, paddingVertical: 11, borderRadius: 12 },
-  retryText: { color: C.white, fontWeight: '700', fontSize: 14 },
-  empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 40 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: C.steel700, marginTop: 16 },
-  emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 8, lineHeight: 20 },
-
-  fab: { position: 'absolute', bottom: 28, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
+  empty: { alignItems: 'center', paddingVertical: 60 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: C.steel700, marginTop: 14 },
+  emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 6 },
 });

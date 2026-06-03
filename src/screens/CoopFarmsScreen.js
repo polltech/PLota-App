@@ -252,6 +252,23 @@ export default function CoopFarmsScreen() {
         </View>
       </SafeAreaView>
 
+      {/* 4 stat cards — matching web app farm approvals page */}
+      {!loading && (
+        <View style={s.statsRow}>
+          {[
+            { val: farms.length,           label: 'Total',     color: C.c700,    bg: C.c050 },
+            { val: counts.pending,         label: 'Pending',   color: '#b45309', bg: '#fef3c7' },
+            { val: counts.coop_approved,   label: 'Approved',  color: '#15803d', bg: '#dcfce7' },
+            { val: counts.coop_rejected,   label: 'Rejected',  color: '#dc2626', bg: '#fee2e2' },
+          ].map(c => (
+            <View key={c.label} style={[s.statCard, { backgroundColor: c.bg, borderLeftColor: c.color }]}>
+              <Text style={[s.statVal, { color: c.color }]}>{c.val}</Text>
+              <Text style={[s.statLbl, { color: c.color }]}>{c.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Filter pills */}
       <View style={s.filterRow}>
         {FILTERS.map(f => (
@@ -348,6 +365,11 @@ const s = StyleSheet.create({
   rejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderLeftWidth: 1, borderLeftColor: C.steel100, paddingVertical: 11 },
   rejectBtnText: { color: '#dc2626', fontSize: 13, fontWeight: '800' },
   btnDisabled: { opacity: 0.5 },
+
+  statsRow: { flexDirection: 'row', backgroundColor: C.white, paddingHorizontal: 10, paddingVertical: 10, gap: 6, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  statCard: { flex: 1, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 4, alignItems: 'center', borderLeftWidth: 3 },
+  statVal: { fontSize: 18, fontWeight: '900' },
+  statLbl: { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 2, lineHeight: 11 },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 40 },

@@ -33,6 +33,8 @@ import CoopDashboardScreen from '../screens/CoopDashboardScreen';
 import CoopFarmersScreen from '../screens/CoopFarmersScreen';
 import CoopFarmsScreen from '../screens/CoopFarmsScreen';
 import CoopDeliveriesScreen from '../screens/CoopDeliveriesScreen';
+import CoopBatchesScreen from '../screens/CoopBatchesScreen';
+import CoopConsignmentsScreen from '../screens/CoopConsignmentsScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
@@ -249,8 +251,8 @@ function CoopTabs() {
       <Tab.Screen name="CoopBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"  component={BatchesScreen} />
-            <Stack.Screen name="BatchDetail"  component={BatchDetailScreen} />
+            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
             <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
           </Stack.Navigator>
         )}
@@ -259,7 +261,8 @@ function CoopTabs() {
       <Tab.Screen name="CoopConsignments" options={{ tabBarLabel: 'Consignments' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="ConsignmentsList" component={ConsignmentsScreen} />
+            <Stack.Screen name="ConsignmentsList"  component={CoopConsignmentsScreen} />
+            <Stack.Screen name="ConsignmentDetail" component={ConsignmentsScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>

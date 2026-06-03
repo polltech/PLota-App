@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Image,
+  ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,14 +10,31 @@ import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
 
-const StatCard = ({ icon, label, value, color, sub, onPress }) => (
-  <TouchableOpacity style={s.statCard} onPress={onPress} activeOpacity={onPress ? 0.75 : 1} disabled={!onPress}>
-    <View style={[s.statIcon, { backgroundColor: (color || C.c600) + '18' }]}>
-      <Ionicons name={icon} size={22} color={color || C.c600} />
-    </View>
-    <Text style={s.statVal}>{value ?? '—'}</Text>
-    <Text style={s.statLabel}>{label}</Text>
-    {sub != null && <Text style={s.statSub}>{sub}</Text>}
+const fmtDate = (d) => {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }); }
+  catch { return '—'; }
+};
+const statusStyle = (s) => {
+  const u = (s || '').toLowerCase();
+  if (u === 'received' || u === 'processed') return { color: '#15803d', bg: '#dcfce7' };
+  if (u === 'in_processing') return { color: '#1d4ed8', bg: '#dbeafe' };
+  if (u === 'ready_for_batching' || u === 'batched') return { color: '#7c3aed', bg: '#ede9fe' };
+  if (u === 'rejected') return { color: '#dc2626', bg: '#fee2e2' };
+  return { color: '#b45309', bg: '#fef3c7' };
+};
+const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
+
+const BigStatCard = ({ icon, iconColor, value, label, accent, onPress }) => (
+  <TouchableOpacity
+    style={[s.bigCard, { borderLeftColor: accent }]}
+    onPress={onPress}
+    activeOpacity={onPress ? 0.8 : 1}
+    disabled={!onPress}
+  >
+    <Ionicons name={icon} size={28} color={iconColor} style={s.bigCardIcon} />
+    <Text style={s.bigCardVal}>{value ?? '—'}</Text>
+    <Text style={s.bigCardLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
@@ -25,42 +42,44 @@ export default function CoopDashboardScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
 
-  const [stats, setStats] = useState(null);
-  const [recentDeliveries, setRecentDeliveries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [farmers,           setFarmers]          = useState([]);
+  const [farms,             setFarms]             = useState([]);
+  const [pendingFarmers,    setPendingFarmers]    = useState([]);
+  const [recentDeliveries,  setRecentDeliveries]  = useState([]);
+  const [loading,           setLoading]           = useState(true);
+  const [refreshing,        setRefreshing]        = useState(false);
 
   const firstName = user?.first_name || 'Officer';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const [batches, setBatches] = useState([]);
-  const [consignments, setConsignments] = useState([]);
-
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      const [statsRes, delivRes, batchRes, consRes] = await Promise.allSettled([
-        coopAPI.getStats(),
+      const [fRes, farmRes, pfRes, dRes] = await Promise.allSettled([
+        coopAPI.getFarmers(),
+        coopAPI.getFarms(),
+        coopAPI.getPendingFarmers(),
         coopAPI.getDeliveries(),
-        coopAPI.getBatches(),
-        coopAPI.getConsignments(),
       ]);
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
-      if (delivRes.status === 'fulfilled') {
-        const d = delivRes.value.data;
-        setRecentDeliveries((Array.isArray(d) ? d : d?.deliveries || []).slice(0, 5));
+      if (fRes.status === 'fulfilled') {
+        const d = fRes.value.data;
+        setFarmers(Array.isArray(d) ? d : []);
       }
-      if (batchRes.status === 'fulfilled') {
-        const d = batchRes.value.data;
-        setBatches(Array.isArray(d) ? d : (d?.batches || []));
+      if (farmRes.status === 'fulfilled') {
+        const d = farmRes.value.data;
+        setFarms(Array.isArray(d) ? d : (d?.farms || []));
       }
-      if (consRes.status === 'fulfilled') {
-        const d = consRes.value.data;
-        setConsignments(Array.isArray(d) ? d : []);
+      if (pfRes.status === 'fulfilled') {
+        const d = pfRes.value.data;
+        setPendingFarmers(Array.isArray(d) ? d : []);
+      }
+      if (dRes.status === 'fulfilled') {
+        const d = dRes.value.data;
+        setRecentDeliveries((Array.isArray(d) ? d : (d?.deliveries || [])).slice(0, 5));
       }
     } catch (e) {
-      console.warn('CoopDashboard load error:', e.message);
+      console.warn('CoopDashboard load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,19 +87,15 @@ export default function CoopDashboardScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
-
   const onRefresh = () => { setRefreshing(true); load(true); };
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>;
   }
 
-  const pendingCount = stats?.pending_verification ?? 0;
-  const inProcessing = recentDeliveries.filter(d => d.status === 'in_processing').length;
-  const readyForBatching = recentDeliveries.filter(d => d.status === 'ready_for_batching').length;
-  const draftBatches = batches.filter(b => (b.status || 'draft') === 'draft').length;
-  const releasedBatches = batches.filter(b => b.status === 'released').length;
-  const pendingConsignments = consignments.filter(c => c.consignment_status === 'pending_dds').length;
+  const pendingFarmsCount = farms.filter(f =>
+    !f.coop_status || f.coop_status === 'pending' || f.coop_status === 'update_requested'
+  ).length;
 
   return (
     <View style={s.container}>
@@ -95,23 +110,29 @@ export default function CoopDashboardScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.roleTag}>Cooperative Officer</Text>
             </View>
-            <View style={s.logoCircle}>
-              <Image source={require('../../assets/logo.jpeg')} style={s.logo} />
+            <View style={s.heroActions}>
+              {pendingFarmers.length > 0 && (
+                <TouchableOpacity
+                  style={s.heroBadgeBtn}
+                  onPress={() => navigation.navigate('CoopFarmers')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-outline" size={14} color="#fbbf24" />
+                  <Text style={s.heroBadgeBtnText}>{pendingFarmers.length} farmers</Text>
+                </TouchableOpacity>
+              )}
+              {pendingFarmsCount > 0 && (
+                <TouchableOpacity
+                  style={[s.heroBadgeBtn, { backgroundColor: 'rgba(26,160,83,0.2)', borderColor: 'rgba(26,160,83,0.4)' }]}
+                  onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="leaf-outline" size={14} color="#4ade80" />
+                  <Text style={[s.heroBadgeBtnText, { color: '#4ade80' }]}>{pendingFarmsCount} farms</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-
-          {pendingCount > 0 && (
-            <TouchableOpacity
-              style={s.alertBanner}
-              onPress={() => navigation.navigate('Farmers', { screen: 'CoopFarmersList', params: { tab: 'pending' } })}
-            >
-              <Ionicons name="alert-circle-outline" size={18} color="#fbbf24" />
-              <Text style={s.alertText}>
-                {pendingCount} farmer{pendingCount > 1 ? 's' : ''} awaiting verification — tap to review
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
-            </TouchableOpacity>
-          )}
         </SafeAreaView>
       </View>
 
@@ -121,88 +142,118 @@ export default function CoopDashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats grid */}
-        <Text style={s.sectionTitle}>Cooperative Overview</Text>
-        <View style={s.statsGrid}>
-          <StatCard icon="people-outline" label="Members" value={stats?.total_members ?? stats?.member_count} color="#6366f1" onPress={() => navigation.navigate('CoopFarmers')} />
-          <StatCard icon="leaf-outline" label="Verified Farms" value={stats?.verified_farms} color={C.eudrLow} />
-          <StatCard icon="time-outline" label="Pending KYC" value={pendingCount} color={pendingCount > 0 ? C.eudrMedium : C.subtle} onPress={pendingCount > 0 ? () => navigation.navigate('CoopFarmers') : undefined} />
-          <StatCard icon="cube-outline" label="Deliveries" value={stats?.total_deliveries} color="#0ea5e9" onPress={() => navigation.navigate('CoopDeliveries')} />
-          <StatCard icon="scale-outline" label="Total kg" value={stats?.total_weight_kg != null ? `${Number(stats.total_weight_kg).toLocaleString()}` : '—'} color={C.c600} />
-          <StatCard icon="layers-outline" label="Batches" value={batches.length} color="#8b5cf6" onPress={() => navigation.navigate('CoopBatches')} />
+        {/* 4 Stat cards — matching web app */}
+        <View style={s.cardsGrid}>
+          <BigStatCard
+            icon="people"  iconColor="#6f4e37"
+            value={farmers.length}
+            label="Total Farmers"
+            accent="#6f4e37"
+            onPress={() => navigation.navigate('CoopFarmers')}
+          />
+          <BigStatCard
+            icon="hourglass-outline"  iconColor="#f86441"
+            value={pendingFarmers.length}
+            label="Pending Farmer Approvals"
+            accent="#f86441"
+            onPress={() => navigation.navigate('CoopFarmers')}
+          />
+          <BigStatCard
+            icon="location-outline"  iconColor="#1aa053"
+            value={pendingFarmsCount}
+            label="Farms Awaiting Approval"
+            accent="#1aa053"
+            onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
+          />
+          <BigStatCard
+            icon="cube-outline"  iconColor="#0d6efd"
+            value={recentDeliveries.length}
+            label="Recent Deliveries"
+            accent="#0d6efd"
+            onPress={() => navigation.navigate('CoopDeliveries')}
+          />
         </View>
 
-        {/* Processing pipeline */}
-        <Text style={s.sectionTitle}>Processing Pipeline</Text>
-        <View style={s.pipelineRow}>
-          {[
-            { label: 'In Processing', value: inProcessing, color: '#1d4ed8', bg: '#dbeafe' },
-            { label: 'Ready to Batch', value: readyForBatching, color: '#15803d', bg: '#dcfce7' },
-            { label: 'Draft Batches', value: draftBatches, color: '#b45309', bg: '#fef3c7' },
-            { label: 'Released', value: releasedBatches, color: '#7c3aed', bg: '#ede9fe' },
-            { label: 'Consignments', value: pendingConsignments, color: '#0891b2', bg: '#e0f2fe' },
-          ].map(p => (
-            <View key={p.label} style={[s.pipelineCard, { backgroundColor: p.bg, borderColor: p.color + '40' }]}>
-              <Text style={[s.pipelineVal, { color: p.color }]}>{p.value}</Text>
-              <Text style={[s.pipelineLabel, { color: p.color }]}>{p.label}</Text>
+        {/* Recent Deliveries table */}
+        <View style={s.tableCard}>
+          <View style={s.tableCardHeader}>
+            <View style={s.tableCardHeaderLeft}>
+              <Ionicons name="time-outline" size={16} color="#0d6efd" />
+              <Text style={s.tableCardTitle}>Recent Deliveries</Text>
             </View>
-          ))}
+            <TouchableOpacity onPress={() => navigation.navigate('CoopDeliveries')}>
+              <Text style={s.seeAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {recentDeliveries.length === 0 ? (
+            <View style={s.tableEmpty}>
+              <Ionicons name="cube-outline" size={36} color={C.steel300} />
+              <Text style={s.tableEmptyText}>No deliveries yet</Text>
+            </View>
+          ) : (
+            <>
+              <View style={s.tableHeader}>
+                <Text style={[s.th, { flex: 2 }]}>Farmer</Text>
+                <Text style={[s.th, { flex: 1, textAlign: 'center' }]}>Weight</Text>
+                <Text style={[s.th, { flex: 1.2, textAlign: 'center' }]}>Status</Text>
+                <Text style={[s.th, { flex: 1, textAlign: 'right' }]}>Date</Text>
+              </View>
+              {recentDeliveries.map((d, i) => {
+                const ss = statusStyle(d.status);
+                return (
+                  <View key={d.id || i} style={[s.tableRow, i < recentDeliveries.length - 1 && s.tableRowBorder]}>
+                    <View style={{ flex: 2 }}>
+                      <Text style={s.tdName} numberOfLines={1}>{d.farmer_name || 'Farmer'}</Text>
+                      <Text style={s.tdSub} numberOfLines={1}>{d.farm_name || d.delivery_number || ''}</Text>
+                    </View>
+                    <Text style={[s.tdText, { flex: 1, textAlign: 'center' }]}>
+                      {d.net_weight_kg != null ? `${Number(d.net_weight_kg).toFixed(1)} kg` : '—'}
+                    </Text>
+                    <View style={{ flex: 1.2, alignItems: 'center' }}>
+                      <View style={[s.badge, { backgroundColor: ss.bg }]}>
+                        <Text style={[s.badgeText, { color: ss.color }]}>{cap(d.status)}</Text>
+                      </View>
+                    </View>
+                    <Text style={[s.tdText, { flex: 1, textAlign: 'right', color: C.muted }]}>
+                      {fmtDate(d.created_at)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </>
+          )}
         </View>
 
-        {/* Quick actions */}
-        <Text style={s.sectionTitle}>Quick Actions</Text>
-        <View style={s.actionsRow}>
+        {/* Quick Actions */}
+        <View style={s.tableCard}>
+          <View style={s.tableCardHeader}>
+            <View style={s.tableCardHeaderLeft}>
+              <Ionicons name="flash" size={16} color="#f59e0b" />
+              <Text style={s.tableCardTitle}>Quick Actions</Text>
+            </View>
+          </View>
           {[
-            { icon: 'add-circle-outline', label: 'Record\nDelivery', color: C.c700, nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
-            { icon: 'people-outline', label: 'Farmers', color: '#6366f1', nav: () => navigation.navigate('CoopFarmers') },
-            { icon: 'layers-outline', label: 'Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
+            { icon: 'person-add-outline', label: 'Review Farmer Applications', color: '#f86441', nav: () => navigation.navigate('CoopFarmers') },
+            { icon: 'map-outline', label: 'Review Farm Submissions', color: '#1aa053', nav: () => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' }) },
+            { icon: 'add-circle-outline', label: 'Record Delivery', color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
+            { icon: 'layers-outline', label: 'Manage Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
             { icon: 'airplane-outline', label: 'Consignments', color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
-          ].map(({ icon, label, color, nav }) => (
-            <TouchableOpacity key={label} style={s.actionBtn} onPress={nav} activeOpacity={0.75}>
-              <View style={[s.actionIcon, { backgroundColor: color + '18' }]}>
-                <Ionicons name={icon} size={24} color={color} />
+          ].map((a, i, arr) => (
+            <TouchableOpacity
+              key={a.label}
+              style={[s.actionRow, i < arr.length - 1 && s.tableRowBorder]}
+              onPress={a.nav}
+              activeOpacity={0.8}
+            >
+              <View style={[s.actionIcon, { backgroundColor: a.color + '18' }]}>
+                <Ionicons name={a.icon} size={18} color={a.color} />
               </View>
-              <Text style={s.actionLabel}>{label}</Text>
+              <Text style={s.actionLabel}>{a.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color={C.subtle} />
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Recent deliveries */}
-        {recentDeliveries.length > 0 && (
-          <>
-            <View style={s.sectionRow}>
-              <Text style={s.sectionTitle}>Recent Deliveries</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Deliveries')}>
-                <Text style={s.seeAll}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            {recentDeliveries.map((d) => (
-              <View key={d.id} style={s.delivCard}>
-                <View style={s.delivLeft}>
-                  <Ionicons name="cube-outline" size={18} color={C.c600} />
-                </View>
-                <View style={s.delivContent}>
-                  <Text style={s.delivNo} numberOfLines={1}>
-                    {d.delivery_number || d.batch_number || `#${d.id}`}
-                  </Text>
-                  <Text style={s.delivMeta}>
-                    {d.net_weight_kg != null ? `${Number(d.net_weight_kg).toFixed(1)} kg` : '—'}
-                    {d.quality_grade ? ` · ${d.quality_grade}` : ''}
-                  </Text>
-                </View>
-                <View style={[s.delivStatus, {
-                  backgroundColor: d.status === 'received' ? C.eudrLowBg : C.pendingBg
-                }]}>
-                  <Text style={[s.delivStatusText, {
-                    color: d.status === 'received' ? C.eudrLow : C.pendingText
-                  }]}>
-                    {(d.status || 'pending').toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </>
-        )}
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -214,46 +265,49 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 24 },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 16, marginBottom: 16 },
+  hero: { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 20 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 14 },
   greet: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
   name: { fontSize: 22, fontWeight: '800', color: C.white },
   roleTag: { fontSize: 11, fontWeight: '700', color: C.c400, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
-  logoCircle: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' },
-  logo: { width: '100%', height: '100%' },
-
-  alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
-  alertText: { flex: 1, fontSize: 12, color: '#fbbf24', fontWeight: '700' },
+  heroActions: { gap: 8, alignItems: 'flex-end' },
+  heroBadgeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
+  heroBadgeBtnText: { fontSize: 11, fontWeight: '700', color: '#fbbf24' },
 
   scroll: { flex: 1 },
-  content: { padding: 20 },
+  content: { padding: 16 },
 
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, marginTop: 4 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 4 },
-  seeAll: { fontSize: 13, color: C.c600, fontWeight: '700' },
+  // 4 big stat cards (2×2 grid)
+  cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  bigCard: {
+    width: '47.5%', backgroundColor: C.white, borderRadius: 16, padding: 16,
+    borderLeftWidth: 4, borderLeftColor: C.c700,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  bigCardIcon: { marginBottom: 8 },
+  bigCardVal: { fontSize: 28, fontWeight: '900', color: C.ink, marginBottom: 4 },
+  bigCardLabel: { fontSize: 11, fontWeight: '700', color: C.muted, lineHeight: 14 },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  statCard: { width: '31%', backgroundColor: C.white, borderRadius: 16, padding: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
-  statIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  statVal: { fontSize: 18, fontWeight: '800', color: C.ink },
-  statLabel: { fontSize: 10, color: C.muted, fontWeight: '600', textAlign: 'center', marginTop: 2 },
-  statSub: { fontSize: 10, color: C.subtle, marginTop: 2 },
+  // Table cards
+  tableCard: { backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  tableCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  tableCardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tableCardTitle: { fontSize: 14, fontWeight: '800', color: C.ink },
+  seeAll: { fontSize: 13, color: C.c700, fontWeight: '700' },
+  tableEmpty: { alignItems: 'center', paddingVertical: 28, gap: 8 },
+  tableEmptyText: { fontSize: 13, color: C.muted },
+  tableHeader: { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: C.steel100, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  th: { fontSize: 10, fontWeight: '800', color: C.steel600, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tableRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
+  tableRowBorder: { borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  tdName: { fontSize: 13, fontWeight: '700', color: C.ink },
+  tdSub: { fontSize: 11, color: C.muted, marginTop: 1 },
+  tdText: { fontSize: 12, color: C.ink, fontWeight: '600' },
+  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  badgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
 
-  pipelineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  pipelineCard: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', minWidth: '18%', borderWidth: 1 },
-  pipelineVal: { fontSize: 18, fontWeight: '900' },
-  pipelineLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center', marginTop: 2, lineHeight: 12 },
-
-  actionsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  actionBtn: { flex: 1, alignItems: 'center' },
-  actionIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  actionLabel: { fontSize: 11, fontWeight: '700', color: C.steel700, textAlign: 'center', lineHeight: 14 },
-
-  delivCard: { backgroundColor: C.white, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  delivLeft: { width: 38, height: 38, borderRadius: 12, backgroundColor: C.c050, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  delivContent: { flex: 1 },
-  delivNo: { fontSize: 14, fontWeight: '700', color: C.ink },
-  delivMeta: { fontSize: 12, color: C.muted, marginTop: 2 },
-  delivStatus: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  delivStatusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  // Quick actions
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
+  actionIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  actionLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: C.ink },
 });
