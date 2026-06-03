@@ -239,6 +239,7 @@ export default function CoopDashboardScreen() {
             { icon: 'add-circle-outline', label: 'Record Delivery', color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
             { icon: 'layers-outline', label: 'Manage Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
             { icon: 'airplane-outline', label: 'Consignments', color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
+            { icon: 'person-circle-outline', label: 'Manage Delivery Agents', color: '#6f4e37', nav: () => navigation.navigate('CoopStaff') },
           ].map((a, i, arr) => (
             <TouchableOpacity
               key={a.label}

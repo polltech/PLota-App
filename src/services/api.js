@@ -169,6 +169,10 @@ export const coopAPI = {
   getMe: () => api.get('/coop/me'),
   getStats: () => api.get('/coop/stats'),
 
+  // Delivery Agents (staff)
+  getStaff: () => api.get('/coop/staff'),
+  createStaff: (data) => api.post('/coop/staff', data),
+
   getFarmers: () => api.get('/coop/farmers'),
   getPendingFarmers: () => api.get('/coop/farmers/pending'),
   verifyFarmer: (userId) => api.put(`/coop/members/${userId}/verify`),

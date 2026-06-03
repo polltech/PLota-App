@@ -35,6 +35,7 @@ import CoopFarmsScreen from '../screens/CoopFarmsScreen';
 import CoopDeliveriesScreen from '../screens/CoopDeliveriesScreen';
 import CoopBatchesScreen from '../screens/CoopBatchesScreen';
 import CoopConsignmentsScreen from '../screens/CoopConsignmentsScreen';
+import CoopStaffScreen from '../screens/CoopStaffScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
@@ -225,6 +226,7 @@ function CoopTabs() {
             CoopBatches:      focused ? 'layers'           : 'layers-outline',
             CoopConsignments: focused ? 'airplane'         : 'airplane-outline',
             CoopFarmers:      focused ? 'people'           : 'people-outline',
+            CoopStaff:        focused ? 'person-circle'    : 'person-circle-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -272,6 +274,14 @@ function CoopTabs() {
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
             <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="CoopStaff" options={{ tabBarLabel: 'Staff' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopStaffList" component={CoopStaffScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
