@@ -1,8 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, TextInput,
+  ActivityIndicator, RefreshControl, StatusBar, TextInput, Dimensions,
 } from 'react-native';
+
+const SCREEN_W = Dimensions.get('window').width;
+const CARD_W = (SCREEN_W - 32 - 10) / 2; // 16px padding each side, 10px gap
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,76 +60,76 @@ const matchFilter = (farm, key) => {
   return true;
 };
 
-// ── Farm Card (matching web layout) ──────────────────────────────────────────
+// ── Farm Card — compact 2-column grid ────────────────────────────────────────
 const FarmCard = ({ farm, onPress, onCapture, onAnalyse }) => {
   const vb = verifyBadge(farm.verification_status);
   const cb = complianceBadge(farm.eudr_risk_level || farm.compliance_status);
   const hasPolygon = farm.parcels_count > 0;
+  const areaStr = fmt(farm.total_area_hectares) !== '—' ? `${fmt(farm.total_area_hectares)} ha` : null;
 
   return (
-    <View style={[s.card, { borderLeftColor: vb.color }]}>
-      {/* Update required banner */}
+    <View style={[s.card, { borderTopColor: vb.color, width: CARD_W }]}>
+      {/* Update dot */}
       {farm.update_requested && (
-        <View style={s.updateBanner}>
-          <Ionicons name="warning-outline" size={14} color="#b45309" />
-          <Text style={s.updateBannerText}>Update required{farm.update_request_notes ? `: ${farm.update_request_notes}` : ''}</Text>
-        </View>
+        <View style={s.updateDot} />
       )}
 
-      {/* Header row: name + status badge */}
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-        <View style={s.cardHeader}>
-          <Text style={s.farmName} numberOfLines={2}>{farm.farm_name || farm.name || 'Unnamed Farm'}</Text>
-          <View style={[s.badge, { backgroundColor: vb.bg }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={{ flex: 1 }}>
+        {/* Status badge */}
+        <View style={s.cardTop}>
+          <View style={[s.badge, { backgroundColor: vb.bg, alignSelf: 'flex-start' }]}>
             <Text style={[s.badgeText, { color: vb.color }]}>{vb.label}</Text>
           </View>
+          {hasPolygon && (
+            <Ionicons name="location" size={13} color={C.c400} />
+          )}
         </View>
 
-        {/* Farm details */}
-        <View style={s.cardBody}>
-          <View style={s.detailRow}>
-            <Ionicons name="expand-outline" size={13} color={C.eudrLow} />
-            <Text style={s.detailText}>{fmt(farm.total_area_hectares) !== '—' ? `${fmt(farm.total_area_hectares)} ha total` : 'Area not set'}</Text>
-          </View>
-          {farm.coffee_area_hectares != null && farm.coffee_area_hectares > 0 && (
-            <View style={s.detailRow}>
-              <Ionicons name="leaf-outline" size={13} color={C.c600} />
-              <Text style={s.detailText}>{fmt(farm.coffee_area_hectares)} ha coffee</Text>
+        {/* Farm name */}
+        <Text style={s.farmName} numberOfLines={2}>{farm.farm_name || farm.name || 'Unnamed Farm'}</Text>
+
+        {/* Details */}
+        <View style={s.cardMeta}>
+          {areaStr && (
+            <View style={s.metaRow}>
+              <Ionicons name="expand-outline" size={11} color={C.muted} />
+              <Text style={s.metaText}>{areaStr}</Text>
             </View>
           )}
-          <View style={s.detailRow}>
-            <Ionicons name="shield-checkmark-outline" size={13} color={C.eudrLow} />
-            <View style={[s.badge, { backgroundColor: cb.bg }]}>
-              <Text style={[s.badgeText, { color: cb.color }]}>{cb.label}</Text>
+          {farm.county ? (
+            <View style={s.metaRow}>
+              <Ionicons name="location-outline" size={11} color={C.muted} />
+              <Text style={s.metaText} numberOfLines={1}>{farm.county}</Text>
             </View>
-          </View>
-          {farm.county && (
-            <View style={s.detailRow}>
-              <Ionicons name="location-outline" size={13} color={C.subtle} />
-              <Text style={s.detailText}>{farm.county}</Text>
-            </View>
-          )}
+          ) : null}
+        </View>
+
+        {/* Compliance chip */}
+        <View style={[s.compChip, { backgroundColor: cb.bg }]}>
+          <Text style={[s.compChipText, { color: cb.color }]}>{cb.label}</Text>
         </View>
       </TouchableOpacity>
 
-      {/* Action buttons: View / Capture / Analyse */}
+      {/* Action icon row */}
       <View style={s.cardActions}>
         <TouchableOpacity style={s.actionBtn} onPress={onPress} activeOpacity={0.8}>
-          <Ionicons name="eye-outline" size={14} color={C.c700} />
+          <Ionicons name="eye-outline" size={15} color={C.c700} />
           <Text style={s.actionBtnText}>View</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.actionBtn, s.actionBtnMid]} onPress={onCapture} activeOpacity={0.8}>
-          <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={14} color={hasPolygon ? '#b45309' : '#15803d'} />
+        <View style={s.actionDivider} />
+        <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
+          <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={15} color={hasPolygon ? '#b45309' : '#15803d'} />
           <Text style={[s.actionBtnText, { color: hasPolygon ? '#b45309' : '#15803d' }]}>
-            {hasPolygon ? 'Recapture' : 'Capture'}
+            {hasPolygon ? 'Redo' : 'Capture'}
           </Text>
         </TouchableOpacity>
+        <View style={s.actionDivider} />
         <TouchableOpacity
           style={[s.actionBtn, !hasPolygon && s.actionBtnDisabled]}
           onPress={hasPolygon ? onAnalyse : null}
           activeOpacity={hasPolygon ? 0.8 : 1}
         >
-          <Ionicons name="analytics-outline" size={14} color={hasPolygon ? '#1d4ed8' : C.subtle} />
+          <Ionicons name="analytics-outline" size={15} color={hasPolygon ? '#1d4ed8' : C.subtle} />
           <Text style={[s.actionBtnText, { color: hasPolygon ? '#1d4ed8' : C.subtle }]}>Analyse</Text>
         </TouchableOpacity>
       </View>
@@ -316,6 +319,8 @@ export default function FarmsListScreen() {
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
+          numColumns={2}
+          columnWrapperStyle={s.row}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -373,27 +378,40 @@ const s = StyleSheet.create({
   miniCount: { fontSize: 16, fontWeight: '900' },
   miniLabel: { fontSize: 8, fontWeight: '700', textAlign: 'center', lineHeight: 10 },
 
-  // Farm card (web-style)
-  list: { padding: 16, paddingBottom: 100 },
-  card: { backgroundColor: C.white, borderRadius: 18, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderLeftWidth: 4, overflow: 'hidden' },
+  // Farm grid (2 columns)
+  list:  { padding: 16, paddingBottom: 100 },
+  row:   { gap: 10, marginBottom: 10 },
 
-  updateBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fef3c7', paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#fde68a' },
-  updateBannerText: { fontSize: 12, color: '#b45309', fontWeight: '600', flex: 1 },
+  card: {
+    backgroundColor: C.white,
+    borderRadius: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
+    borderTopWidth: 3,
+    overflow: 'hidden',
+    flex: 1,
+  },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 14, paddingBottom: 8, gap: 8 },
-  farmName: { fontSize: 15, fontWeight: '800', color: C.ink, flex: 1 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexShrink: 0 },
-  badgeText: { fontSize: 10, fontWeight: '800' },
+  updateDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#f59e0b', zIndex: 1 },
 
-  cardBody: { paddingHorizontal: 14, paddingBottom: 10, gap: 5 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detailText: { fontSize: 13, color: C.muted, fontWeight: '500' },
+  cardTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, paddingBottom: 4 },
+  farmName: { fontSize: 13, fontWeight: '800', color: C.ink, paddingHorizontal: 10, paddingBottom: 6, lineHeight: 18 },
 
-  cardActions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.steel100 },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10 },
-  actionBtnMid: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: C.steel100 },
-  actionBtnDisabled: { opacity: 0.4 },
-  actionBtnText: { fontSize: 12, fontWeight: '700', color: C.c700 },
+  badge:     { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  badgeText: { fontSize: 9, fontWeight: '800' },
+
+  cardMeta: { paddingHorizontal: 10, gap: 3, marginBottom: 8 },
+  metaRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 11, color: C.muted, fontWeight: '500', flex: 1 },
+
+  compChip:     { marginHorizontal: 10, marginBottom: 10, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
+  compChipText: { fontSize: 9, fontWeight: '800' },
+
+  cardActions:   { flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.steel100 },
+  actionBtn:     { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 8 },
+  actionDivider: { width: 1, backgroundColor: C.steel100 },
+  actionBtnDisabled: { opacity: 0.35 },
+  actionBtnText: { fontSize: 9, fontWeight: '700', color: C.c700 },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingVertical: 60 },
   loadText: { marginTop: 12, color: C.muted, fontSize: 14 },
