@@ -289,6 +289,46 @@ function CoopTabs() {
   );
 }
 
+// ── Delivery Agent tabs (dashboard + deliveries only) ─────────────────────────
+function DeliveryAgentTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            AgentHome:       focused ? 'grid'  : 'grid-outline',
+            AgentDeliveries: focused ? 'cube'  : 'cube-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="AgentHome" options={{ tabBarLabel: 'Dashboard' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AgentDashMain" component={CoopDashboardScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="AgentDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 // ── Wrong-role screen ─────────────────────────────────────────────────────────
 function WrongRoleScreen() {
   const { user, logout } = useAuth();
@@ -325,6 +365,7 @@ export default function AppNavigator() {
   const role = user?.role;
   const isFarmer = !user || role === 'farmer';
   const isCoopOfficer = role === 'cooperative_officer';
+  const isDeliveryAgent = role === 'delivery_agent';
 
   return (
     <NavigationContainer>
@@ -334,6 +375,8 @@ export default function AppNavigator() {
             <RootStack.Screen name="Main" component={FarmerTabs} />
           ) : isCoopOfficer ? (
             <RootStack.Screen name="CoopMain" component={CoopTabs} />
+          ) : isDeliveryAgent ? (
+            <RootStack.Screen name="AgentMain" component={DeliveryAgentTabs} />
           ) : (
             <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
           )
