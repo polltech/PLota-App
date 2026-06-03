@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet, Animated, Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -172,6 +172,29 @@ function FarmerTabs() {
   );
 }
 
+// ── Splash loader ─────────────────────────────────────────────────────────────
+function SplashLoader() {
+  const spin = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 1000, useNativeDriver: true })
+    ).start();
+  }, []);
+
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+  return (
+    <View style={s.splash}>
+      <Image source={require('../../assets/logo-plotra.png')} style={s.splashLogo} resizeMode="contain" />
+      <Animated.View style={{ transform: [{ rotate }], marginTop: 32 }}>
+        <Ionicons name="reload-outline" size={30} color={C.c700} />
+      </Animated.View>
+      <Text style={s.splashText}>Loading...</Text>
+    </View>
+  );
+}
+
 // ── Root navigator ────────────────────────────────────────────────────────────
 const RootStack = createNativeStackNavigator();
 
@@ -179,11 +202,7 @@ export default function AppNavigator() {
   const { user, authReady } = useAuth();
 
   if (!authReady) {
-    return (
-      <View style={s.splash}>
-        <ActivityIndicator color={C.c700} size="large" />
-      </View>
-    );
+    return <SplashLoader />;
   }
 
   return (
@@ -207,5 +226,7 @@ export default function AppNavigator() {
 }
 
 const s = StyleSheet.create({
-  splash: { flex: 1, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' },
+  splash:      { flex: 1, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' },
+  splashLogo:  { width: 90, height: 90, borderRadius: 20 },
+  splashText:  { marginTop: 12, fontSize: 13, color: C.muted, fontWeight: '600' },
 });
