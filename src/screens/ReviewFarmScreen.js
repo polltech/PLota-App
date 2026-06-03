@@ -179,11 +179,7 @@ export default function ReviewFarmScreen() {
         } catch (_) {}
       }
 
-      navigation.replace('Submitted', {
-        farmId: formData.farmCode || formData.farmName,
-        areaHectares: polygonData?.areaHectares,
-        pointsCount: polygonData?.pointsCount,
-      });
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
 
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to register farm.';

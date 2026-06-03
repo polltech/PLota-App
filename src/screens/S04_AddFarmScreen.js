@@ -428,7 +428,7 @@ export default function AddFarmScreen() {
         ngo_support:           ngoSupport.trim() || null,
       });
 
-      setCreated(res.data);
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to add farm.';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
