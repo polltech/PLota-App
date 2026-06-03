@@ -34,18 +34,30 @@ export default function CoopDashboardScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const [batches, setBatches] = useState([]);
+  const [consignments, setConsignments] = useState([]);
+
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      const [statsRes, delivRes] = await Promise.allSettled([
+      const [statsRes, delivRes, batchRes, consRes] = await Promise.allSettled([
         coopAPI.getStats(),
         coopAPI.getDeliveries(),
+        coopAPI.getBatches(),
+        coopAPI.getConsignments(),
       ]);
-
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
       if (delivRes.status === 'fulfilled') {
         const d = delivRes.value.data;
         setRecentDeliveries((Array.isArray(d) ? d : d?.deliveries || []).slice(0, 5));
+      }
+      if (batchRes.status === 'fulfilled') {
+        const d = batchRes.value.data;
+        setBatches(Array.isArray(d) ? d : (d?.batches || []));
+      }
+      if (consRes.status === 'fulfilled') {
+        const d = consRes.value.data;
+        setConsignments(Array.isArray(d) ? d : []);
       }
     } catch (e) {
       console.warn('CoopDashboard load error:', e.message);
@@ -64,6 +76,11 @@ export default function CoopDashboardScreen() {
   }
 
   const pendingCount = stats?.pending_verification ?? 0;
+  const inProcessing = recentDeliveries.filter(d => d.status === 'in_processing').length;
+  const readyForBatching = recentDeliveries.filter(d => d.status === 'ready_for_batching').length;
+  const draftBatches = batches.filter(b => (b.status || 'draft') === 'draft').length;
+  const releasedBatches = batches.filter(b => b.status === 'released').length;
+  const pendingConsignments = consignments.filter(c => c.consignment_status === 'pending_dds').length;
 
   return (
     <View style={s.container}>
@@ -107,57 +124,39 @@ export default function CoopDashboardScreen() {
         {/* Stats grid */}
         <Text style={s.sectionTitle}>Cooperative Overview</Text>
         <View style={s.statsGrid}>
-          <StatCard
-            icon="people-outline"
-            label="Members"
-            value={stats?.total_members ?? stats?.member_count}
-            color="#6366f1"
-            onPress={() => navigation.navigate('Farmers')}
-          />
-          <StatCard
-            icon="leaf-outline"
-            label="Verified Farms"
-            value={stats?.verified_farms}
-            color={C.eudrLow}
-          />
-          <StatCard
-            icon="time-outline"
-            label="Pending KYC"
-            value={pendingCount}
-            color={pendingCount > 0 ? C.eudrMedium : C.subtle}
-            onPress={pendingCount > 0
-              ? () => navigation.navigate('Farmers', { screen: 'CoopFarmersList', params: { tab: 'pending' } })
-              : undefined}
-          />
-          <StatCard
-            icon="cube-outline"
-            label="Total Deliveries"
-            value={stats?.total_deliveries}
-            color="#0ea5e9"
-            onPress={() => navigation.navigate('Deliveries')}
-          />
-          <StatCard
-            icon="scale-outline"
-            label="Total kg"
-            value={stats?.total_weight_kg != null ? `${Number(stats.total_weight_kg).toLocaleString()}` : '—'}
-            color={C.c600}
-          />
-          <StatCard
-            icon="ribbon-outline"
-            label="Quality"
-            value={stats?.quality_index ?? '—'}
-            color="#8b5cf6"
-          />
+          <StatCard icon="people-outline" label="Members" value={stats?.total_members ?? stats?.member_count} color="#6366f1" onPress={() => navigation.navigate('CoopFarmers')} />
+          <StatCard icon="leaf-outline" label="Verified Farms" value={stats?.verified_farms} color={C.eudrLow} />
+          <StatCard icon="time-outline" label="Pending KYC" value={pendingCount} color={pendingCount > 0 ? C.eudrMedium : C.subtle} onPress={pendingCount > 0 ? () => navigation.navigate('CoopFarmers') : undefined} />
+          <StatCard icon="cube-outline" label="Deliveries" value={stats?.total_deliveries} color="#0ea5e9" onPress={() => navigation.navigate('CoopDeliveries')} />
+          <StatCard icon="scale-outline" label="Total kg" value={stats?.total_weight_kg != null ? `${Number(stats.total_weight_kg).toLocaleString()}` : '—'} color={C.c600} />
+          <StatCard icon="layers-outline" label="Batches" value={batches.length} color="#8b5cf6" onPress={() => navigation.navigate('CoopBatches')} />
+        </View>
+
+        {/* Processing pipeline */}
+        <Text style={s.sectionTitle}>Processing Pipeline</Text>
+        <View style={s.pipelineRow}>
+          {[
+            { label: 'In Processing', value: inProcessing, color: '#1d4ed8', bg: '#dbeafe' },
+            { label: 'Ready to Batch', value: readyForBatching, color: '#15803d', bg: '#dcfce7' },
+            { label: 'Draft Batches', value: draftBatches, color: '#b45309', bg: '#fef3c7' },
+            { label: 'Released', value: releasedBatches, color: '#7c3aed', bg: '#ede9fe' },
+            { label: 'Consignments', value: pendingConsignments, color: '#0891b2', bg: '#e0f2fe' },
+          ].map(p => (
+            <View key={p.label} style={[s.pipelineCard, { backgroundColor: p.bg, borderColor: p.color + '40' }]}>
+              <Text style={[s.pipelineVal, { color: p.color }]}>{p.value}</Text>
+              <Text style={[s.pipelineLabel, { color: p.color }]}>{p.label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Quick actions */}
         <Text style={s.sectionTitle}>Quick Actions</Text>
         <View style={s.actionsRow}>
           {[
-            { icon: 'add-circle-outline', label: 'Record\nDelivery', color: C.c700, nav: () => navigation.navigate('Deliveries', { screen: 'CreateDelivery' }) },
-            { icon: 'people-outline', label: 'View\nFarmers', color: '#6366f1', nav: () => navigation.navigate('Farmers') },
-            { icon: 'leaf-outline', label: 'All\nFarms', color: C.eudrLow, nav: () => navigation.navigate('Farms') },
-            { icon: 'layers-outline', label: 'Batches', color: '#8b5cf6', nav: () => navigation.navigate('Deliveries', { screen: 'Batches' }) },
+            { icon: 'add-circle-outline', label: 'Record\nDelivery', color: C.c700, nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
+            { icon: 'people-outline', label: 'Farmers', color: '#6366f1', nav: () => navigation.navigate('CoopFarmers') },
+            { icon: 'layers-outline', label: 'Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
+            { icon: 'airplane-outline', label: 'Consignments', color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
           ].map(({ icon, label, color, nav }) => (
             <TouchableOpacity key={label} style={s.actionBtn} onPress={nav} activeOpacity={0.75}>
               <View style={[s.actionIcon, { backgroundColor: color + '18' }]}>
@@ -239,6 +238,11 @@ const s = StyleSheet.create({
   statVal: { fontSize: 18, fontWeight: '800', color: C.ink },
   statLabel: { fontSize: 10, color: C.muted, fontWeight: '600', textAlign: 'center', marginTop: 2 },
   statSub: { fontSize: 10, color: C.subtle, marginTop: 2 },
+
+  pipelineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  pipelineCard: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', minWidth: '18%', borderWidth: 1 },
+  pipelineVal: { fontSize: 18, fontWeight: '900' },
+  pipelineLabel: { fontSize: 9, fontWeight: '700', textAlign: 'center', marginTop: 2, lineHeight: 12 },
 
   actionsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   actionBtn: { flex: 1, alignItems: 'center' },

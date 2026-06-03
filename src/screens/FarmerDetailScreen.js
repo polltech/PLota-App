@@ -63,17 +63,17 @@ export default function FarmerDetailScreen() {
   const handleVerify = () => {
     Alert.alert(
       'Verify Farmer',
-      `Confirm verification for ${fullName}? This marks them as KYC-approved within your cooperative.`,
+      `Approve & verify ${fullName}? This marks them as KYC-approved within your cooperative.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Verify',
+          text: 'Approve',
           onPress: async () => {
             setVerifying(true);
             try {
               await coopAPI.verifyFarmer(farmerId);
-              setFarmer((prev) => ({ ...prev, verification_status: 'verified' }));
-              Alert.alert('Verified', `${fullName} has been verified successfully.`);
+              setFarmer(prev => ({ ...prev, verification_status: 'verified', coop_status: 'coop_approved' }));
+              Alert.alert('Approved', `${fullName} has been verified.`);
             } catch (e) {
               Alert.alert('Error', e.response?.data?.detail || 'Verification failed.');
             } finally {
@@ -85,7 +85,30 @@ export default function FarmerDetailScreen() {
     );
   };
 
+  const handleReject = () => {
+    Alert.alert(
+      'Reject Farmer',
+      `Reject ${fullName}'s cooperative application? They will be notified and can reapply.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject', style: 'destructive',
+          onPress: async () => {
+            try {
+              await coopAPI.rejectFarmer(farmerId, 'Application rejected by cooperative officer');
+              setFarmer(prev => ({ ...prev, coop_status: 'coop_rejected' }));
+              Alert.alert('Rejected', `${fullName}'s application has been rejected.`);
+            } catch (e) {
+              Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const isPending = ['pending', 'update_requested'].includes((farmer?.verification_status || '').toLowerCase());
+  const isCoopRejected = farmer?.coop_status === 'coop_rejected';
 
   return (
     <View style={s.container}>
@@ -118,23 +141,33 @@ export default function FarmerDetailScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}
       >
-        {/* Verify banner */}
+        {/* Verify / Reject actions */}
         {isPending && (
-          <TouchableOpacity
-            style={[s.verifyBanner, verifying && s.btnDisabled]}
-            onPress={handleVerify}
-            disabled={verifying}
-            activeOpacity={0.85}
-          >
-            {verifying ? (
-              <ActivityIndicator color={C.white} size="small" />
-            ) : (
-              <Ionicons name="checkmark-circle-outline" size={20} color={C.white} />
-            )}
-            <Text style={s.verifyBannerText}>
-              {verifying ? 'Verifying…' : 'Approve & Verify This Farmer'}
-            </Text>
-          </TouchableOpacity>
+          <View style={s.actionRow}>
+            <TouchableOpacity
+              style={[s.verifyBanner, { flex: 2 }, verifying && s.btnDisabled]}
+              onPress={handleVerify}
+              disabled={verifying}
+              activeOpacity={0.85}
+            >
+              {verifying ? <ActivityIndicator color={C.white} size="small" /> : <Ionicons name="checkmark-circle-outline" size={18} color={C.white} />}
+              <Text style={s.verifyBannerText}>{verifying ? 'Verifying…' : 'Approve'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.rejectBtn, { flex: 1 }]}
+              onPress={handleReject}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="close-circle-outline" size={18} color="#dc2626" />
+              <Text style={s.rejectBtnText}>Reject</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isCoopRejected && (
+          <View style={[s.verifyBanner, { backgroundColor: '#fee2e2', marginBottom: 14 }]}>
+            <Ionicons name="close-circle-outline" size={18} color="#dc2626" />
+            <Text style={[s.verifyBannerText, { color: '#dc2626' }]}>Application rejected</Text>
+          </View>
         )}
 
         {/* Personal info */}
@@ -211,9 +244,12 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20 },
 
-  verifyBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: C.eudrLow, borderRadius: 16, paddingVertical: 16, marginBottom: 16, shadowColor: C.eudrLow, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 5 },
+  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  verifyBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.eudrLow, borderRadius: 16, paddingVertical: 14, shadowColor: C.eudrLow, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 5 },
   btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },
-  verifyBannerText: { color: C.white, fontSize: 15, fontWeight: '800' },
+  verifyBannerText: { color: C.white, fontSize: 14, fontWeight: '800' },
+  rejectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 16, paddingVertical: 14, borderWidth: 2, borderColor: '#dc2626', backgroundColor: '#fff5f5' },
+  rejectBtnText: { color: '#dc2626', fontSize: 14, fontWeight: '800' },
 
   section: { backgroundColor: C.white, borderRadius: 18, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   subHeader: { fontSize: 11, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
