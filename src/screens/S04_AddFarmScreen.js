@@ -438,14 +438,14 @@ export default function AddFarmScreen() {
   };
 
   const handleCaptureBoundary = () => {
-    navigation.navigate('WalkBoundary', {
+    const farmParam = {
+      id: created.farm_id || created.id,
+      farm_code: created.farm_code,
+      farm_name: created.farm_name,
+    };
+    navigation.navigate('CaptureMode', {
       farmId: created.farm_id || created.id,
-      farm: {
-        id: created.farm_id || created.id,
-        farm_code: created.farm_code,
-        farm_name: created.farm_name,
-        status: 'admin_approved',
-      },
+      farm: farmParam,
     });
   };
 
@@ -770,7 +770,7 @@ export default function AddFarmScreen() {
                     <TouchableOpacity
                       style={s.captureNowBtn}
                       onPress={() => {
-                        navigation.navigate('WalkBoundary', { farmId: farmCode.trim() || farmName.trim() });
+                        navigation.navigate('CaptureMode', { farmId: farmCode.trim() || farmName.trim() });
                       }}
                       activeOpacity={0.85}
                     >

@@ -171,7 +171,7 @@ export default function FarmsListScreen() {
           }
         }
       }
-      navigation.navigate('WalkBoundary', { farmId: farmCode.trim() });
+      navigation.navigate('CaptureMode', { farmId: farmCode.trim() });
       setFarmCode('');
     } finally {
       setLookupLoading(false);
@@ -213,7 +213,7 @@ export default function FarmsListScreen() {
     <FarmCard
       farm={item}
       onPress={() => navigation.navigate('FarmDetail', { farm: item })}
-      onCapture={() => navigation.navigate('WalkBoundary', { farmId: item.farm_code || item.id })}
+      onCapture={() => navigation.navigate('CaptureMode', { farmId: item.farm_code || item.id, farm: item })}
       onAnalyse={() => navigation.navigate('FarmDetail', { farm: item, openTab: 'eudr' })}
     />
   );

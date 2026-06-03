@@ -23,6 +23,8 @@ import WalletScreen from '../screens/WalletScreen';
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
 import ComplianceScreen from '../screens/ComplianceScreen';
+import CaptureModeScreen from '../screens/CaptureModeScreen';
+import CaptureImportScreen from '../screens/CaptureImportScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -65,6 +67,8 @@ function CaptureStack() {
       <Stack.Screen name="FarmIDEntry"       component={FarmIDEntryScreen} />
       <Stack.Screen name="FarmConfirmation"  component={FarmConfirmationScreen} />
       <Stack.Screen name="AddFarm"           component={AddFarmScreen} />
+      <Stack.Screen name="CaptureMode"       component={CaptureModeScreen} />
+      <Stack.Screen name="CaptureImport"     component={CaptureImportScreen} />
       <Stack.Screen name="WalkBoundary"      component={WalkBoundaryScreen} />
       <Stack.Screen name="ReviewPolygon"     component={ReviewPolygonScreen} />
       <Stack.Screen name="OfflineSaved"      component={OfflineSavedScreen} />
@@ -120,10 +124,12 @@ function FarmerTabs() {
             {/* Capture flow accessible from FAB */}
             <Stack.Screen name="CaptureLanding" component={LandingScreen}
               options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }} />
-            <Stack.Screen name="FarmIDEntry"    component={FarmIDEntryScreen} />
+            <Stack.Screen name="FarmIDEntry"      component={FarmIDEntryScreen} />
             <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
-            <Stack.Screen name="AddFarm"        component={AddFarmScreen} />
-            <Stack.Screen name="WalkBoundary"   component={WalkBoundaryScreen} />
+            <Stack.Screen name="AddFarm"          component={AddFarmScreen} />
+            <Stack.Screen name="CaptureMode"      component={CaptureModeScreen} />
+            <Stack.Screen name="CaptureImport"    component={CaptureImportScreen} />
+            <Stack.Screen name="WalkBoundary"     component={WalkBoundaryScreen} />
             <Stack.Screen name="ReviewPolygon"  component={ReviewPolygonScreen} />
             <Stack.Screen name="OfflineSaved"   component={OfflineSavedScreen} />
             <Stack.Screen name="Submitted"      component={SubmittedScreen} />

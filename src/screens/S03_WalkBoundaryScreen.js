@@ -92,16 +92,20 @@ const WalkBoundaryScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { farmId, farm } = route.params || {};
+  const { farmId, farm, captureMode = 'walk' } = route.params || {};
+
+  // captureMode: 'walk' | 'click' | 'draw'
+  // click = GPS tracking + tap map; draw = no GPS, tap map; walk = GPS + press button
+  const isMapTapMode  = captureMode === 'click' || captureMode === 'draw';
+  const needsGPS      = captureMode !== 'draw';
 
   const [currentLocation, setCurrentLocation] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [pointAccuracies, setPointAccuracies] = useState([]);
   const [accuracy, setAccuracy] = useState(null);
-  const [isManualMode, setIsManualMode] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
-  const [gpsLoading, setGpsLoading] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState('Initializing GPS...');
+  const [gpsLoading, setGpsLoading] = useState(!needsGPS); // draw mode skips GPS loading
+  const [gpsStatus, setGpsStatus] = useState(needsGPS ? 'Initializing GPS...' : 'Ready');
 
   const webViewRef = useRef(null);
   const locationSub = useRef(null);
@@ -117,7 +121,7 @@ const WalkBoundaryScreen = () => {
   }, []);
 
   useEffect(() => {
-    startLocation();
+    if (needsGPS) startLocation();
     return () => locationSub.current?.remove();
   }, []);
 
@@ -251,8 +255,8 @@ const WalkBoundaryScreen = () => {
   };
 
   const handleMarkPoint = () => {
-    if (isManualMode) {
-      Alert.alert('Manual Override', 'Tap the map at the boundary location to add points.');
+    if (isMapTapMode) {
+      Alert.alert('Tap Mode', 'Tap the map at each boundary corner to add points.');
       return;
     }
     const loc = currentLocationRef.current;
@@ -316,7 +320,7 @@ const WalkBoundaryScreen = () => {
         onLoad={onMapReady}
         onMessage={(e) => {
           const msg = JSON.parse(e.nativeEvent.data);
-          if (msg.type === 'click' && isManualMode) {
+          if (msg.type === 'click' && isMapTapMode) {
             setMarkers(prev => [...prev, { id: Date.now(), latitude: msg.lat, longitude: msg.lng }]);
             send({ type: 'add', lat: msg.lat, lng: msg.lng });
           }
@@ -366,25 +370,24 @@ const WalkBoundaryScreen = () => {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[s.modeToggle, isManualMode && s.modeActive]}
-            onPress={() => setIsManualMode(!isManualMode)}
-          >
-            <View style={[s.modeIcon, isManualMode && s.modeIconActive]}>
-              <Text style={s.modeIconText}>{isManualMode ? '📍' : '🚶'}</Text>
-            </View>
-            <Text style={[s.modeText, isManualMode && s.modeTextActive]}>
-              {isManualMode ? 'Manual' : 'Walk'}
+          <View style={s.modeLabel}>
+            <Text style={s.modeLabelIcon}>
+              {captureMode === 'walk' ? '🚶' : captureMode === 'click' ? '📍' : '✏️'}
             </Text>
-          </TouchableOpacity>
+            <Text style={s.modeLabelText}>
+              {captureMode === 'walk' ? 'Walk' : captureMode === 'click' ? 'GPS Click' : 'Draw'}
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity
-          style={[s.markBtn, (!currentLocation && !isManualMode) && s.btnDisabled]}
+          style={[s.markBtn, (!currentLocation && !isMapTapMode) && s.btnDisabled]}
           onPress={handleMarkPoint}
           activeOpacity={0.8}
         >
-          <Text style={s.markBtnText}>{isManualMode ? 'Tap Map to Add Point' : 'Capture Current Point'}</Text>
+          <Text style={s.markBtnText}>
+            {isMapTapMode ? 'Tap Map to Add Point' : 'Capture Current Point'}
+          </Text>
         </TouchableOpacity>
 
         <View style={s.actionRow}>
@@ -451,13 +454,9 @@ const s = StyleSheet.create({
   statValue: { fontSize: 32, fontWeight: '900', color: C.ink },
   statUnit: { fontSize: 14, color: C.muted, fontWeight: '600', marginLeft: 6 },
 
-  modeToggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.steel100, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: C.steel200 },
-  modeActive: { backgroundColor: C.c700, borderColor: C.c800 },
-  modeIcon: { width: 28, height: 28, borderRadius: 10, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  modeIconActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  modeIconText: { fontSize: 16 },
-  modeText: { fontSize: 14, fontWeight: '800', color: C.steel700 },
-  modeTextActive: { color: C.white },
+  modeLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.steel100, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: C.steel200 },
+  modeLabelIcon: { fontSize: 16 },
+  modeLabelText: { fontSize: 13, fontWeight: '800', color: C.steel700 },
 
   markBtn: { backgroundColor: C.c800, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8 },
   markBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
