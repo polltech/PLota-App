@@ -316,6 +316,7 @@ export default function FarmsListScreen() {
         </View>
       ) : (
         <FlatList
+          key="farms-grid-2"
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
