@@ -28,6 +28,17 @@ import CaptureImportScreen from '../screens/CaptureImportScreen';
 import AdvancedScreen from '../screens/AdvancedScreen';
 import ReviewFarmScreen from '../screens/ReviewFarmScreen';
 
+// ── Cooperative Officer screens ───────────────────────────────────────────────
+import CoopDashboardScreen from '../screens/CoopDashboardScreen';
+import CoopFarmersScreen from '../screens/CoopFarmersScreen';
+import CoopFarmsScreen from '../screens/CoopFarmsScreen';
+import CoopDeliveriesScreen from '../screens/CoopDeliveriesScreen';
+import BatchesScreen from '../screens/BatchesScreen';
+import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
+import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
+import BatchDetailScreen from '../screens/BatchDetailScreen';
+import ConsignmentsScreen from '../screens/ConsignmentsScreen';
+
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
 import FarmIDEntryScreen from '../screens/S01_FarmIDEntryScreen';
@@ -195,6 +206,76 @@ function SplashLoader() {
   );
 }
 
+// ── Cooperative Officer tabs ──────────────────────────────────────────────────
+function CoopTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            CoopHome:         focused ? 'grid'             : 'grid-outline',
+            CoopDeliveries:   focused ? 'cube'             : 'cube-outline',
+            CoopBatches:      focused ? 'layers'           : 'layers-outline',
+            CoopConsignments: focused ? 'airplane'         : 'airplane-outline',
+            CoopFarmers:      focused ? 'people'           : 'people-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="CoopHome" options={{ tabBarLabel: 'Dashboard' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopDashMain" component={CoopDashboardScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="CoopDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="CoopBatches" options={{ tabBarLabel: 'Batches' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="BatchesList"  component={BatchesScreen} />
+            <Stack.Screen name="BatchDetail"  component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="CoopConsignments" options={{ tabBarLabel: 'Consignments' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="ConsignmentsList" component={ConsignmentsScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="CoopFarmers" options={{ tabBarLabel: 'Farmers' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
+            <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 // ── Wrong-role screen ─────────────────────────────────────────────────────────
 function WrongRoleScreen() {
   const { user, logout } = useAuth();
@@ -228,7 +309,9 @@ export default function AppNavigator() {
     return <SplashLoader />;
   }
 
-  const isFarmer = !user || user.role === 'farmer';
+  const role = user?.role;
+  const isFarmer = !user || role === 'farmer';
+  const isCoopOfficer = role === 'cooperative_officer';
 
   return (
     <NavigationContainer>
@@ -236,6 +319,8 @@ export default function AppNavigator() {
         {user ? (
           isFarmer ? (
             <RootStack.Screen name="Main" component={FarmerTabs} />
+          ) : isCoopOfficer ? (
+            <RootStack.Screen name="CoopMain" component={CoopTabs} />
           ) : (
             <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
           )

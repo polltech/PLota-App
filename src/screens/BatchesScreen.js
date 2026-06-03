@@ -175,7 +175,7 @@ export default function BatchesScreen() {
         <FlatList
           data={batches}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <BatchCard batch={item} onPress={() => openTraceability(item)} />}
+          renderItem={({ item }) => <BatchCard batch={item} onPress={() => navigation.navigate('BatchDetail', { batchId: item.id, batch: item })} />}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}

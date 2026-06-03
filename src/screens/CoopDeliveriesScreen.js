@@ -22,10 +22,10 @@ const statusStyle = (s) => STATUS_STYLE[(s || 'pending').toLowerCase()] || { bg:
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 const fmtKg = (v) => v != null ? `${Number(v).toFixed(1)} kg` : '—';
 
-const DeliveryCard = ({ item }) => {
+const DeliveryCard = ({ item, onPress }) => {
   const ss = statusStyle(item.status);
   return (
-    <View style={s.card}>
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
       <View style={s.cardLeft}>
         <Ionicons name="cube-outline" size={20} color={C.c600} />
       </View>
@@ -33,7 +33,7 @@ const DeliveryCard = ({ item }) => {
         <View style={s.cardTop}>
           <Text style={s.delivNo} numberOfLines={1}>{item.delivery_number || `#${item.id}`}</Text>
           <View style={[s.chip, { backgroundColor: ss.bg }]}>
-            <Text style={[s.chipText, { color: ss.fg }]}>{(item.status || 'PENDING').toUpperCase()}</Text>
+            <Text style={[s.chipText, { color: ss.fg }]}>{(item.status || 'PENDING').replace(/_/g,' ').toUpperCase()}</Text>
           </View>
         </View>
         <Text style={s.farmName} numberOfLines={1}>{item.farm?.farm_name || item.farm_name || `Farm ${item.farm_id}`}</Text>
@@ -54,7 +54,8 @@ const DeliveryCard = ({ item }) => {
           </View>
         </View>
       </View>
-    </View>
+      <Ionicons name="chevron-forward" size={16} color={C.subtle} />
+    </TouchableOpacity>
   );
 };
 
@@ -152,7 +153,12 @@ export default function CoopDeliveriesScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <DeliveryCard item={item} />}
+          renderItem={({ item }) => (
+            <DeliveryCard
+              item={item}
+              onPress={() => navigation.navigate('DeliveryDetail', { deliveryId: item.id, delivery: item })}
+            />
+          )}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}

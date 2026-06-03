@@ -177,11 +177,22 @@ export const coopAPI = {
   getPendingFarms: () => api.get('/coop/farms/pending'),
 
   getDeliveries: (params) => api.get('/coop/deliveries', { params }),
+  getDelivery: (id) => api.get(`/coop/deliveries/${id}`),
   createDelivery: (data) => api.post('/coop/deliveries', data),
+  updateDeliveryStatus: (id, status, notes) => api.patch(`/coop/deliveries/${id}/status`, { status, notes }),
+  addProcessingStep: (id, data) => api.post(`/coop/deliveries/${id}/processing`, data),
+  getProcessingLog: (id) => api.get(`/coop/deliveries/${id}/processing`),
 
   getBatches: () => api.get('/coop/batches'),
+  getBatch: (id) => api.get(`/coop/batches/${id}`),
   createBatch: (data) => api.post('/coop/batches', data),
   getBatchTraceability: (batchId) => api.get(`/coop/batches/${batchId}/traceability`),
+  releaseBatch: (id, notes) => api.post(`/coop/batches/${id}/release`, { notes }),
+  updateBatchStatus: (id, status) => api.patch(`/coop/batches/${id}/status`, { status }),
+
+  getConsignments: () => api.get('/coop/consignments'),
+  getConsignment: (id) => api.get(`/coop/consignments/${id}`),
+  createConsignment: (data) => api.post('/coop/consignments', data),
 };
 
 // ── Admin API ─────────────────────────────────────────────────────────────────
