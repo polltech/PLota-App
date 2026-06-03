@@ -53,13 +53,13 @@ const METHODS = [
 export default function CaptureModeScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { farmId, farm } = route.params || {};
+  const { farmId, farm, formData } = route.params || {};
 
   const handleSelect = (mode) => {
     if (mode === 'import') {
-      navigation.navigate('CaptureImport', { farmId, farm });
+      navigation.navigate('CaptureImport', { farmId, farm, formData });
     } else {
-      navigation.navigate('WalkBoundary', { farmId, farm, captureMode: mode });
+      navigation.navigate('WalkBoundary', { farmId, farm, captureMode: mode, formData });
     }
   };
 

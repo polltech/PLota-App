@@ -769,7 +769,18 @@ export default function AddFarmScreen() {
 
                     <TouchableOpacity
                       style={s.captureNowBtn}
-                      onPress={() => navigation.navigate('CaptureMode', { farmId: farmCode.trim() || farmName.trim() })}
+                      onPress={() => navigation.navigate('CaptureMode', {
+                        farmId: farmCode.trim() || farmName.trim(),
+                        formData: {
+                          firstName, lastName, phone, nationalId, gender,
+                          county, subCounty, dataConsent,
+                          farmName, farmCode, farmType, landRegNumber, totalArea, landUse,
+                          varieties, yearPlanted, coffeeTrees, farmStatus,
+                          plantingMethod, irrigationUsed, irrigationType, annualYield,
+                          cooperativeName: user?.cooperative_name || null,
+                          cooperativeMemberNo: user?.cooperative_member_no || user?.coop_member_no || null,
+                        },
+                      })}
                       activeOpacity={0.85}
                     >
                       <Ionicons name="location-outline" size={18} color={C.c700} />

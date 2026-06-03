@@ -92,7 +92,7 @@ const WalkBoundaryScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { farmId, farm, captureMode = 'walk' } = route.params || {};
+  const { farmId, farm, captureMode = 'walk', formData } = route.params || {};
 
   // captureMode: 'walk' | 'click' | 'draw'
   // click = GPS tracking + tap map; draw = no GPS, tap map; walk = GPS + press button
@@ -300,14 +300,21 @@ const WalkBoundaryScreen = () => {
       ? pointAccuracies.reduce((a, b) => a + b, 0) / pointAccuracies.length
       : (accuracy || 0);
 
-    navigation.navigate('ReviewPolygon', {
-      farmId, farm,
+    const polygonData = {
       polygonCoords: markers.map(m => ({ latitude: m.latitude, longitude: m.longitude })),
-      areaHectares: turf.area(poly) / 10000,
+      areaHectares:    turf.area(poly) / 10000,
       perimeterMeters: turf.length(turf.lineString(ring), { units: 'kilometers' }) * 1000,
-      pointsCount: markers.length,
-      accuracyM: avgAccuracy,
-    });
+      pointsCount:     markers.length,
+      accuracyM:       avgAccuracy,
+    };
+
+    if (formData) {
+      // New farm flow: go to Advanced → Review → Register
+      navigation.navigate('AdvancedCapture', { formData, polygonData });
+    } else {
+      // Existing farm boundary capture: go to ReviewPolygon (saves boundary only)
+      navigation.navigate('ReviewPolygon', { farmId, farm, ...polygonData });
+    }
   };
 
   return (

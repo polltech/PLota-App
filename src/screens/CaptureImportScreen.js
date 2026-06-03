@@ -74,7 +74,7 @@ function parseInput(text) {
 export default function CaptureImportScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { farmId, farm } = route.params || {};
+  const { farmId, farm, formData } = route.params || {};
 
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -89,15 +89,19 @@ export default function CaptureImportScreen() {
       const ring = [...points.map(p => [p.longitude, p.latitude]), [points[0].longitude, points[0].latitude]];
       const poly = turf.polygon([ring]);
 
-      navigation.navigate('ReviewPolygon', {
-        farmId,
-        farm,
-        polygonCoords: points,
+      const polygonData = {
+        polygonCoords:   points,
         areaHectares:    turf.area(poly) / 10000,
         perimeterMeters: turf.length(turf.lineString(ring), { units: 'kilometers' }) * 1000,
         pointsCount:     points.length,
         accuracyM:       0,
-      });
+      };
+
+      if (formData) {
+        navigation.navigate('AdvancedCapture', { formData, polygonData });
+      } else {
+        navigation.navigate('ReviewPolygon', { farmId, farm, ...polygonData });
+      }
     } catch (e) {
       setError(e.message);
     }

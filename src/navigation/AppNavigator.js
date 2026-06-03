@@ -25,6 +25,8 @@ import ParcelDetailScreen from '../screens/ParcelDetailScreen';
 import ComplianceScreen from '../screens/ComplianceScreen';
 import CaptureModeScreen from '../screens/CaptureModeScreen';
 import CaptureImportScreen from '../screens/CaptureImportScreen';
+import AdvancedScreen from '../screens/AdvancedScreen';
+import ReviewFarmScreen from '../screens/ReviewFarmScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -70,6 +72,8 @@ function CaptureStack() {
       <Stack.Screen name="CaptureMode"       component={CaptureModeScreen} />
       <Stack.Screen name="CaptureImport"     component={CaptureImportScreen} />
       <Stack.Screen name="WalkBoundary"      component={WalkBoundaryScreen} />
+      <Stack.Screen name="AdvancedCapture"   component={AdvancedScreen} />
+      <Stack.Screen name="ReviewFarm"        component={ReviewFarmScreen} />
       <Stack.Screen name="ReviewPolygon"     component={ReviewPolygonScreen} />
       <Stack.Screen name="OfflineSaved"      component={OfflineSavedScreen} />
       <Stack.Screen name="Submitted"         component={SubmittedScreen} />
@@ -130,6 +134,8 @@ function FarmerTabs() {
             <Stack.Screen name="CaptureMode"      component={CaptureModeScreen} />
             <Stack.Screen name="CaptureImport"    component={CaptureImportScreen} />
             <Stack.Screen name="WalkBoundary"     component={WalkBoundaryScreen} />
+            <Stack.Screen name="AdvancedCapture"  component={AdvancedScreen} />
+            <Stack.Screen name="ReviewFarm"       component={ReviewFarmScreen} />
             <Stack.Screen name="ReviewPolygon"  component={ReviewPolygonScreen} />
             <Stack.Screen name="OfflineSaved"   component={OfflineSavedScreen} />
             <Stack.Screen name="Submitted"      component={SubmittedScreen} />
