@@ -391,6 +391,9 @@ const WalkBoundaryScreen = () => {
         </TouchableOpacity>
 
         <View style={s.actionRow}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Text style={s.backBtnText}>Back</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={s.undoBtn} onPress={() => { setMarkers(m => m.slice(0, -1)); send({ type: 'undo' }); }}>
             <Text style={s.undoBtnText}>Undo</Text>
           </TouchableOpacity>
@@ -399,7 +402,7 @@ const WalkBoundaryScreen = () => {
             onPress={handleSave}
             activeOpacity={0.8}
           >
-            <Text style={s.saveBtnText}>Review & Save</Text>
+            <Text style={s.saveBtnText}>Next</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -462,11 +465,13 @@ const s = StyleSheet.create({
   markBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
   btnDisabled: { opacity: 0.3, elevation: 0 },
 
-  actionRow: { flexDirection: 'row', gap: 15 },
-  undoBtn: { flex: 1, height: 58, borderRadius: 20, borderWidth: 2, borderColor: C.steel200, alignItems: 'center', justifyContent: 'center' },
-  undoBtnText: { fontSize: 16, fontWeight: '800', color: C.steel600 },
-  saveBtn: { flex: 2, backgroundColor: C.c700, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  saveBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
+  actionRow:    { flexDirection: 'row', gap: 10 },
+  backBtn:      { flex: 1, height: 58, borderRadius: 20, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
+  backBtnText:  { fontSize: 14, fontWeight: '800', color: C.steel600 },
+  undoBtn:      { flex: 1, height: 58, borderRadius: 20, borderWidth: 2, borderColor: C.steel200, alignItems: 'center', justifyContent: 'center' },
+  undoBtnText:  { fontSize: 14, fontWeight: '800', color: C.steel600 },
+  saveBtn:      { flex: 2, backgroundColor: C.c700, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
+  saveBtnText:  { color: C.white, fontSize: 16, fontWeight: '800' },
 
   gpsOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
   gpsLoadingCard: { width: '85%', backgroundColor: C.white, borderRadius: 28, padding: 30, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 15 },

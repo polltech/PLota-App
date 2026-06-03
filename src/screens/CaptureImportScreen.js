@@ -177,15 +177,19 @@ export default function CaptureImportScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              style={[s.importBtn, !text.trim() && s.importBtnDisabled]}
-              onPress={handleImport}
-              disabled={!text.trim()}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="checkmark-circle-outline" size={18} color={C.white} />
-              <Text style={s.importBtnText}>Preview Boundary</Text>
-            </TouchableOpacity>
+            <View style={s.navRow}>
+              <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                <Text style={s.backBtnText}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.nextBtn, !text.trim() && s.nextBtnDisabled]}
+                onPress={handleImport}
+                disabled={!text.trim()}
+                activeOpacity={0.85}
+              >
+                <Text style={s.nextBtnText}>Next</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={{ height: 40 }} />
           </ScrollView>
@@ -226,7 +230,10 @@ const s = StyleSheet.create({
   useExampleBtn:  { marginTop: 10, alignSelf: 'flex-end' },
   useExampleText: { fontSize: 12, fontWeight: '700', color: C.c700 },
 
-  importBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.c700, borderRadius: 14, paddingVertical: 15, marginTop: 8 },
-  importBtnDisabled: { backgroundColor: C.steel300 },
-  importBtnText:     { fontSize: 15, fontWeight: '800', color: C.white },
+  navRow:        { flexDirection: 'row', gap: 12, marginTop: 8 },
+  backBtn:       { flex: 1, height: 54, borderRadius: 14, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
+  backBtnText:   { fontSize: 15, fontWeight: '800', color: C.steel600 },
+  nextBtn:       { flex: 2, height: 54, backgroundColor: C.c700, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  nextBtnDisabled: { backgroundColor: C.steel300 },
+  nextBtnText:   { fontSize: 15, fontWeight: '800', color: C.white },
 });

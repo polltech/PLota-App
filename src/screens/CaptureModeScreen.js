@@ -109,6 +109,10 @@ export default function CaptureModeScreen() {
             </TouchableOpacity>
           ))}
 
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Text style={s.backBtnText}>Back</Text>
+          </TouchableOpacity>
+
           <View style={{ height: 32 }} />
         </ScrollView>
       </SafeAreaView>
@@ -127,6 +131,8 @@ const s = StyleSheet.create({
 
   content:      { padding: 20 },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 16 },
+  backBtn:      { height: 54, borderRadius: 16, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  backBtnText:  { fontSize: 15, fontWeight: '800', color: C.steel600 },
 
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.white, borderRadius: 18, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
 
