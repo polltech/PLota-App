@@ -414,7 +414,7 @@ const WalkBoundaryScreen = () => {
         </View>
       </View>
 
-      {gpsLoading && !isManualMode && (
+      {gpsLoading && !isMapTapMode && (
         <View style={s.gpsOverlay}>
           <View style={s.gpsLoadingCard}>
             <ActivityIndicator size="large" color={C.c700} />

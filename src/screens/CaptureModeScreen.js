@@ -29,17 +29,6 @@ const METHODS = [
     badge: null,
   },
   {
-    mode:  'draw',
-    icon:  'pencil-outline',
-    color: '#7c3aed',
-    bg:    '#ede9fe',
-    title: 'Manual Draw',
-    desc:  'No GPS required. Tap directly on the map to place boundary corners. Use when offline or GPS is unavailable.',
-    badge: 'Works Offline',
-    badgeColor: '#1d4ed8',
-    badgeBg:    '#dbeafe',
-  },
-  {
     mode:  'import',
     icon:  'code-download-outline',
     color: '#059669',
