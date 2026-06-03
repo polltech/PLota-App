@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { farmerAPI } from '../services/api';
+import { dbService } from '../services/database';
 import { C } from '../theme';
 
 // ── Profile dropdown ──────────────────────────────────────────────────────────
@@ -249,6 +250,11 @@ export default function HomeScreen() {
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
+    // Safety net: always clear loading after 12s even if a promise stalls
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setRefreshing(false);
+    }, 12000);
     try {
       const [statsRes, farmsRes, deliveriesRes, notifRes] = await Promise.allSettled([
         farmerAPI.getStats(),
@@ -261,11 +267,14 @@ export default function HomeScreen() {
       if (deliveriesRes.status === 'fulfilled') setDeliveries(deliveriesRes.value.data?.deliveries || deliveriesRes.value.data || []);
       if (notifRes.status      === 'fulfilled') setNotifications(notifRes.value.data?.notifications || []);
       try {
-        const { dbService: db } = require('../services/database');
-        const r = await db.getPendingCount();
-        setPendingSync(r?.count || 0);
+        const pendingCount = await Promise.race([
+          dbService.getPendingCount(),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('db timeout')), 3000)),
+        ]);
+        setPendingSync(pendingCount?.count || 0);
       } catch (_) {}
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
       setRefreshing(false);
     }

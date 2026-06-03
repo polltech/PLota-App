@@ -13,7 +13,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'X-API-Key': API_KEY,
   },
-  timeout: 30000,
+  timeout: 10000,
 });
 
 api.interceptors.request.use(async (config) => {
