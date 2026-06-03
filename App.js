@@ -139,7 +139,7 @@ function useGPSCheck() {
     // Initial check after a short delay (let app fully mount first)
     const t = setTimeout(() => { check(); checked.current = true; }, 1500);
 
-    // Re-check when app comes back to foreground (user may have enabled GPS in settings)
+    // Re-check when app comes back to foreground
     const sub = AppState.addEventListener('change', (next) => {
       if (appState.current.match(/inactive|background/) && next === 'active') {
         check();
@@ -149,6 +149,25 @@ function useGPSCheck() {
 
     return () => { clearTimeout(t); sub.remove(); };
   }, []);
+
+  // Poll every 2s while modal is open — auto-close as soon as GPS is on and permission granted
+  useEffect(() => {
+    if (!modalVisible) return;
+
+    const poll = setInterval(async () => {
+      try {
+        const enabled = await Location.hasServicesEnabledAsync();
+        if (!enabled) return;
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          setModalVisible(false);
+          setReason(null);
+        }
+      } catch (_) {}
+    }, 2000);
+
+    return () => clearInterval(poll);
+  }, [modalVisible]);
 
   const handleOpenSettings = () => {
     Linking.openSettings();
