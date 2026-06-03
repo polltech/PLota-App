@@ -193,6 +193,14 @@ export const coopAPI = {
   getConsignments: () => api.get('/coop/consignments'),
   getConsignment: (id) => api.get(`/coop/consignments/${id}`),
   createConsignment: (data) => api.post('/coop/consignments', data),
+
+  // Farm approval (coop officer)
+  approveFarm: (id, reason) => api.patch(`/coop/farms/${id}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
+  rejectFarm:  (id, reason) => api.patch(`/coop/farms/${id}/reject`  + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
+
+  // Farmer approval (coop officer) — aligned to correct coop endpoints
+  approveFarmer: (userId, reason) => api.patch(`/coop/farmers/${userId}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
+  rejectFarmer:  (userId, reason) => api.post(`/coop/members/${userId}/reject`, { reason }),
 };
 
 // ── Admin API ─────────────────────────────────────────────────────────────────

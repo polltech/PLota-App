@@ -71,7 +71,7 @@ export default function FarmerDetailScreen() {
           onPress: async () => {
             setVerifying(true);
             try {
-              await coopAPI.verifyFarmer(farmerId);
+              await coopAPI.approveFarmer(farmerId);
               setFarmer(prev => ({ ...prev, verification_status: 'verified', coop_status: 'coop_approved' }));
               Alert.alert('Approved', `${fullName} has been verified.`);
             } catch (e) {
