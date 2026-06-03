@@ -10,7 +10,7 @@ import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 
-const STEPS = { PHONE: 'phone', OTP: 'otp', PASSWORD: 'password', DONE: 'done' };
+const STEPS = { PHONE: 'phone', OTP: 'otp', PASSWORD: 'password' };
 
 export default function ForgotPasswordScreen({ navigation }) {
   const { login } = useAuth();
@@ -66,17 +66,15 @@ export default function ForgotPasswordScreen({ navigation }) {
     setLoading(true);
     try {
       await authAPI.resetPassword(resetToken, newPwd, confirmPwd);
-      // Auto-login with new password
+      // Auto-login — setUser fires in AuthContext → AppNavigator switches to dashboard
       const loginRes = await login(phone.trim(), newPwd);
-      if (loginRes.success) {
-        setStep(STEPS.DONE);
-        // AppNavigator handles redirect automatically
-      } else {
-        // Reset success but auto-login failed — send them back to login screen
-        Alert.alert('Password Reset', 'Your password has been set. Please sign in.', [
+      if (!loginRes.success) {
+        // Reset succeeded but auto-login failed; send to login screen
+        Alert.alert('Password Set', 'Your password has been updated. Please sign in.', [
           { text: 'Sign In', onPress: () => navigation.replace('Login') },
         ]);
       }
+      // On success: no setStep needed — AppNavigator unmounts this screen automatically
     } catch (e) {
       Alert.alert('Error', e.response?.data?.detail || 'Reset failed. Try again.');
     } finally {
@@ -88,14 +86,12 @@ export default function ForgotPasswordScreen({ navigation }) {
     [STEPS.PHONE]:    'Reset Password',
     [STEPS.OTP]:      'Enter OTP Code',
     [STEPS.PASSWORD]: 'Set New Password',
-    [STEPS.DONE]:     'All Done!',
   }[step];
 
   const stepSubtitle = {
     [STEPS.PHONE]:    'Enter the phone number linked to your account.',
     [STEPS.OTP]:      `We sent a code to ${phone}. Enter it below.`,
     [STEPS.PASSWORD]: 'Choose a new password for your account.',
-    [STEPS.DONE]:     'You\'re logged in with your new password.',
   }[step];
 
   return (
@@ -109,7 +105,7 @@ export default function ForgotPasswordScreen({ navigation }) {
             showsVerticalScrollIndicator={false}
           >
             {/* Back button */}
-            {step !== STEPS.DONE && (
+            {(
               <TouchableOpacity style={s.back} onPress={() => navigation.goBack()} activeOpacity={0.8}>
                 <Ionicons name="arrow-back" size={20} color={C.c700} />
                 <Text style={s.backText}>Back to Sign In</Text>
@@ -120,9 +116,9 @@ export default function ForgotPasswordScreen({ navigation }) {
             <View style={s.iconWrap}>
               <View style={s.iconCircle}>
                 <Ionicons
-                  name={step === STEPS.DONE ? 'checkmark-circle' : step === STEPS.OTP ? 'keypad' : step === STEPS.PASSWORD ? 'lock-closed' : 'phone-portrait'}
+                  name={step === STEPS.OTP ? 'keypad' : step === STEPS.PASSWORD ? 'lock-closed' : 'phone-portrait'}
                   size={36}
-                  color={step === STEPS.DONE ? '#15803d' : C.c700}
+                  color={C.c700}
                 />
               </View>
             </View>
@@ -242,12 +238,6 @@ export default function ForgotPasswordScreen({ navigation }) {
               </>
             )}
 
-            {/* ── Done step ──────────────────────────────────────── */}
-            {step === STEPS.DONE && (
-              <View style={s.doneWrap}>
-                <Text style={s.doneMsg}>Your password has been updated. You're now signed in.</Text>
-              </View>
-            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -282,7 +272,4 @@ const s = StyleSheet.create({
 
   resendBtn: { alignItems: 'center', marginTop: 16 },
   resendText: { fontSize: 14, color: C.c700, fontWeight: '700' },
-
-  doneWrap: { alignItems: 'center', paddingVertical: 20 },
-  doneMsg: { fontSize: 15, color: C.muted, textAlign: 'center', lineHeight: 24 },
 });
