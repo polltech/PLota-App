@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
-import { mobileAPI, farmerAPI } from '../services/api';
+import { mobileAPI, farmerAPI, authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 import { divisionsForCountry } from '../data/adminDivisions';
@@ -276,7 +276,7 @@ function Dropdown({ value, options, onChange, placeholder, disabled }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function AddFarmScreen() {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [step, setStep] = useState(0);
 
   // ── Step 1: Farmer Details — pre-filled from registration ─────────────────
@@ -294,18 +294,35 @@ export default function AddFarmScreen() {
   const allL1Options = Object.keys(divisions.data).sort();
   const subOptions   = county ? (divisions.data[county] || []) : [];
 
-  // Fetch full profile on mount to fill any missing fields
+  // On mount: refresh /auth/me so cooperative_name is always current,
+  // then fill any form fields the cached user object may have missed.
   useEffect(() => {
-    farmerAPI.getProfile().then(res => {
-      const p = res.data;
-      if (!firstName  && p.first_name)  setFirstName(p.first_name);
-      if (!lastName   && p.last_name)   setLastName(p.last_name);
-      if (!phone      && p.phone)       setPhone(p.phone);
-      if (!nationalId && p.national_id) setNationalId(p.national_id);
-      if (!gender     && p.gender)      setGender(p.gender);
-      if (!county     && p.county)      setCounty(p.county);
-      if (!subCounty  && p.sub_county)  setSubCounty(p.sub_county);
-    }).catch(() => {});
+    authAPI.me().then(res => {
+      const fresh = res.data;
+      // Update the AuthContext so cooperative_name is available everywhere
+      updateUser(fresh);
+      // Fill form fields (always overwrite with authoritative server data)
+      if (fresh.first_name)  setFirstName(fresh.first_name);
+      if (fresh.last_name)   setLastName(fresh.last_name);
+      if (fresh.phone)       setPhone(fresh.phone);
+      if (fresh.national_id) setNationalId(fresh.national_id);
+      if (fresh.gender)      setGender(fresh.gender);
+      if (fresh.county)      setCounty(fresh.county);
+      if (fresh.subcounty || fresh.sub_county) setSubCounty(fresh.subcounty || fresh.sub_county);
+    }).catch(() => {
+      // Fallback: try farmer profile endpoint
+      farmerAPI.getProfile().then(res => {
+        const p = res.data;
+        updateUser(p);
+        if (p.first_name)  setFirstName(p.first_name);
+        if (p.last_name)   setLastName(p.last_name);
+        if (p.phone)       setPhone(p.phone);
+        if (p.national_id) setNationalId(p.national_id);
+        if (p.gender)      setGender(p.gender);
+        if (p.county)      setCounty(p.county);
+        if (p.subcounty || p.sub_county) setSubCounty(p.subcounty || p.sub_county);
+      }).catch(() => {});
+    });
   }, []);
 
   // ── Step 2: Land & Farm ────────────────────────────────────────────────────
