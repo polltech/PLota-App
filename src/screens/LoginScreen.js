@@ -150,9 +150,17 @@ export default function LoginScreen({ navigation }) {
                   )}
                 </TouchableOpacity>
 
+                <TouchableOpacity
+                  style={s.forgotBtn}
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.forgotText}>Forgot password? Reset it here</Text>
+                </TouchableOpacity>
+
                 <View style={s.divider}>
                   <View style={s.line} />
-                  <Text style={s.divText}>New to Plotra?</Text>
+                  <Text style={s.divText}>New farmer?</Text>
                   <View style={s.line} />
                 </View>
 
@@ -161,7 +169,7 @@ export default function LoginScreen({ navigation }) {
                   onPress={() => navigation.navigate('Register')}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.registerText}>Create an Account</Text>
+                  <Text style={s.registerText}>Create a Farmer Account</Text>
                 </TouchableOpacity>
 
                 <View style={s.footer}>
@@ -217,6 +225,9 @@ const s = StyleSheet.create({
   btn: { backgroundColor: C.c700, height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 8, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },
   btnText: { color: C.white, fontSize: 17, fontWeight: '800' },
+
+  forgotBtn: { alignItems: 'center', marginTop: 12, paddingVertical: 6 },
+  forgotText: { fontSize: 14, color: C.c700, fontWeight: '700' },
 
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 22 },
   line: { flex: 1, height: 1, backgroundColor: C.steel200 },
