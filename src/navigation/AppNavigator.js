@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Animated, Image, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -195,6 +195,29 @@ function SplashLoader() {
   );
 }
 
+// ── Wrong-role screen ─────────────────────────────────────────────────────────
+function WrongRoleScreen() {
+  const { user, logout } = useAuth();
+  return (
+    <View style={s.splash}>
+      <Ionicons name="lock-closed-outline" size={52} color={C.c700} />
+      <Text style={[s.splashText, { fontSize: 17, fontWeight: '800', color: C.ink, marginTop: 20 }]}>
+        Farmer Access Only
+      </Text>
+      <Text style={[s.splashText, { textAlign: 'center', marginTop: 8, paddingHorizontal: 32 }]}>
+        This app is for registered farmers. Your account ({user?.role}) must access the Plotra web portal instead.
+      </Text>
+      <TouchableOpacity
+        onPress={logout}
+        style={{ marginTop: 32, backgroundColor: C.c700, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14 }}
+        activeOpacity={0.85}
+      >
+        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Sign Out</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // ── Root navigator ────────────────────────────────────────────────────────────
 const RootStack = createNativeStackNavigator();
 
@@ -205,11 +228,17 @@ export default function AppNavigator() {
     return <SplashLoader />;
   }
 
+  const isFarmer = !user || user.role === 'farmer';
+
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {user ? (
-          <RootStack.Screen name="Main" component={FarmerTabs} />
+          isFarmer ? (
+            <RootStack.Screen name="Main" component={FarmerTabs} />
+          ) : (
+            <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
+          )
         ) : (
           <RootStack.Screen name="Auth">
             {() => (
