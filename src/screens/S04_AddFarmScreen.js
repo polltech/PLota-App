@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import { mobileAPI, farmerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
