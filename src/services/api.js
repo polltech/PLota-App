@@ -53,17 +53,36 @@ api.interceptors.response.use(
 
     _isRefreshing = true;
     try {
+      // 1. Try sliding-window refresh (works while token is still valid)
       const res = await api.post('/auth/refresh');
       const newToken = res.data.access_token;
       await SecureStore.setItemAsync('access_token', newToken);
       processQueue(null, newToken);
       orig.headers.Authorization = `Bearer ${newToken}`;
       return api(orig);
-    } catch (refreshErr) {
-      processQueue(refreshErr, null);
+    } catch (_refreshErr) {
+      // 2. Refresh failed (token fully expired) — silent re-login with cached creds
+      try {
+        const savedId  = await SecureStore.getItemAsync('offline_id');
+        const savedPwd = await SecureStore.getItemAsync('offline_pwd');
+        if (savedId && savedPwd) {
+          const loginRes = await api.post(
+            '/auth/token',
+            `username=${encodeURIComponent(savedId)}&password=${encodeURIComponent(savedPwd)}`,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, _retry: true }
+          );
+          const newToken = loginRes.data.access_token;
+          await SecureStore.setItemAsync('access_token', newToken);
+          processQueue(null, newToken);
+          orig.headers.Authorization = `Bearer ${newToken}`;
+          return api(orig);
+        }
+      } catch (_loginErr) {}
+      // 3. All recovery failed — clear session so user sees login screen
+      processQueue(_refreshErr, null);
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_data');
-      return Promise.reject(refreshErr);
+      return Promise.reject(_refreshErr);
     } finally {
       _isRefreshing = false;
     }
