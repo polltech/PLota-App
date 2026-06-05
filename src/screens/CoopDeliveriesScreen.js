@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, StatusBar, Alert,
+  ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -26,13 +26,13 @@ const statusStyle = (s) => {
 };
 
 const FILTERS = [
-  { key: 'all',              label: 'All' },
-  { key: 'pending',          label: 'Pending' },
-  { key: 'received',         label: 'Received' },
-  { key: 'in_processing',    label: 'Processing' },
-  { key: 'ready_for_batching', label: 'Ready' },
-  { key: 'batched',          label: 'Batched' },
-  { key: 'rejected',         label: 'Rejected' },
+  { key: 'all',               label: 'All',        icon: 'layers-outline',            color: C.c700   },
+  { key: 'pending',           label: 'Pending',    icon: 'time-outline',              color: '#b45309' },
+  { key: 'received',          label: 'Received',   icon: 'archive-outline',           color: '#0369a1' },
+  { key: 'in_processing',     label: 'Processing', icon: 'cog-outline',               color: '#7c3aed' },
+  { key: 'ready_for_batching',label: 'Ready',      icon: 'checkmark-circle-outline',  color: '#1d4ed8' },
+  { key: 'batched',           label: 'Batched',    icon: 'cube-outline',              color: '#6d28d9' },
+  { key: 'rejected',          label: 'Rejected',   icon: 'close-circle-outline',      color: '#dc2626' },
 ];
 
 const DeliveryRow = ({ item, onPress }) => {
@@ -40,7 +40,6 @@ const DeliveryRow = ({ item, onPress }) => {
   const lastStep = item.processing_log?.slice(-1)?.[0]?.step_type;
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.8}>
-      {/* Delivery # + Farmer */}
       <View style={s.rowMain}>
         <View style={s.rowTop}>
           <Text style={s.delivNo} numberOfLines={1}>{item.delivery_number || `D-${item.id}`}</Text>
@@ -96,10 +95,9 @@ const DeliveryRow = ({ item, onPress }) => {
 export default function CoopDeliveriesScreen() {
   const navigation = useNavigation();
   const [deliveries, setDeliveries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const [query, setQuery] = useState('');
+  const [filter,     setFilter]     = useState('all');
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -118,24 +116,11 @@ export default function CoopDeliveriesScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(true); };
 
-  // Stats
-  const totalKg     = deliveries.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
-  const received    = deliveries.filter(d => ['received', 'pending'].includes((d.status || '').toLowerCase())).length;
-  const inProcess   = deliveries.filter(d => d.status === 'in_processing').length;
-  const ready       = deliveries.filter(d => ['ready_for_batching', 'batched'].includes(d.status)).length;
-  const rejected    = deliveries.filter(d => d.status === 'rejected').length;
+  const totalKg = deliveries.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
 
-  // Filter + search
-  let filtered = filter === 'all' ? deliveries
+  const filtered = filter === 'all'
+    ? deliveries
     : deliveries.filter(d => (d.status || 'pending').toLowerCase() === filter);
-  if (query.trim()) {
-    const q = query.toLowerCase();
-    filtered = filtered.filter(d =>
-      (d.delivery_number || '').toLowerCase().includes(q) ||
-      (d.farmer_name || '').toLowerCase().includes(q) ||
-      (d.farm_name || '').toLowerCase().includes(q)
-    );
-  }
 
   return (
     <View style={s.container}>
@@ -158,7 +143,7 @@ export default function CoopDeliveriesScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Filter tabs */}
+      {/* Square filter cards — horizontal scroll, fixed height */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -169,36 +154,27 @@ export default function CoopDeliveriesScreen() {
           const cnt = f.key === 'all'
             ? deliveries.length
             : deliveries.filter(d => (d.status || 'pending').toLowerCase() === f.key).length;
+          const active = filter === f.key;
           return (
             <TouchableOpacity
               key={f.key}
-              style={[s.filterBtn, filter === f.key && s.filterBtnActive]}
+              style={[
+                s.filterCard,
+                {
+                  borderColor: active ? f.color : 'transparent',
+                  backgroundColor: active ? f.color + '18' : C.steel100,
+                },
+              ]}
               onPress={() => setFilter(f.key)}
+              activeOpacity={0.75}
             >
-              <Text style={[s.filterText, filter === f.key && s.filterTextActive]}>
-                {f.label} ({cnt})
-              </Text>
+              <Ionicons name={f.icon} size={20} color={active ? f.color : C.steel500} />
+              <Text style={[s.filterCount, { color: active ? f.color : C.ink }]}>{cnt}</Text>
+              <Text style={[s.filterLabel, { color: active ? f.color : C.muted }]}>{f.label}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
-
-      {/* Search */}
-      <View style={s.searchWrap}>
-        <Ionicons name="search" size={15} color={C.subtle} style={{ marginRight: 7 }} />
-        <TextInput
-          style={s.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search delivery #, farmer, farm..."
-          placeholderTextColor={C.subtle}
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')}>
-            <Ionicons name="close-circle" size={16} color={C.subtle} />
-          </TouchableOpacity>
-        )}
-      </View>
 
       {loading ? (
         <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>
@@ -219,7 +195,9 @@ export default function CoopDeliveriesScreen() {
             <View style={s.empty}>
               <Ionicons name="cube-outline" size={48} color={C.steel300} />
               <Text style={s.emptyTitle}>No deliveries</Text>
-              <Text style={s.emptyMsg}>{query ? 'No results for your search.' : filter !== 'all' ? `No ${filter} deliveries.` : 'Record the first delivery.'}</Text>
+              <Text style={s.emptyMsg}>
+                {filter !== 'all' ? `No ${filter} deliveries.` : 'Record the first delivery.'}
+              </Text>
             </View>
           }
         />
@@ -239,17 +217,14 @@ const s = StyleSheet.create({
   newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
   newBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
 
-  filterScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 9, gap: 7 },
-  filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: C.steel100 },
-  filterBtnActive: { backgroundColor: C.c700 },
-  filterText: { fontSize: 12, fontWeight: '700', color: C.steel700 },
-  filterTextActive: { color: C.white },
+  // Square filter cards
+  filterScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, maxHeight: 110 },
+  filterRow:    { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 8, alignItems: 'center' },
+  filterCard:   { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1.5, gap: 3 },
+  filterCount:  { fontSize: 18, fontWeight: '900' },
+  filterLabel:  { fontSize: 8,  fontWeight: '700', textAlign: 'center' },
 
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.white, margin: 12, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: C.steel200 },
-  searchInput: { flex: 1, fontSize: 14, color: C.ink },
-
-  list: { paddingHorizontal: 12, paddingBottom: 24 },
+  list: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 24 },
   row: { backgroundColor: C.white, borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   rowMain: { flex: 1 },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
