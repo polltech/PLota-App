@@ -12,6 +12,18 @@ import { C } from '../theme';
 const QUALITY_GRADES = ['AA', 'AB', 'PB', 'C', 'AAAA', 'ungraded'];
 const TODAY = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+const complianceInfo = (farm) => {
+  const s = (farm?.compliance_status || 'Under Review').trim();
+  if (s === 'Compliant')
+    return { blocked: false, label: 'Compliant',    icon: 'shield-checkmark', color: '#15803d', bg: '#dcfce7', border: '#86efac' };
+  if (s === 'Non-Compliant' || s === 'Non Compliant')
+    return { blocked: true,  label: 'Non-Compliant', icon: 'shield-outline',   color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' };
+  if (s.toLowerCase().includes('flag'))
+    return { blocked: true,  label: 'Flagged',        icon: 'flag',             color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' };
+  // Under Review or anything else — warn but allow
+  return { blocked: false, label: s,               icon: 'time-outline',     color: '#d97706', bg: '#fef3c7', border: '#fcd34d', warn: true };
+};
+
 const Lbl = ({ text, required }) => (
   <Text style={s.label}>{text}{required && <Text style={{ color: '#dc2626' }}> *</Text>}</Text>
 );
@@ -101,6 +113,8 @@ export default function CreateDeliveryScreen() {
 
   const handleSubmit = () => {
     if (!selectedFarm)     { Alert.alert('Required', 'Select a farm.'); return; }
+    const ci = complianceInfo(selectedFarm);
+    if (ci.blocked) { Alert.alert('Farm Not Compliant', `This farm is ${ci.label} and cannot accept deliveries.`); return; }
     if (!grossWeight || parseFloat(grossWeight) <= 0) { Alert.alert('Required', 'Gross weight must be greater than 0.'); return; }
 
     Alert.alert(
@@ -277,96 +291,142 @@ export default function CreateDeliveryScreen() {
               ) : (
                 <View style={s.farmList}>
                   {farmerFarms.map(f => (
-                    <TouchableOpacity
-                      key={f.id}
-                      style={s.farmOption}
-                      onPress={() => setSelectedFarm(f)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={s.farmOptionLeft}>
-                        <Ionicons name="leaf-outline" size={16} color={C.c600} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.farmOptionName} numberOfLines={1}>{f.farm_name || f.name}</Text>
-                          <Text style={s.farmOptionSub} numberOfLines={1}>
-                            {[f.county, f.total_area_ha ? `${Number(f.total_area_ha).toFixed(2)} ha` : null].filter(Boolean).join(' · ')}
-                          </Text>
-                        </View>
-                      </View>
-                      <Ionicons name="radio-button-off-outline" size={18} color={C.subtle} />
-                    </TouchableOpacity>
+                    {(() => {
+                      const ci = complianceInfo(f);
+                      return (
+                        <TouchableOpacity
+                          key={f.id}
+                          style={s.farmOption}
+                          onPress={() => setSelectedFarm(f)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={s.farmOptionLeft}>
+                            <Ionicons name="leaf-outline" size={16} color={C.c600} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={s.farmOptionName} numberOfLines={1}>{f.farm_name || f.name}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                <Text style={s.farmOptionSub} numberOfLines={1}>
+                                  {[f.county, f.total_area_ha ? `${Number(f.total_area_ha).toFixed(2)} ha` : null].filter(Boolean).join(' · ')}
+                                </Text>
+                                <View style={[s.compliancePill, { backgroundColor: ci.bg }]}>
+                                  <Ionicons name={ci.icon} size={9} color={ci.color} />
+                                  <Text style={[s.compliancePillText, { color: ci.color }]}>{ci.label}</Text>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                          <Ionicons name="radio-button-off-outline" size={18} color={C.subtle} />
+                        </TouchableOpacity>
+                      );
+                    })()}
                   ))}
                 </View>
               )}
             </View>
           )}
 
-          {/* STEP 3: Weight & Quality (only if farm selected) */}
-          {selectedFarm && (
-            <>
-              <View style={s.section}>
-                <View style={s.stepHeader}>
-                  <View style={s.stepBadge}><Text style={s.stepBadgeText}>3</Text></View>
-                  <Text style={s.stepTitle}>Weight</Text>
+          {/* Compliance banner + Steps 3-5 (only if farm selected) */}
+          {selectedFarm && (() => {
+            const ci = complianceInfo(selectedFarm);
+            return (
+              <>
+                {/* Compliance status banner */}
+                <View style={[s.complianceBanner, { backgroundColor: ci.bg, borderColor: ci.border }]}>
+                  <Ionicons name={ci.icon} size={22} color={ci.color} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.complianceBannerTitle, { color: ci.color }]}>
+                      {ci.blocked ? `Farm is ${ci.label}` : ci.warn ? 'Farm Under Review' : 'Farm is Compliant'}
+                    </Text>
+                    {ci.blocked && (
+                      <Text style={[s.complianceBannerSub, { color: ci.color }]}>
+                        {selectedFarm.deforestation_risk_score != null && Number(selectedFarm.deforestation_risk_score) > 0
+                          ? `Deforestation risk score: ${Number(selectedFarm.deforestation_risk_score).toFixed(1)}/100`
+                          : 'This farm has been flagged.'
+                        }{'\n'}Deliveries cannot be recorded for this farm.
+                      </Text>
+                    )}
+                    {ci.warn && !ci.blocked && (
+                      <Text style={[s.complianceBannerSub, { color: ci.color }]}>
+                        Compliance review is pending. Proceed with caution.
+                      </Text>
+                    )}
+                    {!ci.blocked && !ci.warn && (
+                      <Text style={[s.complianceBannerSub, { color: ci.color }]}>
+                        This farm meets EUDR requirements.
+                      </Text>
+                    )}
+                  </View>
                 </View>
-                <Lbl text="Net Weight (kg)" required />
-                <TextInput
-                  style={s.input}
-                  value={grossWeight}
-                  onChangeText={setGrossWeight}
-                  keyboardType="decimal-pad"
-                  placeholder="0.0"
-                  placeholderTextColor={C.subtle}
-                />
-              </View>
 
-              <View style={s.section}>
-                <View style={s.stepHeader}>
-                  <View style={s.stepBadge}><Text style={s.stepBadgeText}>4</Text></View>
-                  <Text style={s.stepTitle}>Quality</Text>
-                </View>
-                <Lbl text="Quality Grade" />
-                <Chips options={QUALITY_GRADES} value={qualityGrade} onChange={setQualityGrade} />
-                <View style={{ height: 14 }} />
-                <Lbl text="Notes" />
-                <TextInput
-                  style={[s.input, s.textarea]}
-                  value={notes} onChangeText={setNotes}
-                  placeholder="Quality notes, visual observations at intake…"
-                  placeholderTextColor={C.subtle}
-                  multiline numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
+                {!ci.blocked && (
+                  <>
+                    <View style={s.section}>
+                      <View style={s.stepHeader}>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>3</Text></View>
+                        <Text style={s.stepTitle}>Weight</Text>
+                      </View>
+                      <Lbl text="Net Weight (kg)" required />
+                      <TextInput
+                        style={s.input}
+                        value={grossWeight}
+                        onChangeText={setGrossWeight}
+                        keyboardType="decimal-pad"
+                        placeholder="0.0"
+                        placeholderTextColor={C.subtle}
+                      />
+                    </View>
 
-              {/* Record Date — auto-set, read-only */}
-              <View style={s.section}>
-                <View style={s.stepHeader}>
-                  <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
-                  <Text style={s.stepTitle}>Record Date</Text>
-                </View>
-                <View style={s.recordDateBox}>
-                  <Ionicons name="calendar" size={18} color={C.c700} />
-                  <Text style={s.recordDateText}>{TODAY}</Text>
-                  <Text style={s.recordDateHint}>Auto-set · cannot be changed</Text>
-                </View>
-              </View>
+                    <View style={s.section}>
+                      <View style={s.stepHeader}>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>4</Text></View>
+                        <Text style={s.stepTitle}>Quality</Text>
+                      </View>
+                      <Lbl text="Quality Grade" />
+                      <Chips options={QUALITY_GRADES} value={qualityGrade} onChange={setQualityGrade} />
+                      <View style={{ height: 14 }} />
+                      <Lbl text="Notes" />
+                      <TextInput
+                        style={[s.input, s.textarea]}
+                        value={notes} onChangeText={setNotes}
+                        placeholder="Quality notes, visual observations at intake…"
+                        placeholderTextColor={C.subtle}
+                        multiline numberOfLines={3}
+                        textAlignVertical="top"
+                      />
+                    </View>
 
-              <TouchableOpacity
-                style={[s.submitBtn, (submitting || !grossWeight) && s.btnDisabled]}
-                onPress={handleSubmit}
-                disabled={submitting || !parseFloat(grossWeight)}
-                activeOpacity={0.85}
-              >
-                {submitting
-                  ? <ActivityIndicator color={C.white} />
-                  : <>
-                      <Ionicons name="checkmark-circle-outline" size={20} color={C.white} />
-                      <Text style={s.submitText}>Record Delivery</Text>
-                    </>
-                }
-              </TouchableOpacity>
-            </>
-          )}
+                    {/* Record Date — auto-set, read-only */}
+                    <View style={s.section}>
+                      <View style={s.stepHeader}>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
+                        <Text style={s.stepTitle}>Record Date</Text>
+                      </View>
+                      <View style={s.recordDateBox}>
+                        <Ionicons name="calendar" size={18} color={C.c700} />
+                        <Text style={s.recordDateText}>{TODAY}</Text>
+                        <Text style={s.recordDateHint}>Auto-set · cannot be changed</Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[s.submitBtn, (submitting || !grossWeight) && s.btnDisabled]}
+                      onPress={handleSubmit}
+                      disabled={submitting || !parseFloat(grossWeight)}
+                      activeOpacity={0.85}
+                    >
+                      {submitting
+                        ? <ActivityIndicator color={C.white} />
+                        : <>
+                            <Ionicons name="checkmark-circle-outline" size={20} color={C.white} />
+                            <Text style={s.submitText}>Record Delivery</Text>
+                          </>
+                      }
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -422,6 +482,13 @@ const s = StyleSheet.create({
   farmOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   farmOptionName: { fontSize: 14, fontWeight: '700', color: C.ink },
   farmOptionSub: { fontSize: 11, color: C.muted, marginTop: 1 },
+
+  compliancePill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  compliancePillText: { fontSize: 9, fontWeight: '800' },
+
+  complianceBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1.5 },
+  complianceBannerTitle: { fontSize: 14, fontWeight: '800', marginBottom: 3 },
+  complianceBannerSub: { fontSize: 12, fontWeight: '600', lineHeight: 17 },
 
   label: { fontSize: 11, fontWeight: '700', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   input: { backgroundColor: C.steel100, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 15, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
