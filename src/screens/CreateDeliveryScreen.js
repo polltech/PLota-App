@@ -68,6 +68,18 @@ export default function CreateDeliveryScreen() {
   const [qualityGrade,  setQualityGrade]  = useState(null);
   const [notes,         setNotes]         = useState('');
 
+  // Crop mix
+  const [coffeePrimary, setCoffeePrimary] = useState(true);
+  const [otherCrops,    setOtherCrops]    = useState('');
+
+  const buildCropMix = () => {
+    const others = otherCrops.split(',').map(s => s.trim()).filter(Boolean);
+    if (coffeePrimary && others.length === 0) return null;
+    return coffeePrimary
+      ? { primary: 'Coffee', secondary: others }
+      : { primary: others[0] || 'Other', secondary: ['Coffee', ...others.slice(1)] };
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -116,6 +128,7 @@ export default function CreateDeliveryScreen() {
   const resetForm = () => {
     setSelectedFarmer(null); setSelectedFarm(null);
     setGrossWeight(''); setQualityGrade(null); setNotes('');
+    setCoffeePrimary(true); setOtherCrops('');
   };
 
   const doSubmit = async () => {
@@ -127,6 +140,7 @@ export default function CreateDeliveryScreen() {
         tare_weight_kg:  0,
         quality_grade:   qualityGrade || null,
         notes:           notes.trim() || null,
+        crop_mix:        buildCropMix(),
       });
       modal.show({
         type:         'success',
@@ -407,10 +421,51 @@ export default function CreateDeliveryScreen() {
                       />
                     </View>
 
-                    {/* Record Date — auto-set, read-only */}
+                    {/* Crop Mix */}
                     <View style={s.section}>
                       <View style={s.stepHeader}>
                         <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
+                        <Text style={s.stepTitle}>Crop Mix</Text>
+                        <View style={s.optionalTag}><Text style={s.optionalTagText}>Optional</Text></View>
+                      </View>
+                      <Text style={s.stepHint}>Is coffee the primary or secondary crop on this farm?</Text>
+
+                      <View style={s.cropRoleRow}>
+                        <TouchableOpacity
+                          style={[s.cropRoleBtn, coffeePrimary && s.cropRoleBtnActive]}
+                          onPress={() => setCoffeePrimary(true)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="star" size={15} color={coffeePrimary ? C.white : C.steel600} />
+                          <Text style={[s.cropRoleText, coffeePrimary && s.cropRoleTextActive]}>Primary</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[s.cropRoleBtn, !coffeePrimary && s.cropRoleBtnActive]}
+                          onPress={() => setCoffeePrimary(false)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="git-branch-outline" size={15} color={!coffeePrimary ? C.white : C.steel600} />
+                          <Text style={[s.cropRoleText, !coffeePrimary && s.cropRoleTextActive]}>Secondary</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={{ height: 14 }} />
+                      <Lbl text="Other crops on this farm" />
+                      <TextInput
+                        style={s.input}
+                        value={otherCrops}
+                        onChangeText={setOtherCrops}
+                        placeholder={coffeePrimary ? 'e.g. Maize, Beans, Bananas' : 'Primary crop (e.g. Maize), others…'}
+                        placeholderTextColor={C.subtle}
+                        autoCapitalize="words"
+                      />
+                      <Text style={s.cropHint}>Separate multiple crops with commas</Text>
+                    </View>
+
+                    {/* Record Date — auto-set, read-only */}
+                    <View style={s.section}>
+                      <View style={s.stepHeader}>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>6</Text></View>
                         <Text style={s.stepTitle}>Record Date</Text>
                       </View>
                       <View style={s.recordDateBox}>
@@ -499,6 +554,16 @@ const s = StyleSheet.create({
 
   compliancePill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   compliancePillText: { fontSize: 9, fontWeight: '800' },
+
+  optionalTag: { marginLeft: 6, backgroundColor: C.steel100, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: C.steel200 },
+  optionalTagText: { fontSize: 10, fontWeight: '700', color: C.muted },
+
+  cropRoleRow: { flexDirection: 'row', gap: 10 },
+  cropRoleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel200, backgroundColor: C.steel100 },
+  cropRoleBtnActive: { backgroundColor: C.c700, borderColor: C.c700 },
+  cropRoleText: { fontSize: 14, fontWeight: '700', color: C.steel600 },
+  cropRoleTextActive: { color: C.white },
+  cropHint: { fontSize: 11, color: C.subtle, marginTop: 6 },
 
   complianceBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1.5 },
   complianceBannerTitle: { fontSize: 14, fontWeight: '800', marginBottom: 3 },
