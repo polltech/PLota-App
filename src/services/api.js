@@ -150,6 +150,7 @@ export const farmerAPI = {
 
   getStats: () => api.get('/farmer/stats'),
   getNotifications: () => api.get('/farmer/notifications'),
+  markNotificationRead: (id) => api.patch(`/farmer/notifications/${id}/read`),
   getDeliveries: () => api.get('/farmer/deliveries'),
 
   getDeforestationHistory: (farmId, parcelId) =>
@@ -201,6 +202,8 @@ export const coopAPI = {
   getBatchTraceability: (batchId) => api.get(`/coop/batches/${batchId}/traceability`),
   releaseBatch: (id, notes) => api.post(`/coop/batches/${id}/release`, { notes }),
   updateBatchStatus: (id, status) => api.patch(`/coop/batches/${id}/status`, { status }),
+
+  requestUpdate: (userId, issue) => api.patch(`/coop/farmers/${userId}/request-update`, { issue }),
 
   getConsignments: () => api.get('/coop/consignments'),
   getConsignment: (id) => api.get(`/coop/consignments/${id}`),

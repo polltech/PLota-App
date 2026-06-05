@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, StatusBar, TextInput,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { farmerAPI } from '../services/api';
+import { farmerAPI, authAPI } from '../services/api';
 import { C } from '../theme';
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -48,9 +48,23 @@ export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
   const navigation = useNavigation();
 
-  const [editing,    setEditing]    = useState(false);
+  const hasUpdateRequest = !!user?.update_requested;
+
+  // Auto-open edit mode when cooperative has requested an update
+  const [editing,    setEditing]    = useState(hasUpdateRequest);
   const [saving,     setSaving]     = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Refresh user data on mount to get latest update_requested state
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const res = await authAPI.me();
+        if (res.data) await updateUser(res.data);
+      } catch (_) {}
+    };
+    refresh();
+  }, []);
 
   // Editable fields
   const [firstName, setFirstName] = useState(user?.first_name  || '');
@@ -85,6 +99,7 @@ export default function ProfileScreen() {
       Alert.alert('Required', 'First name and last name are required.');
       return;
     }
+    const wasUpdateRequested = !!user?.update_requested;
     setSaving(true);
     try {
       const payload = {
@@ -98,7 +113,12 @@ export default function ProfileScreen() {
       const res = await farmerAPI.updateProfile(payload);
       await updateUser(res.data || payload);
       setEditing(false);
-      Alert.alert('Saved', 'Your profile has been updated.');
+      Alert.alert(
+        'Profile Updated',
+        wasUpdateRequested
+          ? 'Your profile has been updated. Your cooperative officer will review the changes.'
+          : 'Your profile has been updated.'
+      );
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to save profile.';
       Alert.alert('Error', typeof msg === 'string' ? msg : 'Failed to save profile.');
@@ -154,6 +174,33 @@ export default function ProfileScreen() {
             </>
           )}
         </View>
+
+        {/* ── UPDATE REQUEST BANNER ──────────────────────────────────────── */}
+        {hasUpdateRequest && (
+          <View style={s.urBanner}>
+            <View style={s.urBannerTop}>
+              <Ionicons name="warning" size={20} color="#d97706" />
+              <Text style={s.urTitle}>Profile Update Required</Text>
+            </View>
+            <Text style={s.urSubtitle}>
+              {user?.update_requested_by_name
+                ? `${user.update_requested_by_name} from your cooperative has requested that you update your profile.`
+                : 'Your cooperative has requested that you update your profile.'}
+            </Text>
+            {!!user?.update_request_notes && (
+              <View style={s.urNotesBox}>
+                <Text style={s.urNotesLabel}>Issue to fix:</Text>
+                <Text style={s.urNotesText}>{user.update_request_notes}</Text>
+              </View>
+            )}
+            {!editing && (
+              <TouchableOpacity style={s.urButton} onPress={startEdit} activeOpacity={0.85}>
+                <Ionicons name="create-outline" size={16} color={C.white} />
+                <Text style={s.urButtonText}>Update My Profile Now</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* ── EDIT MODE ──────────────────────────────────────────────────── */}
         {editing && (
@@ -343,4 +390,15 @@ const s = StyleSheet.create({
   compDesc: { fontSize: 12, color: C.muted, lineHeight: 17 },
 
   version: { textAlign: 'center', fontSize: 11, color: C.subtle, marginTop: 28, fontWeight: '500' },
+
+  // Update request banner
+  urBanner: { margin: 20, marginBottom: 0, backgroundColor: '#fffbeb', borderRadius: 18, padding: 16, borderWidth: 1.5, borderColor: '#fcd34d' },
+  urBannerTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  urTitle: { fontSize: 15, fontWeight: '800', color: '#92400e' },
+  urSubtitle: { fontSize: 13, color: '#78350f', lineHeight: 19, marginBottom: 10 },
+  urNotesBox: { backgroundColor: '#fef3c7', borderRadius: 10, padding: 12, marginBottom: 12 },
+  urNotesLabel: { fontSize: 10, fontWeight: '800', color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  urNotesText: { fontSize: 14, color: '#78350f', fontWeight: '600', lineHeight: 20 },
+  urButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#d97706', borderRadius: 12, paddingVertical: 12, shadowColor: '#d97706', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  urButtonText: { color: C.white, fontSize: 14, fontWeight: '800' },
 });

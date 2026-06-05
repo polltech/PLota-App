@@ -318,11 +318,30 @@ export default function HomeScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.heroTime}>{time}</Text>
             </View>
-            <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
-              <Text style={s.avatarBtnText}>
-                {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+            <View style={s.heroActions}>
+              {/* Notification bell */}
+              <TouchableOpacity
+                style={s.bellBtn}
+                onPress={() => navigation.navigate('Notifications')}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="notifications-outline" size={22} color={C.white} />
+                {notifications.filter(n => !n.is_read).length > 0 && (
+                  <View style={s.bellBadge}>
+                    <Text style={s.bellBadgeText}>
+                      {Math.min(notifications.filter(n => !n.is_read).length, 9)}
+                      {notifications.filter(n => !n.is_read).length > 9 ? '+' : ''}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              {/* Profile avatar */}
+              <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
+                <Text style={s.avatarBtnText}>
+                  {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           {profileOpen && (
             <ProfileMenu
@@ -632,6 +651,10 @@ const s = StyleSheet.create({
   greet: { fontSize: 14, color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
   name: { fontSize: 24, fontWeight: '800', color: C.white },
   heroTime: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '500', marginTop: 2 },
+  heroActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  bellBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  bellBadge: { position: 'absolute', top: -2, right: -2, backgroundColor: '#dc2626', borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 2, borderColor: C.c800 },
+  bellBadgeText: { color: C.white, fontSize: 9, fontWeight: '900' },
   avatarBtn:     { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' },
   avatarBtnText: { fontSize: 18, fontWeight: '900', color: C.white },
   syncBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, RefreshControl, StatusBar,
+  ActivityIndicator, Alert, RefreshControl, StatusBar, Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -35,6 +35,11 @@ export default function FarmerDetailScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [verifying, setVerifying] = useState(false);
+
+  // Request update modal
+  const [updateModal, setUpdateModal] = useState(false);
+  const [issueText,   setIssueText]   = useState('');
+  const [requesting,  setRequesting]  = useState(false);
 
   const farmerId = farmer?.id;
   const fullName = [farmer?.first_name, farmer?.last_name].filter(Boolean).join(' ') || 'Farmer';
@@ -107,6 +112,29 @@ export default function FarmerDetailScreen() {
     );
   };
 
+  const handleRequestUpdate = async () => {
+    const issue = issueText.trim();
+    if (!issue) { Alert.alert('Required', 'Describe what the farmer needs to update.'); return; }
+    setRequesting(true);
+    try {
+      await coopAPI.requestUpdate(farmerId, issue);
+      setFarmer(prev => ({
+        ...prev,
+        update_requested: true,
+        update_requested_by_name: 'You',
+        update_request_notes: issue,
+        coop_status: 'update_requested',
+      }));
+      setUpdateModal(false);
+      setIssueText('');
+      Alert.alert('Request Sent', `${fullName} has been notified to update their profile.`);
+    } catch (e) {
+      Alert.alert('Error', e.response?.data?.detail || 'Failed to send request.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   const isPending = ['pending', 'update_requested'].includes((farmer?.verification_status || '').toLowerCase());
   const isCoopRejected = farmer?.coop_status === 'coop_rejected';
 
@@ -170,6 +198,24 @@ export default function FarmerDetailScreen() {
           </View>
         )}
 
+        {/* Request Update button (always available) */}
+        {!farmer?.update_requested && (
+          <TouchableOpacity
+            style={s.requestUpdateBtn}
+            onPress={() => { setIssueText(''); setUpdateModal(true); }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="create-outline" size={16} color="#d97706" />
+            <Text style={s.requestUpdateBtnText}>Request Profile Update</Text>
+          </TouchableOpacity>
+        )}
+        {farmer?.update_requested && (
+          <View style={s.updatePendingBanner}>
+            <Ionicons name="warning" size={16} color="#d97706" />
+            <Text style={s.updatePendingText}>Update requested — awaiting farmer's response</Text>
+          </View>
+        )}
+
         {/* Personal info */}
         <View style={s.section}>
           <Text style={s.subHeader}>Personal Information</Text>
@@ -225,6 +271,48 @@ export default function FarmerDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Request Update Modal ───────────────────────────────────────── */}
+      <Modal visible={updateModal} transparent animationType="fade" onRequestClose={() => setUpdateModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Request Profile Update</Text>
+            <Text style={s.modalSub}>
+              Describe what {farmer?.first_name || 'the farmer'} needs to fix or update in their profile:
+            </Text>
+            <TextInput
+              style={s.modalInput}
+              value={issueText}
+              onChangeText={setIssueText}
+              placeholder="e.g. National ID is missing, phone number is incorrect, county needs to be updated..."
+              placeholderTextColor={C.subtle}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <View style={s.modalActions}>
+              <TouchableOpacity
+                style={s.modalCancel}
+                onPress={() => { setUpdateModal(false); setIssueText(''); }}
+              >
+                <Text style={s.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.modalSubmit, requesting && { opacity: 0.5 }]}
+                onPress={handleRequestUpdate}
+                disabled={requesting}
+                activeOpacity={0.85}
+              >
+                {requesting
+                  ? <ActivityIndicator color={C.white} size="small" />
+                  : <Text style={s.modalSubmitText}>Send Request</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -264,4 +352,20 @@ const s = StyleSheet.create({
   farmName: { fontSize: 14, fontWeight: '700', color: C.ink },
   farmMeta: { fontSize: 12, color: C.muted, marginTop: 2 },
   noFarms: { fontSize: 13, color: C.muted, textAlign: 'center', paddingVertical: 20 },
+
+  requestUpdateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: 14, paddingVertical: 12, marginBottom: 14, borderWidth: 1.5, borderColor: '#fcd34d' },
+  requestUpdateBtnText: { fontSize: 14, fontWeight: '800', color: '#d97706' },
+  updatePendingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 14, borderWidth: 1.5, borderColor: '#fcd34d' },
+  updatePendingText: { fontSize: 13, color: '#d97706', fontWeight: '700', flex: 1 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalCard: { backgroundColor: C.white, borderRadius: 22, padding: 24, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: C.c900, marginBottom: 6 },
+  modalSub: { fontSize: 13, color: C.muted, lineHeight: 19, marginBottom: 16 },
+  modalInput: { backgroundColor: C.steel100, borderRadius: 14, padding: 14, fontSize: 14, color: C.ink, borderWidth: 1.5, borderColor: C.steel200, minHeight: 100, marginBottom: 16, fontWeight: '500' },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalCancel: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.steel300 },
+  modalCancelText: { fontSize: 14, fontWeight: '700', color: C.steel700 },
+  modalSubmit: { flex: 2, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#d97706', shadowColor: '#d97706', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  modalSubmitText: { fontSize: 14, fontWeight: '800', color: C.white },
 });

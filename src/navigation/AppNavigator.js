@@ -19,6 +19,7 @@ import FarmsListScreen from '../screens/FarmsListScreen';
 import DeliveriesScreen from '../screens/DeliveriesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import WalletScreen from '../screens/WalletScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 // ── Shared detail screens ─────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
@@ -124,12 +125,13 @@ function FarmerTabs() {
       <Tab.Screen name="Dashboard" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="HomeMain"     component={HomeScreen} />
-            <Stack.Screen name="Wallet"       component={WalletScreen} />
-            <Stack.Screen name="Profile"      component={ProfileScreen} />
-            <Stack.Screen name="FarmDetail"   component={FarmDetailScreen} />
-            <Stack.Screen name="ParcelDetail" component={ParcelDetailScreen} />
-            <Stack.Screen name="QueueList"    component={QueueListScreen} />
+            <Stack.Screen name="HomeMain"       component={HomeScreen} />
+            <Stack.Screen name="Notifications"  component={NotificationsScreen} />
+            <Stack.Screen name="Wallet"         component={WalletScreen} />
+            <Stack.Screen name="Profile"        component={ProfileScreen} />
+            <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
+            <Stack.Screen name="QueueList"      component={QueueListScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
