@@ -10,7 +10,7 @@ import { coopAPI } from '../services/api';
 import { C } from '../theme';
 
 const QUALITY_GRADES = ['AA', 'AB', 'PB', 'C', 'AAAA', 'ungraded'];
-const CHERRY_TYPES   = ['Red Cherry', 'Mbuni', 'Parchment'];
+const TODAY = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 const Lbl = ({ text, required }) => (
   <Text style={s.label}>{text}{required && <Text style={{ color: '#dc2626' }}> *</Text>}</Text>
@@ -53,9 +53,6 @@ export default function CreateDeliveryScreen() {
   // Form fields
   const [grossWeight,   setGrossWeight]   = useState('');
   const [qualityGrade,  setQualityGrade]  = useState(null);
-  const [moisture,      setMoisture]      = useState('');
-  const [cherryType,    setCherryType]    = useState(null);
-  const [pickingDate,   setPickingDate]   = useState('');
   const [notes,         setNotes]         = useState('');
 
   useEffect(() => {
@@ -120,21 +117,17 @@ export default function CreateDeliveryScreen() {
             setSubmitting(true);
             try {
               await coopAPI.createDelivery({
-                farm_id:          selectedFarm.id,
-                gross_weight_kg:  parseFloat(grossWeight),
-                tare_weight_kg:   0,
-                quality_grade:    qualityGrade || null,
-                moisture_content: moisture ? parseFloat(moisture) : null,
-                cherry_type:      cherryType || null,
-                picking_date:     pickingDate ? new Date(pickingDate).toISOString() : null,
-                notes:            notes.trim() || null,
+                farm_id:         selectedFarm.id,
+                gross_weight_kg: parseFloat(grossWeight),
+                tare_weight_kg:  0,
+                quality_grade:   qualityGrade || null,
+                notes:           notes.trim() || null,
               });
               Alert.alert('Delivery Recorded', `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been recorded.`, [
                 { text: 'Record Another', onPress: () => {
                     setSelectedFarmer(null); setSelectedFarm(null);
                     setGrossWeight('');
-                    setQualityGrade(null); setMoisture(''); setCherryType(null);
-                    setPickingDate(''); setNotes('');
+                    setQualityGrade(null); setNotes('');
                 }},
                 { text: 'Done', onPress: () => navigation.goBack() },
               ]);
@@ -329,24 +322,6 @@ export default function CreateDeliveryScreen() {
                 <Lbl text="Quality Grade" />
                 <Chips options={QUALITY_GRADES} value={qualityGrade} onChange={setQualityGrade} />
                 <View style={{ height: 14 }} />
-                <Lbl text="Cherry Type" />
-                <Chips options={CHERRY_TYPES} value={cherryType} onChange={setCherryType} />
-                <View style={{ height: 14 }} />
-                <Lbl text="Moisture Content (%)" />
-                <TextInput style={s.input} value={moisture} onChangeText={setMoisture}
-                  keyboardType="decimal-pad" placeholder="e.g. 11.5" placeholderTextColor={C.subtle} />
-              </View>
-
-              <View style={s.section}>
-                <View style={s.stepHeader}>
-                  <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
-                  <Text style={s.stepTitle}>Harvest Details</Text>
-                </View>
-                <Lbl text="Picking Date (YYYY-MM-DD)" />
-                <TextInput style={s.input} value={pickingDate} onChangeText={setPickingDate}
-                  placeholder={new Date().toISOString().slice(0,10)} placeholderTextColor={C.subtle}
-                  keyboardType="numbers-and-punctuation" />
-                <View style={{ height: 14 }} />
                 <Lbl text="Notes" />
                 <TextInput
                   style={[s.input, s.textarea]}
@@ -356,6 +331,19 @@ export default function CreateDeliveryScreen() {
                   multiline numberOfLines={3}
                   textAlignVertical="top"
                 />
+              </View>
+
+              {/* Record Date — auto-set, read-only */}
+              <View style={s.section}>
+                <View style={s.stepHeader}>
+                  <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
+                  <Text style={s.stepTitle}>Record Date</Text>
+                </View>
+                <View style={s.recordDateBox}>
+                  <Ionicons name="calendar" size={18} color={C.c700} />
+                  <Text style={s.recordDateText}>{TODAY}</Text>
+                  <Text style={s.recordDateHint}>Auto-set · cannot be changed</Text>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -439,6 +427,10 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: C.c700, borderColor: C.c700 },
   chipText: { fontSize: 13, fontWeight: '700', color: C.steel700 },
   chipTextActive: { color: C.white },
+
+  recordDateBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.steel100, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1.5, borderColor: C.steel200 },
+  recordDateText: { fontSize: 15, fontWeight: '800', color: C.ink, flex: 1 },
+  recordDateHint: { fontSize: 11, color: C.muted, fontWeight: '600' },
 
   weightRow: { flexDirection: 'row', gap: 12 },
   netRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10 },
