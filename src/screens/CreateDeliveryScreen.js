@@ -192,7 +192,7 @@ export default function CreateDeliveryScreen() {
                   <View>
                     <Text style={s.selectedName}>{selectedFarmer.first_name} {selectedFarmer.last_name}</Text>
                     <Text style={s.selectedSub}>
-                      {selectedFarmer.phone || ''}
+                      {[selectedFarmer.coop_member_no, selectedFarmer.phone].filter(Boolean).join('  ·  ')}
                     </Text>
                   </View>
                 </View>
@@ -229,7 +229,7 @@ export default function CreateDeliveryScreen() {
                             <View>
                               <Text style={s.dropName}>{f.first_name} {f.last_name}</Text>
                               <Text style={s.dropSub}>
-                                {f.phone || ''}
+                                {[f.coop_member_no, f.phone].filter(Boolean).join('  ·  ')}
                               </Text>
                             </View>
                           </View>

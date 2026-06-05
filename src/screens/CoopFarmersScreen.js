@@ -160,6 +160,7 @@ export default function CoopFarmersScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.tdName} numberOfLines={1}>{name}</Text>
+                {!!f.coop_member_no && <Text style={[s.tdSub, { color: C.c700, fontWeight: '700' }]} numberOfLines={1}>{f.coop_member_no}</Text>}
                 {!!f.email && <Text style={s.tdSub} numberOfLines={1}>{f.email}</Text>}
               </View>
             </View>
@@ -372,6 +373,7 @@ export default function CoopFarmersScreen() {
 
                 {/* Detail rows */}
                 <View style={s.confirmDetails}>
+                  {!!cf.coop_member_no && <View style={s.confirmRow}><Ionicons name="ribbon-outline"    size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Member No.</Text><Text style={s.confirmRowVal}>{cf.coop_member_no}</Text></View>}
                   {!!cf.phone      && <View style={s.confirmRow}><Ionicons name="call-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Phone</Text><Text style={s.confirmRowVal}>{cf.phone}</Text></View>}
                   {!!cf.national_id && <View style={s.confirmRow}><Ionicons name="card-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>National ID</Text><Text style={s.confirmRowVal}>{cf.national_id}</Text></View>}
                   {!!cf.email      && <View style={s.confirmRow}><Ionicons name="mail-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Email</Text><Text style={s.confirmRowVal} numberOfLines={1}>{cf.email}</Text></View>}

@@ -26,6 +26,9 @@ const FarmerCard = ({ farmer, isPending, onVerify, onReject }) => (
         <Text style={s.name}>
           {[farmer.first_name, farmer.last_name].filter(Boolean).join(' ') || farmer.email}
         </Text>
+        {!!farmer.coop_member_no && (
+          <Text style={[s.meta, { color: '#6d28d9', fontWeight: '700' }]}>{farmer.coop_member_no}</Text>
+        )}
         <Text style={s.meta}>ID: {farmer.national_id || '—'} · {farmer.phone || '—'}</Text>
         <Text style={s.meta}>{farmer.county || farmer.district || '—'} · Joined {fmtDate(farmer.created_at)}</Text>
         {farmer.cooperative_name && (

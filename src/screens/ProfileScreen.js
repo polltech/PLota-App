@@ -50,17 +50,23 @@ export default function ProfileScreen() {
 
   const hasUpdateRequest = !!user?.update_requested;
 
-  // Auto-open edit mode when cooperative has requested an update
   const [editing,    setEditing]    = useState(hasUpdateRequest);
   const [saving,     setSaving]     = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [memberNo,   setMemberNo]   = useState(user?.coop_member_no || null);
 
-  // Refresh user data on mount to get latest update_requested state
   useEffect(() => {
     const refresh = async () => {
       try {
         const res = await authAPI.me();
-        if (res.data) await updateUser(res.data);
+        if (res.data) {
+          await updateUser(res.data);
+          if (res.data.coop_member_no) setMemberNo(res.data.coop_member_no);
+        }
+      } catch (_) {}
+      try {
+        const mRes = await farmerAPI.getMembership();
+        if (mRes.data?.membership_number) setMemberNo(mRes.data.membership_number);
       } catch (_) {}
     };
     refresh();
@@ -243,6 +249,9 @@ export default function ProfileScreen() {
             <View style={s.section}>
               <Text style={s.sectionTitle}>Account</Text>
               <View style={s.card}>
+                {!!memberNo && (
+                  <InfoItem label="Member No." value={memberNo} />
+                )}
                 <InfoItem label="Email"       value={user?.email} />
                 <InfoItem label="Phone"       value={user?.phone} />
                 <InfoItem label="National ID" value={user?.national_id} />

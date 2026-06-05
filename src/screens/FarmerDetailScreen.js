@@ -200,6 +200,9 @@ export default function FarmerDetailScreen() {
         {/* Personal info */}
         <View style={s.section}>
           <Text style={s.subHeader}>Personal Information</Text>
+          {!!farmer?.coop_member_no && (
+            <InfoRow icon="ribbon-outline" label="Member No." value={farmer.coop_member_no} />
+          )}
           <InfoRow icon="person-outline" label="Full Name" value={fullName} />
           <InfoRow icon="call-outline" label="Phone" value={farmer?.phone} />
           <InfoRow icon="mail-outline" label="Email" value={farmer?.email} />
@@ -275,6 +278,7 @@ export default function FarmerDetailScreen() {
 
             {/* Key details */}
             <View style={s.confirmDetails}>
+              {!!farmer?.coop_member_no && <View style={s.confirmRow}><Ionicons name="ribbon-outline"    size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Member No.</Text><Text style={s.confirmRowVal}>{farmer.coop_member_no}</Text></View>}
               {!!farmer?.phone      && <View style={s.confirmRow}><Ionicons name="call-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Phone</Text><Text style={s.confirmRowVal}>{farmer.phone}</Text></View>}
               {!!farmer?.national_id && <View style={s.confirmRow}><Ionicons name="card-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>National ID</Text><Text style={s.confirmRowVal}>{farmer.national_id}</Text></View>}
               {!!farmer?.email      && <View style={s.confirmRow}><Ionicons name="mail-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Email</Text><Text style={s.confirmRowVal} numberOfLines={1}>{farmer.email}</Text></View>}

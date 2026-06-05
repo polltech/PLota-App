@@ -152,6 +152,7 @@ export const farmerAPI = {
   getNotifications: () => api.get('/farmer/notifications'),
   markNotificationRead: (id) => api.patch(`/farmer/notifications/${id}/read`),
   getDeliveries: () => api.get('/farmer/deliveries'),
+  getMembership: () => api.get('/auth/me/membership'),
 
   getDeforestationHistory: (farmId, parcelId) =>
     api.get(`/farmer/farm/${farmId}/deforestation-history`, { params: parcelId ? { parcel_id: parcelId } : {} }),
