@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import * as SecureStore from 'expo-secure-store';
 import * as Network from 'expo-network';
 import { dbService } from '../services/database';
-import { syncService } from '../services/api';
+import { syncService, onSessionExpired } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -111,6 +111,12 @@ export const AuthProvider = ({ children }) => {
     } catch (_) {}
     setUser(null);
   }, []);
+
+  // Register the logout callback so the axios interceptor can trigger a proper
+  // React-state logout (not just SecureStore deletion) when a 401 can't be recovered.
+  useEffect(() => {
+    onSessionExpired(logout);
+  }, [logout]);
 
   const refreshSession = useCallback(async () => {
     const { authAPI } = require('../services/api');

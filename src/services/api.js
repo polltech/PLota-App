@@ -24,7 +24,12 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Auto-retry once on 401 with refreshed token
+// ── Session-expired callback (set by AuthContext) ─────────────────────────────
+// Called when a 401 cannot be recovered — triggers proper React logout.
+let _onSessionExpired = null;
+export function onSessionExpired(callback) { _onSessionExpired = callback; }
+
+// ── 401 retry with token refresh ──────────────────────────────────────────────
 let _isRefreshing = false;
 let _pendingQueue = [];
 
@@ -33,11 +38,27 @@ const processQueue = (err, token = null) => {
   _pendingQueue = [];
 };
 
+const _doLogout = async () => {
+  try { await SecureStore.deleteItemAsync('access_token'); } catch (_) {}
+  try { await SecureStore.deleteItemAsync('user_data'); } catch (_) {}
+  if (_onSessionExpired) _onSessionExpired();
+};
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const orig = err.config;
-    if (err.response?.status !== 401 || orig._retry) return Promise.reject(err);
+
+    // Only handle 401; skip if already retried or if this IS an auth endpoint
+    // (prevents the refresh/login calls themselves from re-entering)
+    const isAuthEndpoint =
+      orig?.url?.includes('/auth/token') ||
+      orig?.url?.includes('/auth/refresh');
+
+    if (err.response?.status !== 401 || orig?._retry || isAuthEndpoint) {
+      return Promise.reject(err);
+    }
+
     orig._retry = true;
 
     if (_isRefreshing) {
@@ -53,7 +74,7 @@ api.interceptors.response.use(
 
     _isRefreshing = true;
     try {
-      // 1. Try sliding-window refresh (works while token is still valid)
+      // Attempt sliding-window refresh (token still in SecureStore is sent by request interceptor)
       const res = await api.post('/auth/refresh');
       const newToken = res.data.access_token;
       await SecureStore.setItemAsync('access_token', newToken);
@@ -61,27 +82,9 @@ api.interceptors.response.use(
       orig.headers.Authorization = `Bearer ${newToken}`;
       return api(orig);
     } catch (_refreshErr) {
-      // 2. Refresh failed (token fully expired) — silent re-login with cached creds
-      try {
-        const savedId  = await SecureStore.getItemAsync('offline_id');
-        const savedPwd = await SecureStore.getItemAsync('offline_pwd');
-        if (savedId && savedPwd) {
-          const loginRes = await api.post(
-            '/auth/token',
-            `username=${encodeURIComponent(savedId)}&password=${encodeURIComponent(savedPwd)}`,
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, _retry: true }
-          );
-          const newToken = loginRes.data.access_token;
-          await SecureStore.setItemAsync('access_token', newToken);
-          processQueue(null, newToken);
-          orig.headers.Authorization = `Bearer ${newToken}`;
-          return api(orig);
-        }
-      } catch (_loginErr) {}
-      // 3. All recovery failed — clear session so user sees login screen
+      // Refresh failed — token is genuinely invalid, log the user out cleanly
       processQueue(_refreshErr, null);
-      await SecureStore.deleteItemAsync('access_token');
-      await SecureStore.deleteItemAsync('user_data');
+      await _doLogout();
       return Promise.reject(_refreshErr);
     } finally {
       _isRefreshing = false;
