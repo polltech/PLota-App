@@ -27,7 +27,6 @@ const statusStyle = (s) => {
 
 const FILTERS = [
   { key: 'all',               label: 'All',        icon: 'layers-outline',            color: C.c700   },
-  { key: 'pending',           label: 'Pending',    icon: 'time-outline',              color: '#b45309' },
   { key: 'received',          label: 'Received',   icon: 'archive-outline',           color: '#0369a1' },
   { key: 'in_processing',     label: 'Processing', icon: 'cog-outline',               color: '#7c3aed' },
   { key: 'ready_for_batching',label: 'Ready',      icon: 'checkmark-circle-outline',  color: '#1d4ed8' },
@@ -120,7 +119,7 @@ export default function CoopDeliveriesScreen() {
 
   const filtered = filter === 'all'
     ? deliveries
-    : deliveries.filter(d => (d.status || 'pending').toLowerCase() === filter);
+    : deliveries.filter(d => (d.status || 'received').toLowerCase() === filter);
 
   return (
     <View style={s.container}>
@@ -153,7 +152,7 @@ export default function CoopDeliveriesScreen() {
         {FILTERS.map(f => {
           const cnt = f.key === 'all'
             ? deliveries.length
-            : deliveries.filter(d => (d.status || 'pending').toLowerCase() === f.key).length;
+            : deliveries.filter(d => (d.status || 'received').toLowerCase() === f.key).length;
           const active = filter === f.key;
           return (
             <TouchableOpacity

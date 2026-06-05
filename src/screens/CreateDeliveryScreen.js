@@ -138,7 +138,7 @@ export default function CreateDeliveryScreen() {
                 quality_grade:   qualityGrade || null,
                 notes:           notes.trim() || null,
               });
-              Alert.alert('Delivery Recorded', `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been recorded.`, [
+              Alert.alert('Delivery Received', `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been received and recorded. Next step: processing.`, [
                 { text: 'Record Another', onPress: () => {
                     setSelectedFarmer(null); setSelectedFarm(null);
                     setGrossWeight('');
