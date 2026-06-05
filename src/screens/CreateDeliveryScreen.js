@@ -10,7 +10,6 @@ import { coopAPI } from '../services/api';
 import { C } from '../theme';
 import AppModal, { useAppModal } from '../components/AppModal';
 
-const QUALITY_GRADES = ['AA', 'AB', 'PB', 'C', 'AAAA', 'ungraded'];
 const TODAY = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 const complianceInfo = (farm) => {
@@ -27,23 +26,6 @@ const complianceInfo = (farm) => {
 
 const Lbl = ({ text, required }) => (
   <Text style={s.label}>{text}{required && <Text style={{ color: '#dc2626' }}> *</Text>}</Text>
-);
-
-const Chips = ({ options, value, onChange }) => (
-  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-    <View style={s.chipRow}>
-      {options.map(opt => (
-        <TouchableOpacity
-          key={opt}
-          style={[s.chip, value === opt && s.chipActive]}
-          onPress={() => onChange(value === opt ? null : opt)}
-          activeOpacity={0.8}
-        >
-          <Text style={[s.chipText, value === opt && s.chipTextActive]}>{opt}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </ScrollView>
 );
 
 export default function CreateDeliveryScreen() {
@@ -64,9 +46,8 @@ export default function CreateDeliveryScreen() {
   const [selectedFarm, setSelectedFarm] = useState(null);
 
   // Form fields
-  const [grossWeight,   setGrossWeight]   = useState('');
-  const [qualityGrade,  setQualityGrade]  = useState(null);
-  const [notes,         setNotes]         = useState('');
+  const [grossWeight, setGrossWeight] = useState('');
+  const [notes,       setNotes]       = useState('');
 
   // Crop mix
   const [coffeePrimary, setCoffeePrimary] = useState(true);
@@ -127,7 +108,7 @@ export default function CreateDeliveryScreen() {
 
   const resetForm = () => {
     setSelectedFarmer(null); setSelectedFarm(null);
-    setGrossWeight(''); setQualityGrade(null); setNotes('');
+    setGrossWeight(''); setNotes('');
     setCoffeePrimary(true); setOtherCrops('');
   };
 
@@ -138,7 +119,6 @@ export default function CreateDeliveryScreen() {
         farm_id:         selectedFarm.id,
         gross_weight_kg: parseFloat(grossWeight),
         tare_weight_kg:  0,
-        quality_grade:   qualityGrade || null,
         notes:           notes.trim() || null,
         crop_mix:        buildCropMix(),
       });
@@ -182,7 +162,7 @@ export default function CreateDeliveryScreen() {
       type:         'confirm',
       icon:         'archive',
       title:        'Confirm Delivery',
-      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nWeight: ${netWeight} kg${qualityGrade ? `\nGrade: ${qualityGrade}` : ''}`,
+      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nWeight: ${netWeight} kg`,
       confirmLabel: 'Record',
       cancelLabel:  'Cancel',
       onConfirm:    doSubmit,
@@ -402,29 +382,10 @@ export default function CreateDeliveryScreen() {
                       />
                     </View>
 
-                    <View style={s.section}>
-                      <View style={s.stepHeader}>
-                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>4</Text></View>
-                        <Text style={s.stepTitle}>Quality</Text>
-                      </View>
-                      <Lbl text="Quality Grade" />
-                      <Chips options={QUALITY_GRADES} value={qualityGrade} onChange={setQualityGrade} />
-                      <View style={{ height: 14 }} />
-                      <Lbl text="Notes" />
-                      <TextInput
-                        style={[s.input, s.textarea]}
-                        value={notes} onChangeText={setNotes}
-                        placeholder="Quality notes, visual observations at intake…"
-                        placeholderTextColor={C.subtle}
-                        multiline numberOfLines={3}
-                        textAlignVertical="top"
-                      />
-                    </View>
-
                     {/* Crop Mix */}
                     <View style={s.section}>
                       <View style={s.stepHeader}>
-                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>4</Text></View>
                         <Text style={s.stepTitle}>Crop Mix</Text>
                         <View style={s.optionalTag}><Text style={s.optionalTagText}>Optional</Text></View>
                       </View>
@@ -460,12 +421,23 @@ export default function CreateDeliveryScreen() {
                         autoCapitalize="words"
                       />
                       <Text style={s.cropHint}>Separate multiple crops with commas</Text>
+
+                      <View style={{ height: 14 }} />
+                      <Lbl text="Intake Notes" />
+                      <TextInput
+                        style={[s.input, s.textarea]}
+                        value={notes} onChangeText={setNotes}
+                        placeholder="Visual observations, cherry condition, any remarks…"
+                        placeholderTextColor={C.subtle}
+                        multiline numberOfLines={3}
+                        textAlignVertical="top"
+                      />
                     </View>
 
                     {/* Record Date — auto-set, read-only */}
                     <View style={s.section}>
                       <View style={s.stepHeader}>
-                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>6</Text></View>
+                        <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
                         <Text style={s.stepTitle}>Record Date</Text>
                       </View>
                       <View style={s.recordDateBox}>
@@ -573,11 +545,7 @@ const s = StyleSheet.create({
   input: { backgroundColor: C.steel100, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 15, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
   textarea: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
 
-  chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: C.steel100, borderWidth: 1, borderColor: C.steel200 },
-  chipActive: { backgroundColor: C.c700, borderColor: C.c700 },
-  chipText: { fontSize: 13, fontWeight: '700', color: C.steel700 },
-  chipTextActive: { color: C.white },
+
 
   recordDateBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.steel100, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1.5, borderColor: C.steel200 },
   recordDateText: { fontSize: 15, fontWeight: '800', color: C.ink, flex: 1 },
