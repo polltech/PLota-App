@@ -35,6 +35,14 @@ const STEP_COLORS = {
   sorting: '#b45309', washing: '#0891b2', drying: '#d97706',
   milling: '#7c3aed', grading: '#15803d', packing: '#1d4ed8',
 };
+const STEP_HINTS = {
+  sorting:  { weight: 'e.g. 490.0 — weight after removing defects', notes: 'e.g. Removed floaters & defective cherries, 5% rejected' },
+  washing:  { weight: 'e.g. 475.0 — weight after pulping & washing', notes: 'e.g. Pulped, fermented 18 hrs, mucilage fully removed' },
+  drying:   { weight: 'e.g. 98.0 — dried parchment weight', notes: 'e.g. Raised beds, 21 days, turned 3× daily, target 11% moisture' },
+  milling:  { weight: 'e.g. 85.0 — milled green bean weight', notes: 'e.g. Hulled, polished, moisture 11.5%, screen size 17' },
+  grading:  { weight: 'e.g. 82.0 — graded weight', notes: 'e.g. Screen 17–18, defect count 3.2%, outturn 94%' },
+  packing:  { weight: 'e.g. 80.0 — net packed weight', notes: 'e.g. 2 × 60 kg jute bags, lot tagged PCF-2025-001' },
+};
 
 export default function DeliveryDetailScreen() {
   const navigation = useNavigation();
@@ -333,19 +341,23 @@ export default function DeliveryDetailScreen() {
 
             <Text style={s.fieldLabel}>Weight Out (kg) — optional</Text>
             <TextInput style={s.input} value={stepWeight} onChangeText={setStepWeight}
-              keyboardType="decimal-pad" placeholder="e.g. 48.5" placeholderTextColor={C.subtle} />
+              keyboardType="decimal-pad"
+              placeholder={STEP_HINTS[stepType]?.weight || 'e.g. 48.5 kg'}
+              placeholderTextColor={C.subtle} />
 
             {stepType === 'grading' && (
               <>
                 <Text style={s.fieldLabel}>Grade (AA, AB, PB, C, etc.)</Text>
                 <TextInput style={s.input} value={stepGrade} onChangeText={setStepGrade}
-                  placeholder="e.g. AA" placeholderTextColor={C.subtle} autoCapitalize="characters" />
+                  placeholder="e.g. AA — assigned after screen-size & defect count"
+                  placeholderTextColor={C.subtle} autoCapitalize="characters" />
               </>
             )}
 
             <Text style={s.fieldLabel}>Notes — optional</Text>
             <TextInput style={[s.input, s.textarea]} value={stepNotes} onChangeText={setStepNotes}
-              placeholder="e.g. Drying on raised beds, 14 days" placeholderTextColor={C.subtle}
+              placeholder={STEP_HINTS[stepType]?.notes || 'Add observations for this step…'}
+              placeholderTextColor={C.subtle}
               multiline numberOfLines={3} />
 
             <TouchableOpacity
