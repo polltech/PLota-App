@@ -254,11 +254,10 @@ export default function FarmerDetailScreen() {
       </ScrollView>
 
       {/* ── Approve / Reject Confirm Modal ────────────────────────────── */}
-      <Modal visible={!!confirmAction} transparent animationType="slide" onRequestClose={() => setConfirmAction(null)}>
-        <View style={s.modalOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setConfirmAction(null)} />
-          <View style={s.confirmSheet}>
-            <View style={s.confirmHandle} />
+      <Modal visible={!!confirmAction} transparent animationType="fade" onRequestClose={() => setConfirmAction(null)}>
+        <TouchableOpacity style={s.confirmOverlay} activeOpacity={1} onPress={() => setConfirmAction(null)}>
+          <TouchableOpacity activeOpacity={1} style={s.confirmSheet} onPress={() => {}}>
+            {/* centered dialog */}
 
             {/* Farmer summary */}
             <View style={s.confirmHero}>
@@ -315,8 +314,8 @@ export default function FarmerDetailScreen() {
                 <Text style={s.confirmCancelBtnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* ── Request Update Modal ───────────────────────────────────────── */}
@@ -400,10 +399,10 @@ const s = StyleSheet.create({
   farmMeta: { fontSize: 12, color: C.muted, marginTop: 2 },
   noFarms: { fontSize: 13, color: C.muted, textAlign: 'center', paddingVertical: 20 },
 
-  // Confirm bottom sheet
-  confirmSheet: { backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 32 },
-  confirmHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  confirmHero: { alignItems: 'center', paddingVertical: 18, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  // Confirm centered dialog
+  confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  confirmSheet: { backgroundColor: C.white, borderRadius: 26, width: '96%', maxHeight: '88%', overflow: 'hidden', paddingBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.25, shadowRadius: 40, elevation: 20 },
+  confirmHero: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
   confirmAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: C.c600, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   confirmAvatarText: { fontSize: 20, fontWeight: '900', color: C.white },
   confirmName: { fontSize: 18, fontWeight: '800', color: C.ink },

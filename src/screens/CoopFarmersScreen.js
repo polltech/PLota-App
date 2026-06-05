@@ -354,11 +354,10 @@ export default function CoopFarmersScreen() {
         const cfInitials = ((cf.first_name?.[0] || '') + (cf.last_name?.[0] || '')).toUpperCase() || '?';
         const cfSS = farmerStatusStyle(cf);
         return (
-          <Modal visible transparent animationType="slide" onRequestClose={() => setConfirmModal(null)}>
-            <View style={s.modalOverlay}>
-              <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setConfirmModal(null)} />
-              <View style={s.confirmSheet}>
-                <View style={s.confirmHandle} />
+          <Modal visible transparent animationType="fade" onRequestClose={() => setConfirmModal(null)}>
+            <TouchableOpacity style={s.confirmOverlay} activeOpacity={1} onPress={() => setConfirmModal(null)}>
+              <TouchableOpacity activeOpacity={1} style={s.confirmSheet} onPress={() => {}}>
+                {/* no handle — centered dialog */}
 
                 {/* Farmer identity header */}
                 <View style={s.confirmHero}>
@@ -412,8 +411,8 @@ export default function CoopFarmersScreen() {
                     <Text style={s.confirmCancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
           </Modal>
         );
       })()}
@@ -520,10 +519,10 @@ const s = StyleSheet.create({
   updateSentRow: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: '#fffbeb', paddingVertical: 9, borderRightWidth: 1, borderRightColor: C.steel200 },
   updateSentText: { color: '#d97706', fontSize: 11, fontWeight: '700' },
 
-  // Confirm (approve/reject) bottom sheet
-  confirmSheet: { backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 32 },
-  confirmHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  confirmHero: { alignItems: 'center', paddingVertical: 20, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  // Confirm (approve/reject) centered dialog
+  confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  confirmSheet: { backgroundColor: C.white, borderRadius: 26, width: '96%', maxHeight: '88%', overflow: 'hidden', paddingBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.25, shadowRadius: 40, elevation: 20 },
+  confirmHero: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
   confirmAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   confirmAvatarText: { fontSize: 22, fontWeight: '900', color: C.white },
   confirmName: { fontSize: 20, fontWeight: '800', color: C.ink, marginBottom: 8 },
