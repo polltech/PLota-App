@@ -35,13 +35,6 @@ const FILTERS = [
   { key: 'rejected',         label: 'Rejected' },
 ];
 
-const StatChip = ({ value, label, color }) => (
-  <View style={[s.statChip, { borderTopColor: color }]}>
-    <Text style={[s.statChipVal, { color }]}>{value ?? '—'}</Text>
-    <Text style={s.statChipLabel}>{label}</Text>
-  </View>
-);
-
 const DeliveryRow = ({ item, onPress }) => {
   const ss = statusStyle(item.status);
   const lastStep = item.processing_log?.slice(-1)?.[0]?.step_type;
@@ -165,23 +158,6 @@ export default function CoopDeliveriesScreen() {
         </View>
       </SafeAreaView>
 
-      {/* 6 stat chips — matching web app */}
-      {!loading && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={s.statsScroll}
-          contentContainerStyle={s.statsRow}
-        >
-          <StatChip value={deliveries.length} label="Total"       color={C.c700} />
-          <StatChip value={fmtKg(totalKg)}   label="Total kg"    color="#15803d" />
-          <StatChip value={received}          label="Received"    color="#0369a1" />
-          <StatChip value={inProcess}         label="Processing"  color="#7c3aed" />
-          <StatChip value={ready}             label="Ready/Batched" color="#1d4ed8" />
-          <StatChip value={rejected}          label="Rejected"    color="#dc2626" />
-        </ScrollView>
-      )}
-
       {/* Filter tabs */}
       <ScrollView
         horizontal
@@ -262,12 +238,6 @@ const s = StyleSheet.create({
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
   newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
   newBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
-
-  statsScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  statsRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  statChip: { minWidth: 72, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: C.steel100, borderRadius: 10, alignItems: 'center', borderTopWidth: 3 },
-  statChipVal: { fontSize: 16, fontWeight: '900' },
-  statChipLabel: { fontSize: 9, fontWeight: '700', color: C.muted, marginTop: 2, textAlign: 'center' },
 
   filterScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   filterRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 9, gap: 7 },
