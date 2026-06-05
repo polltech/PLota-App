@@ -36,6 +36,9 @@ export default function FarmerDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  // Confirm modal (approve / reject)
+  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'reject'
+
   // Request update modal
   const [updateModal, setUpdateModal] = useState(false);
   const [issueText,   setIssueText]   = useState('');
@@ -65,51 +68,29 @@ export default function FarmerDetailScreen() {
 
   const onRefresh = () => { setRefreshing(true); load(true); };
 
-  const handleVerify = () => {
-    Alert.alert(
-      'Verify Farmer',
-      `Approve & verify ${fullName}? This marks them as KYC-approved within your cooperative.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Approve',
-          onPress: async () => {
-            setVerifying(true);
-            try {
-              await coopAPI.approveFarmer(farmerId);
-              setFarmer(prev => ({ ...prev, verification_status: 'verified', coop_status: 'coop_approved' }));
-              Alert.alert('Approved', `${fullName} has been verified.`);
-            } catch (e) {
-              Alert.alert('Error', e.response?.data?.detail || 'Verification failed.');
-            } finally {
-              setVerifying(false);
-            }
-          },
-        },
-      ]
-    );
+  const doVerify = async () => {
+    setConfirmAction(null);
+    setVerifying(true);
+    try {
+      await coopAPI.approveFarmer(farmerId);
+      setFarmer(prev => ({ ...prev, verification_status: 'verified', coop_status: 'coop_approved', update_requested: false }));
+      Alert.alert('Approved', `${fullName} has been verified and approved.`);
+    } catch (e) {
+      Alert.alert('Error', e.response?.data?.detail || 'Verification failed.');
+    } finally {
+      setVerifying(false);
+    }
   };
 
-  const handleReject = () => {
-    Alert.alert(
-      'Reject Farmer',
-      `Reject ${fullName}'s cooperative application? They will be notified and can reapply.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject', style: 'destructive',
-          onPress: async () => {
-            try {
-              await coopAPI.rejectFarmer(farmerId, 'Application rejected by cooperative officer');
-              setFarmer(prev => ({ ...prev, coop_status: 'coop_rejected' }));
-              Alert.alert('Rejected', `${fullName}'s application has been rejected.`);
-            } catch (e) {
-              Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.');
-            }
-          },
-        },
-      ]
-    );
+  const doReject = async () => {
+    setConfirmAction(null);
+    try {
+      await coopAPI.rejectFarmer(farmerId, 'Application rejected by cooperative officer');
+      setFarmer(prev => ({ ...prev, coop_status: 'coop_rejected', update_requested: false }));
+      Alert.alert('Rejected', `${fullName}'s application has been rejected.`);
+    } catch (e) {
+      Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.');
+    }
   };
 
   const handleRequestUpdate = async () => {
@@ -174,7 +155,7 @@ export default function FarmerDetailScreen() {
           <View style={s.actionRow}>
             <TouchableOpacity
               style={[s.verifyBanner, { flex: 2 }, verifying && s.btnDisabled]}
-              onPress={handleVerify}
+              onPress={() => setConfirmAction('approve')}
               disabled={verifying}
               activeOpacity={0.85}
             >
@@ -183,7 +164,7 @@ export default function FarmerDetailScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.rejectBtn, { flex: 1 }]}
-              onPress={handleReject}
+              onPress={() => setConfirmAction('reject')}
               activeOpacity={0.85}
             >
               <Ionicons name="close-circle-outline" size={18} color="#dc2626" />
@@ -272,6 +253,72 @@ export default function FarmerDetailScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* ── Approve / Reject Confirm Modal ────────────────────────────── */}
+      <Modal visible={!!confirmAction} transparent animationType="slide" onRequestClose={() => setConfirmAction(null)}>
+        <View style={s.modalOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setConfirmAction(null)} />
+          <View style={s.confirmSheet}>
+            <View style={s.confirmHandle} />
+
+            {/* Farmer summary */}
+            <View style={s.confirmHero}>
+              <View style={s.confirmAvatar}>
+                <Text style={s.confirmAvatarText}>{initials}</Text>
+              </View>
+              <Text style={s.confirmName}>{fullName}</Text>
+              <View style={[s.statusBadge, { backgroundColor: statusColor + '25', marginTop: 6 }]}>
+                <View style={[s.statusDot, { backgroundColor: statusColor }]} />
+                <Text style={[s.statusText, { color: statusColor }]}>
+                  {(farmer?.verification_status || 'UNVERIFIED').toUpperCase()}
+                </Text>
+              </View>
+            </View>
+
+            {/* Key details */}
+            <View style={s.confirmDetails}>
+              {!!farmer?.phone      && <View style={s.confirmRow}><Ionicons name="call-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Phone</Text><Text style={s.confirmRowVal}>{farmer.phone}</Text></View>}
+              {!!farmer?.national_id && <View style={s.confirmRow}><Ionicons name="card-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>National ID</Text><Text style={s.confirmRowVal}>{farmer.national_id}</Text></View>}
+              {!!farmer?.email      && <View style={s.confirmRow}><Ionicons name="mail-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Email</Text><Text style={s.confirmRowVal} numberOfLines={1}>{farmer.email}</Text></View>}
+              {!!farmer?.county     && <View style={s.confirmRow}><Ionicons name="location-outline" size={14} color={C.c600} /><Text style={s.confirmRowLabel}>County</Text><Text style={s.confirmRowVal}>{farmer.county}</Text></View>}
+              {!!farmer?.gender     && <View style={s.confirmRow}><Ionicons name="person-outline"   size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Gender</Text><Text style={s.confirmRowVal}>{farmer.gender}</Text></View>}
+              <View style={s.confirmRow}><Ionicons name="leaf-outline" size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Farms</Text><Text style={s.confirmRowVal}>{farms.length} registered</Text></View>
+              {farmer?.update_requested && !!farmer?.update_request_notes && (
+                <View style={s.confirmNoteBox}>
+                  <Ionicons name="warning" size={13} color="#d97706" />
+                  <Text style={s.confirmNoteText}>Update requested: {farmer.update_request_notes}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Action buttons */}
+            <View style={s.confirmActions}>
+              {confirmAction === 'approve' ? (
+                <TouchableOpacity style={s.confirmApproveBtn} onPress={doVerify} disabled={verifying} activeOpacity={0.85}>
+                  {verifying ? <ActivityIndicator color={C.white} size="small" /> : <Ionicons name="checkmark-circle-outline" size={18} color={C.white} />}
+                  <Text style={s.confirmApproveBtnText}>Approve Member</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={s.confirmRejectBtn} onPress={doReject} activeOpacity={0.85}>
+                  <Ionicons name="close-circle-outline" size={18} color={C.white} />
+                  <Text style={s.confirmRejectBtnText}>Reject Application</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={s.confirmRequestUpdateBtn}
+                onPress={() => { setConfirmAction(null); setIssueText(''); setUpdateModal(true); }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="create-outline" size={16} color="#d97706" />
+                <Text style={s.confirmRequestUpdateBtnText}>Request Update Instead</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.confirmCancelBtn} onPress={() => setConfirmAction(null)} activeOpacity={0.8}>
+                <Text style={s.confirmCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Request Update Modal ───────────────────────────────────────── */}
       <Modal visible={updateModal} transparent animationType="fade" onRequestClose={() => setUpdateModal(false)}>
         <View style={s.modalOverlay}>
@@ -352,6 +399,29 @@ const s = StyleSheet.create({
   farmName: { fontSize: 14, fontWeight: '700', color: C.ink },
   farmMeta: { fontSize: 12, color: C.muted, marginTop: 2 },
   noFarms: { fontSize: 13, color: C.muted, textAlign: 'center', paddingVertical: 20 },
+
+  // Confirm bottom sheet
+  confirmSheet: { backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 32 },
+  confirmHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  confirmHero: { alignItems: 'center', paddingVertical: 18, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  confirmAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: C.c600, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  confirmAvatarText: { fontSize: 20, fontWeight: '900', color: C.white },
+  confirmName: { fontSize: 18, fontWeight: '800', color: C.ink },
+  confirmDetails: { paddingHorizontal: 24, paddingVertical: 10 },
+  confirmRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  confirmRowLabel: { flex: 1, fontSize: 12, color: C.muted, fontWeight: '600' },
+  confirmRowVal: { fontSize: 13, color: C.ink, fontWeight: '700', maxWidth: '60%', textAlign: 'right' },
+  confirmNoteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#fffbeb', borderRadius: 10, padding: 10, marginTop: 8 },
+  confirmNoteText: { flex: 1, fontSize: 12, color: '#92400e', fontWeight: '500', lineHeight: 17 },
+  confirmActions: { paddingHorizontal: 20, paddingTop: 8, gap: 10 },
+  confirmApproveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#15803d', borderRadius: 16, paddingVertical: 14, shadowColor: '#15803d', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
+  confirmApproveBtnText: { color: C.white, fontSize: 15, fontWeight: '800' },
+  confirmRejectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#dc2626', borderRadius: 16, paddingVertical: 14, shadowColor: '#dc2626', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
+  confirmRejectBtnText: { color: C.white, fontSize: 15, fontWeight: '800' },
+  confirmRequestUpdateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: 16, paddingVertical: 14, borderWidth: 1.5, borderColor: '#fcd34d' },
+  confirmRequestUpdateBtnText: { color: '#d97706', fontSize: 14, fontWeight: '800' },
+  confirmCancelBtn: { alignItems: 'center', paddingVertical: 12 },
+  confirmCancelBtnText: { fontSize: 14, color: C.muted, fontWeight: '700' },
 
   requestUpdateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: 14, paddingVertical: 12, marginBottom: 14, borderWidth: 1.5, borderColor: '#fcd34d' },
   requestUpdateBtnText: { fontSize: 14, fontWeight: '800', color: '#d97706' },

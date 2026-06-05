@@ -43,6 +43,7 @@ export default function CoopFarmersScreen() {
   const [refreshing,   setRefreshing]   = useState(false);
   const [query,        setQuery]        = useState('');
   const [actionId,     setActionId]     = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null); // { farmer, action: 'approve'|'reject' }
   const [requestTarget, setRequestTarget] = useState(null);
   const [issueText,    setIssueText]    = useState('');
   const [requesting,   setRequesting]   = useState(false);
@@ -88,22 +89,18 @@ export default function CoopFarmersScreen() {
   const coopApproved    = allFarmers.filter(f => f.coop_status === 'coop_approved' && f.verification_status !== 'verified').length;
   const pendingCount    = pending.length;
 
-  const handleApprove = (farmer) => {
+  const doApprove = async (farmer) => {
     const name = `${farmer.first_name || ''} ${farmer.last_name || ''}`.trim();
-    Alert.alert('Approve Farmer', `Approve ${name} as a cooperative member?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Approve', onPress: async () => {
-        setActionId(farmer.id);
-        try {
-          await coopAPI.approveFarmer(farmer.id);
-          const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_approved', verification_status: 'verified' } : f;
-          setAllFarmers(p => p.map(update));
-          setPending(p => p.filter(f => f.id !== farmer.id));
-          Alert.alert('Approved', `${name} has been approved.`);
-        } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Approval failed.'); }
-        finally { setActionId(null); }
-      }},
-    ]);
+    setConfirmModal(null);
+    setActionId(farmer.id);
+    try {
+      await coopAPI.approveFarmer(farmer.id);
+      const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_approved', verification_status: 'verified' } : f;
+      setAllFarmers(p => p.map(update));
+      setPending(p => p.filter(f => f.id !== farmer.id));
+      Alert.alert('Approved', `${name} has been approved as a cooperative member.`);
+    } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Approval failed.'); }
+    finally { setActionId(null); }
   };
 
   const handleRequestUpdate = async () => {
@@ -129,22 +126,18 @@ export default function CoopFarmersScreen() {
     }
   };
 
-  const handleReject = (farmer) => {
-    const name = `${farmer.first_name || ''} ${farmer.last_name || ''}`.trim();
-    Alert.alert('Reject Farmer', `Reject ${name}'s application?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reject', style: 'destructive', onPress: async () => {
-        setActionId(farmer.id);
-        try {
-          await coopAPI.rejectFarmer(farmer.id, 'Rejected by cooperative officer');
-          const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_rejected', verification_status: 'rejected' } : f;
-          setAllFarmers(p => p.map(update));
-          setPending(p => p.filter(f => f.id !== farmer.id));
-        } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.'); }
-        finally { setActionId(null); }
-      }},
-    ]);
+  const doReject = async (farmer) => {
+    setConfirmModal(null);
+    setActionId(farmer.id);
+    try {
+      await coopAPI.rejectFarmer(farmer.id, 'Rejected by cooperative officer');
+      const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_rejected', verification_status: 'rejected' } : f;
+      setAllFarmers(p => p.map(update));
+      setPending(p => p.filter(f => f.id !== farmer.id));
+    } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.'); }
+    finally { setActionId(null); }
   };
+
 
   const renderFarmer = ({ item: f, index }) => {
     const ss = farmerStatusStyle(f);
@@ -199,7 +192,7 @@ export default function CoopFarmersScreen() {
           <View style={s.inlineActions}>
             <TouchableOpacity
               style={[s.approveBtn, actioning && { opacity: 0.5 }]}
-              onPress={() => handleApprove(f)}
+              onPress={() => setConfirmModal({ farmer: f, action: 'approve' })}
               disabled={actioning}
               activeOpacity={0.8}
             >
@@ -210,7 +203,7 @@ export default function CoopFarmersScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.rejectBtn, actioning && { opacity: 0.5 }]}
-              onPress={() => handleReject(f)}
+              onPress={() => setConfirmModal({ farmer: f, action: 'reject' })}
               disabled={actioning}
               activeOpacity={0.8}
             >
@@ -353,6 +346,78 @@ export default function CoopFarmersScreen() {
         </View>
       )}
 
+      {/* ── Farmer Detail Confirm Modal (Approve / Reject) ───────────────── */}
+      {!!confirmModal && (() => {
+        const cf = confirmModal.farmer;
+        const isApprove = confirmModal.action === 'approve';
+        const cfName = `${cf.first_name || ''} ${cf.last_name || ''}`.trim() || 'Farmer';
+        const cfInitials = ((cf.first_name?.[0] || '') + (cf.last_name?.[0] || '')).toUpperCase() || '?';
+        const cfSS = farmerStatusStyle(cf);
+        return (
+          <Modal visible transparent animationType="slide" onRequestClose={() => setConfirmModal(null)}>
+            <View style={s.modalOverlay}>
+              <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setConfirmModal(null)} />
+              <View style={s.confirmSheet}>
+                <View style={s.confirmHandle} />
+
+                {/* Farmer identity header */}
+                <View style={s.confirmHero}>
+                  <View style={s.confirmAvatar}>
+                    <Text style={s.confirmAvatarText}>{cfInitials}</Text>
+                  </View>
+                  <Text style={s.confirmName}>{cfName}</Text>
+                  <View style={[s.confirmBadge, { backgroundColor: cfSS.bg }]}>
+                    <Text style={[s.confirmBadgeText, { color: cfSS.color }]}>{cfSS.label}</Text>
+                  </View>
+                </View>
+
+                {/* Detail rows */}
+                <View style={s.confirmDetails}>
+                  {!!cf.phone      && <View style={s.confirmRow}><Ionicons name="call-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Phone</Text><Text style={s.confirmRowVal}>{cf.phone}</Text></View>}
+                  {!!cf.national_id && <View style={s.confirmRow}><Ionicons name="card-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>National ID</Text><Text style={s.confirmRowVal}>{cf.national_id}</Text></View>}
+                  {!!cf.email      && <View style={s.confirmRow}><Ionicons name="mail-outline"     size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Email</Text><Text style={s.confirmRowVal} numberOfLines={1}>{cf.email}</Text></View>}
+                  {!!cf.county     && <View style={s.confirmRow}><Ionicons name="location-outline" size={14} color={C.c600} /><Text style={s.confirmRowLabel}>County</Text><Text style={s.confirmRowVal}>{cf.county}</Text></View>}
+                  <View style={s.confirmRow}><Ionicons name="leaf-outline" size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Farms</Text><Text style={s.confirmRowVal}>{cf.farm_count ?? 0} registered</Text></View>
+                  {!!cf.created_at && <View style={s.confirmRow}><Ionicons name="calendar-outline" size={14} color={C.c600} /><Text style={s.confirmRowLabel}>Joined</Text><Text style={s.confirmRowVal}>{fmtDate(cf.created_at)}</Text></View>}
+                  {cf.update_requested && !!cf.update_request_notes && (
+                    <View style={s.confirmNoteBox}>
+                      <Ionicons name="warning" size={13} color="#d97706" />
+                      <Text style={s.confirmNoteText}>Update requested: {cf.update_request_notes}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Action buttons */}
+                <View style={s.confirmActions}>
+                  {isApprove ? (
+                    <TouchableOpacity style={s.confirmApproveBtn} onPress={() => doApprove(cf)} activeOpacity={0.85}>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={C.white} />
+                      <Text style={s.confirmApproveBtnText}>Approve Member</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={s.confirmRejectBtn} onPress={() => doReject(cf)} activeOpacity={0.85}>
+                      <Ionicons name="close-circle-outline" size={18} color={C.white} />
+                      <Text style={s.confirmRejectBtnText}>Reject Application</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={s.confirmRequestUpdateBtn}
+                    onPress={() => { setConfirmModal(null); setRequestTarget(cf); setIssueText(''); }}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#d97706" />
+                    <Text style={s.confirmRequestUpdateBtnText}>Request Update Instead</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.confirmCancelBtn} onPress={() => setConfirmModal(null)} activeOpacity={0.8}>
+                    <Text style={s.confirmCancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        );
+      })()}
+
       {/* ── Request Update Modal ──────────────────────────────────────────── */}
       <Modal visible={!!requestTarget} transparent animationType="fade" onRequestClose={() => setRequestTarget(null)}>
         <View style={s.modalOverlay}>
@@ -454,6 +519,31 @@ const s = StyleSheet.create({
   requestUpdateBtnText: { color: '#d97706', fontSize: 12, fontWeight: '800' },
   updateSentRow: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: '#fffbeb', paddingVertical: 9, borderRightWidth: 1, borderRightColor: C.steel200 },
   updateSentText: { color: '#d97706', fontSize: 11, fontWeight: '700' },
+
+  // Confirm (approve/reject) bottom sheet
+  confirmSheet: { backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 32 },
+  confirmHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  confirmHero: { alignItems: 'center', paddingVertical: 20, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  confirmAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  confirmAvatarText: { fontSize: 22, fontWeight: '900', color: C.white },
+  confirmName: { fontSize: 20, fontWeight: '800', color: C.ink, marginBottom: 8 },
+  confirmBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
+  confirmBadgeText: { fontSize: 11, fontWeight: '800' },
+  confirmDetails: { paddingHorizontal: 24, paddingVertical: 12 },
+  confirmRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  confirmRowLabel: { flex: 1, fontSize: 12, color: C.muted, fontWeight: '600' },
+  confirmRowVal: { fontSize: 13, color: C.ink, fontWeight: '700', maxWidth: '60%', textAlign: 'right' },
+  confirmNoteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#fffbeb', borderRadius: 10, padding: 10, marginTop: 8 },
+  confirmNoteText: { flex: 1, fontSize: 12, color: '#92400e', fontWeight: '500', lineHeight: 17 },
+  confirmActions: { paddingHorizontal: 20, paddingTop: 8, gap: 10 },
+  confirmApproveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#15803d', borderRadius: 16, paddingVertical: 14, shadowColor: '#15803d', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
+  confirmApproveBtnText: { color: C.white, fontSize: 15, fontWeight: '800' },
+  confirmRejectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#dc2626', borderRadius: 16, paddingVertical: 14, shadowColor: '#dc2626', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 4 },
+  confirmRejectBtnText: { color: C.white, fontSize: 15, fontWeight: '800' },
+  confirmRequestUpdateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fffbeb', borderRadius: 16, paddingVertical: 14, borderWidth: 1.5, borderColor: '#fcd34d' },
+  confirmRequestUpdateBtnText: { color: '#d97706', fontSize: 14, fontWeight: '800' },
+  confirmCancelBtn: { alignItems: 'center', paddingVertical: 12 },
+  confirmCancelBtnText: { fontSize: 14, color: C.muted, fontWeight: '700' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard: { backgroundColor: C.white, borderRadius: 22, padding: 24, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 16 },
