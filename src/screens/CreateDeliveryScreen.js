@@ -290,36 +290,34 @@ export default function CreateDeliveryScreen() {
                 </View>
               ) : (
                 <View style={s.farmList}>
-                  {farmerFarms.map(f => (
-                    {(() => {
-                      const ci = complianceInfo(f);
-                      return (
-                        <TouchableOpacity
-                          key={f.id}
-                          style={s.farmOption}
-                          onPress={() => setSelectedFarm(f)}
-                          activeOpacity={0.8}
-                        >
-                          <View style={s.farmOptionLeft}>
-                            <Ionicons name="leaf-outline" size={16} color={C.c600} />
-                            <View style={{ flex: 1 }}>
-                              <Text style={s.farmOptionName} numberOfLines={1}>{f.farm_name || f.name}</Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                                <Text style={s.farmOptionSub} numberOfLines={1}>
-                                  {[f.county, f.total_area_ha ? `${Number(f.total_area_ha).toFixed(2)} ha` : null].filter(Boolean).join(' · ')}
-                                </Text>
-                                <View style={[s.compliancePill, { backgroundColor: ci.bg }]}>
-                                  <Ionicons name={ci.icon} size={9} color={ci.color} />
-                                  <Text style={[s.compliancePillText, { color: ci.color }]}>{ci.label}</Text>
-                                </View>
+                  {farmerFarms.map(f => {
+                    const ci = complianceInfo(f);
+                    return (
+                      <TouchableOpacity
+                        key={f.id}
+                        style={s.farmOption}
+                        onPress={() => setSelectedFarm(f)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={s.farmOptionLeft}>
+                          <Ionicons name="leaf-outline" size={16} color={C.c600} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.farmOptionName} numberOfLines={1}>{f.farm_name || f.name}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                              <Text style={s.farmOptionSub} numberOfLines={1}>
+                                {[f.county, f.total_area_ha ? `${Number(f.total_area_ha).toFixed(2)} ha` : null].filter(Boolean).join(' · ')}
+                              </Text>
+                              <View style={[s.compliancePill, { backgroundColor: ci.bg }]}>
+                                <Ionicons name={ci.icon} size={9} color={ci.color} />
+                                <Text style={[s.compliancePillText, { color: ci.color }]}>{ci.label}</Text>
                               </View>
                             </View>
                           </View>
-                          <Ionicons name="radio-button-off-outline" size={18} color={C.subtle} />
-                        </TouchableOpacity>
-                      );
-                    })()}
-                  ))}
+                        </View>
+                        <Ionicons name="radio-button-off-outline" size={18} color={C.subtle} />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
