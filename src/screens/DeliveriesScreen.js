@@ -266,15 +266,15 @@ const s = StyleSheet.create({
   verifiedPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 2 },
   verifiedPillText:{ fontSize: 12, fontWeight: '700', color: '#15803d' },
 
-  // 5 stat mini-cards — 3-per-row wrapping grid so each card is square
+  // 5 stat mini-cards — single row, aspectRatio:1 makes each card square
   summaryWrap: {
-    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center',
+    flexDirection: 'row',
     backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200,
-    padding: 12, gap: 8,
+    paddingHorizontal: 10, paddingVertical: 10, gap: 6,
   },
-  miniCard:  { width: '31%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 14, gap: 4, borderWidth: 1.5 },
-  miniCount: { fontSize: 22, fontWeight: '900' },
-  miniLabel: { fontSize: 9,  fontWeight: '700', textAlign: 'center' },
+  miniCard:  { flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12, gap: 3, borderWidth: 1.5 },
+  miniCount: { fontSize: 18, fontWeight: '900' },
+  miniLabel: { fontSize: 8,  fontWeight: '700', textAlign: 'center', lineHeight: 10 },
 
   // Scroll
   scroll:        { flex: 1 },
