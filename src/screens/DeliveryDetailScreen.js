@@ -281,7 +281,7 @@ export default function DeliveryDetailScreen() {
                     {lg.weight_out_kg != null && (
                       <Text style={s.logMeta}>Weight out: {fmtKg(lg.weight_out_kg)}</Text>
                     )}
-                    {lg.grade && <Text style={s.logMeta}>Grade: {lg.grade}</Text>}
+                    {lg.step_type === 'grading' && lg.grade && <Text style={s.logMeta}>Grade: {lg.grade}</Text>}
                     {lg.notes && <Text style={s.logNotes}>{lg.notes}</Text>}
                     {!!lg.logged_by_name && (
                       <View style={s.logByRow}>
@@ -335,9 +335,13 @@ export default function DeliveryDetailScreen() {
             <TextInput style={s.input} value={stepWeight} onChangeText={setStepWeight}
               keyboardType="decimal-pad" placeholder="e.g. 48.5" placeholderTextColor={C.subtle} />
 
-            <Text style={s.fieldLabel}>Grade — optional</Text>
-            <TextInput style={s.input} value={stepGrade} onChangeText={setStepGrade}
-              placeholder="e.g. AA" placeholderTextColor={C.subtle} autoCapitalize="characters" />
+            {stepType === 'grading' && (
+              <>
+                <Text style={s.fieldLabel}>Grade (AA, AB, PB, C, etc.)</Text>
+                <TextInput style={s.input} value={stepGrade} onChangeText={setStepGrade}
+                  placeholder="e.g. AA" placeholderTextColor={C.subtle} autoCapitalize="characters" />
+              </>
+            )}
 
             <Text style={s.fieldLabel}>Notes — optional</Text>
             <TextInput style={[s.input, s.textarea]} value={stepNotes} onChangeText={setStepNotes}
