@@ -84,7 +84,8 @@ export default function CreateDeliveryScreen() {
         const name = `${f.first_name || ''} ${f.last_name || ''}`.toLowerCase();
         const phone = (f.phone || '').toLowerCase();
         const email = (f.email || '').toLowerCase();
-        return name.includes(q) || phone.includes(q) || email.includes(q);
+        const memberNo = (f.coop_member_no || '').toLowerCase();
+        return name.includes(q) || phone.includes(q) || email.includes(q) || memberNo.includes(q);
       })
     : allFarmers.slice(0, 15);
 
@@ -172,7 +173,7 @@ export default function CreateDeliveryScreen() {
               <View style={s.stepBadge}><Text style={s.stepBadgeText}>1</Text></View>
               <Text style={s.stepTitle}>Select Farmer</Text>
             </View>
-            <Text style={s.stepHint}>Search by name or phone number</Text>
+            <Text style={s.stepHint}>Search by name, phone or member number (PCFNO)</Text>
 
             {selectedFarmer ? (
               <TouchableOpacity
