@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity,
-  ActivityIndicator, TextInput, RefreshControl, StatusBar, Alert, Modal,
+  ActivityIndicator, TextInput, RefreshControl, StatusBar, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import AppModal, { useAppModal } from '../components/AppModal';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const farmerStatusStyle = (f) => {
@@ -34,6 +35,7 @@ const TABS = [
 export default function CoopFarmersScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const modal = useAppModal();
   const initialTab = route.params?.tab || 'all';
 
   const [tab,          setTab]          = useState(initialTab);
@@ -98,14 +100,17 @@ export default function CoopFarmersScreen() {
       const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_approved', verification_status: 'verified' } : f;
       setAllFarmers(p => p.map(update));
       setPending(p => p.filter(f => f.id !== farmer.id));
-      Alert.alert('Approved', `${name} has been approved as a cooperative member.`);
-    } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Approval failed.'); }
+      modal.show({ type: 'success', title: 'Farmer Approved', message: `${name} has been approved as a cooperative member.` });
+    } catch (e) { modal.show({ type: 'danger', title: 'Error', message: e.response?.data?.detail || 'Approval failed.' }); }
     finally { setActionId(null); }
   };
 
   const handleRequestUpdate = async () => {
     const issue = issueText.trim();
-    if (!issue) { Alert.alert('Required', 'Describe what the farmer needs to update.'); return; }
+    if (!issue) {
+      modal.show({ type: 'warning', title: 'Required', message: 'Describe what the farmer needs to update.' });
+      return;
+    }
     if (!requestTarget) return;
     setRequesting(true);
     try {
@@ -118,9 +123,9 @@ export default function CoopFarmersScreen() {
       setRequestTarget(null);
       setIssueText('');
       const name = `${requestTarget.first_name || ''} ${requestTarget.last_name || ''}`.trim();
-      Alert.alert('Request Sent', `${name} has been notified to update their profile.`);
+      modal.show({ type: 'success', title: 'Request Sent', message: `${name} has been notified to update their profile.` });
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.detail || 'Failed to send request.');
+      modal.show({ type: 'danger', title: 'Error', message: e.response?.data?.detail || 'Failed to send request.' });
     } finally {
       setRequesting(false);
     }
@@ -134,7 +139,7 @@ export default function CoopFarmersScreen() {
       const update = f => f.id === farmer.id ? { ...f, coop_status: 'coop_rejected', verification_status: 'rejected' } : f;
       setAllFarmers(p => p.map(update));
       setPending(p => p.filter(f => f.id !== farmer.id));
-    } catch (e) { Alert.alert('Error', e.response?.data?.detail || 'Rejection failed.'); }
+    } catch (e) { modal.show({ type: 'danger', title: 'Error', message: e.response?.data?.detail || 'Rejection failed.' }); }
     finally { setActionId(null); }
   };
 
@@ -462,6 +467,8 @@ export default function CoopFarmersScreen() {
           </View>
         </View>
       </Modal>
+
+      <AppModal {...modal.props} />
     </View>
   );
 }

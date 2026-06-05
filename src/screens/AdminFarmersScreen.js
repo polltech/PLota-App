@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, RefreshControl, Alert, StatusBar,
+  TextInput, ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '../services/api';
 import { C } from '../theme';
+import AppModal, { useAppModal } from '../components/AppModal';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
@@ -63,6 +64,7 @@ const FarmerCard = ({ farmer, isPending, onVerify, onReject }) => (
 );
 
 export default function AdminFarmersScreen() {
+  const modal = useAppModal();
   const [tab, setTab] = useState('Pending');
   const [pending, setPending] = useState([]);
   const [all, setAll] = useState([]);
@@ -93,47 +95,42 @@ export default function AdminFarmersScreen() {
   const onRefresh = () => { setRefreshing(true); load(true); };
 
   const handleVerify = (farmer) => {
-    Alert.alert(
-      'Approve Farmer',
-      `Approve ${farmer.first_name || farmer.email}? They will gain full platform access.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Approve',
-          onPress: async () => {
-            try {
-              await adminAPI.verifyFarmer(farmer.id);
-              setPending((prev) => prev.filter((f) => f.id !== farmer.id));
-              Alert.alert('Approved', 'Farmer has been verified successfully.');
-            } catch (e) {
-              Alert.alert('Error', e.response?.data?.detail || 'Failed to verify farmer.');
-            }
-          },
-        },
-      ]
-    );
+    modal.show({
+      type:         'confirm',
+      icon:         'shield-checkmark',
+      title:        'Approve Farmer',
+      message:      `Approve ${farmer.first_name || farmer.email}? They will gain full platform access.`,
+      confirmLabel: 'Approve',
+      cancelLabel:  'Cancel',
+      onConfirm: async () => {
+        try {
+          await adminAPI.verifyFarmer(farmer.id);
+          setPending((prev) => prev.filter((f) => f.id !== farmer.id));
+          modal.show({ type: 'success', title: 'Approved', message: 'Farmer has been verified successfully.' });
+        } catch (e) {
+          modal.show({ type: 'danger', title: 'Error', message: e.response?.data?.detail || 'Failed to verify farmer.' });
+        }
+      },
+    });
   };
 
   const handleReject = (farmer) => {
-    Alert.alert(
-      'Reject Farmer',
-      `Reject ${farmer.first_name || farmer.email}? Please provide a reason.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await adminAPI.rejectFarmer(farmer.id, 'Rejected by admin');
-              setPending((prev) => prev.filter((f) => f.id !== farmer.id));
-            } catch (e) {
-              Alert.alert('Error', e.response?.data?.detail || 'Failed to reject farmer.');
-            }
-          },
-        },
-      ]
-    );
+    modal.show({
+      type:         'danger',
+      icon:         'close-circle',
+      title:        'Reject Farmer',
+      message:      `Reject ${farmer.first_name || farmer.email}? This will deny their access to the platform.`,
+      confirmLabel: 'Reject',
+      cancelLabel:  'Cancel',
+      onConfirm: async () => {
+        try {
+          await adminAPI.rejectFarmer(farmer.id, 'Rejected by admin');
+          setPending((prev) => prev.filter((f) => f.id !== farmer.id));
+        } catch (e) {
+          modal.show({ type: 'danger', title: 'Error', message: e.response?.data?.detail || 'Failed to reject farmer.' });
+        }
+      },
+    });
   };
 
   const data = tab === 'Pending' ? pending : all;
@@ -220,6 +217,7 @@ export default function AdminFarmersScreen() {
           }
         />
       )}
+      <AppModal {...modal.props} />
     </View>
   );
 }

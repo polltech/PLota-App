@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, StatusBar, FlatList,
+  TextInput, ActivityIndicator, StatusBar, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import AppModal, { useAppModal } from '../components/AppModal';
 
 const QUALITY_GRADES = ['AA', 'AB', 'PB', 'C', 'AAAA', 'ungraded'];
 const TODAY = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -109,56 +110,69 @@ export default function CreateDeliveryScreen() {
       )
     : [];
 
+  const modal = useAppModal();
   const netWeight = (parseFloat(grossWeight) || 0).toFixed(1);
 
-  const handleSubmit = () => {
-    if (!selectedFarm)     { Alert.alert('Required', 'Select a farm.'); return; }
-    const ci = complianceInfo(selectedFarm);
-    if (ci.blocked) { Alert.alert('Farm Not Compliant', `This farm is ${ci.label} and cannot accept deliveries.`); return; }
-    if (!grossWeight || parseFloat(grossWeight) <= 0) { Alert.alert('Required', 'Gross weight must be greater than 0.'); return; }
+  const resetForm = () => {
+    setSelectedFarmer(null); setSelectedFarm(null);
+    setGrossWeight(''); setQualityGrade(null); setNotes('');
+  };
 
-    Alert.alert(
-      'Confirm Delivery',
-      [
-        `Farmer: ${selectedFarmer ? `${selectedFarmer.first_name} ${selectedFarmer.last_name}` : '—'}`,
-        `Farm: ${selectedFarm.farm_name || selectedFarm.name}`,
-        `Weight: ${netWeight} kg`,
-        qualityGrade ? `Grade: ${qualityGrade}` : '',
-      ].filter(Boolean).join('\n'),
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Record', onPress: async () => {
-            setSubmitting(true);
-            try {
-              await coopAPI.createDelivery({
-                farm_id:         selectedFarm.id,
-                gross_weight_kg: parseFloat(grossWeight),
-                tare_weight_kg:  0,
-                quality_grade:   qualityGrade || null,
-                notes:           notes.trim() || null,
-              });
-              Alert.alert('Delivery Received', `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been received and recorded. Next step: processing.`, [
-                { text: 'Record Another', onPress: () => {
-                    setSelectedFarmer(null); setSelectedFarm(null);
-                    setGrossWeight('');
-                    setQualityGrade(null); setNotes('');
-                }},
-                { text: 'Done', onPress: () => navigation.goBack() },
-              ]);
-            } catch (e) {
-              const detail = e.response?.data?.detail;
-              const msg = Array.isArray(detail)
-                ? detail.map(d => d.msg || String(d)).join('\n')
-                : (typeof detail === 'string' ? detail : 'Failed to record delivery.');
-              Alert.alert('Error', msg);
-            } finally {
-              setSubmitting(false);
-            }
-          },
-        },
-      ]
-    );
+  const doSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await coopAPI.createDelivery({
+        farm_id:         selectedFarm.id,
+        gross_weight_kg: parseFloat(grossWeight),
+        tare_weight_kg:  0,
+        quality_grade:   qualityGrade || null,
+        notes:           notes.trim() || null,
+      });
+      modal.show({
+        type:         'success',
+        title:        'Delivery Received',
+        message:      `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been received and recorded.\nNext step: processing.`,
+        confirmLabel: 'Done',
+        cancelLabel:  'Record Another',
+        onConfirm:    () => navigation.goBack(),
+        onCancel:     resetForm,
+      });
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg || String(d)).join('\n')
+        : (typeof detail === 'string' ? detail : 'Failed to record delivery.');
+      modal.show({ type: 'danger', title: 'Error', message: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!selectedFarm) {
+      modal.show({ type: 'warning', title: 'Required', message: 'Please select a farm.' });
+      return;
+    }
+    const ci = complianceInfo(selectedFarm);
+    if (ci.blocked) {
+      modal.show({ type: 'danger', title: 'Farm Not Compliant', message: `This farm is ${ci.label} and cannot accept deliveries.` });
+      return;
+    }
+    if (!grossWeight || parseFloat(grossWeight) <= 0) {
+      modal.show({ type: 'warning', title: 'Required', message: 'Net weight must be greater than 0.' });
+      return;
+    }
+
+    const farmerName = selectedFarmer ? `${selectedFarmer.first_name} ${selectedFarmer.last_name}` : '—';
+    modal.show({
+      type:         'confirm',
+      icon:         'archive',
+      title:        'Confirm Delivery',
+      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nWeight: ${netWeight} kg${qualityGrade ? `\nGrade: ${qualityGrade}` : ''}`,
+      confirmLabel: 'Record',
+      cancelLabel:  'Cancel',
+      onConfirm:    doSubmit,
+    });
   };
 
   return (
@@ -429,6 +443,8 @@ export default function CreateDeliveryScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
+
+      <AppModal {...modal.props} />
     </View>
   );
 }

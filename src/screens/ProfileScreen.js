@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { farmerAPI, authAPI } from '../services/api';
 import { C } from '../theme';
+import AppModal, { useAppModal } from '../components/AppModal';
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 const MenuItem = ({ icon, label, onPress, destructive, right }) => (
@@ -47,6 +48,7 @@ const EditField = ({ label, value, onChangeText, keyboardType, placeholder }) =>
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
   const navigation = useNavigation();
+  const modal = useAppModal();
 
   const hasUpdateRequest = !!user?.update_requested;
 
@@ -134,14 +136,15 @@ export default function ProfileScreen() {
   };
 
   const confirmLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => { setLoggingOut(true); await logout(); },
-      },
-    ]);
+    modal.show({
+      type:         'danger',
+      icon:         'log-out',
+      title:        'Sign Out',
+      message:      'Are you sure you want to sign out of your account?',
+      confirmLabel: 'Sign Out',
+      cancelLabel:  'Cancel',
+      onConfirm:    async () => { setLoggingOut(true); await logout(); },
+    });
   };
 
   return (
@@ -349,6 +352,8 @@ export default function ProfileScreen() {
         <Text style={s.version}>Plotra Agent App • v1.1.0 • © 2025 Plotra</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <AppModal {...modal.props} />
     </View>
   );
 }
