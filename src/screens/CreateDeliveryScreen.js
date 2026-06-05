@@ -52,7 +52,6 @@ export default function CreateDeliveryScreen() {
 
   // Form fields
   const [grossWeight,   setGrossWeight]   = useState('');
-  const [tareWeight,    setTareWeight]    = useState('0');
   const [qualityGrade,  setQualityGrade]  = useState(null);
   const [moisture,      setMoisture]      = useState('');
   const [cherryType,    setCherryType]    = useState(null);
@@ -102,7 +101,7 @@ export default function CreateDeliveryScreen() {
       )
     : [];
 
-  const netWeight = Math.max(0, (parseFloat(grossWeight) || 0) - (parseFloat(tareWeight) || 0)).toFixed(1);
+  const netWeight = (parseFloat(grossWeight) || 0).toFixed(1);
 
   const handleSubmit = () => {
     if (!selectedFarm)     { Alert.alert('Required', 'Select a farm.'); return; }
@@ -113,7 +112,7 @@ export default function CreateDeliveryScreen() {
       [
         `Farmer: ${selectedFarmer ? `${selectedFarmer.first_name} ${selectedFarmer.last_name}` : '—'}`,
         `Farm: ${selectedFarm.farm_name || selectedFarm.name}`,
-        `Net Weight: ${netWeight} kg`,
+        `Weight: ${netWeight} kg`,
         qualityGrade ? `Grade: ${qualityGrade}` : '',
       ].filter(Boolean).join('\n'),
       [
@@ -125,7 +124,7 @@ export default function CreateDeliveryScreen() {
               await coopAPI.createDelivery({
                 farm_id:          selectedFarm.id,
                 gross_weight_kg:  parseFloat(grossWeight),
-                tare_weight_kg:   parseFloat(tareWeight) || 0,
+                tare_weight_kg:   0,
                 quality_grade:    qualityGrade || null,
                 moisture_content: moisture ? parseFloat(moisture) : null,
                 cherry_type:      cherryType || null,
@@ -135,7 +134,7 @@ export default function CreateDeliveryScreen() {
               Alert.alert('Delivery Recorded', `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been recorded.`, [
                 { text: 'Record Another', onPress: () => {
                     setSelectedFarmer(null); setSelectedFarm(null);
-                    setGrossWeight(''); setTareWeight('0');
+                    setGrossWeight('');
                     setQualityGrade(null); setMoisture(''); setCherryType(null);
                     setPickingDate(''); setNotes('');
                 }},
@@ -313,24 +312,15 @@ export default function CreateDeliveryScreen() {
                   <View style={s.stepBadge}><Text style={s.stepBadgeText}>3</Text></View>
                   <Text style={s.stepTitle}>Weight</Text>
                 </View>
-                <View style={s.weightRow}>
-                  <View style={{ flex: 1 }}>
-                    <Lbl text="Gross Weight (kg)" required />
-                    <TextInput style={s.input} value={grossWeight} onChangeText={setGrossWeight}
-                      keyboardType="decimal-pad" placeholder="0.0" placeholderTextColor={C.subtle} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Lbl text="Tare Weight (kg)" />
-                    <TextInput style={s.input} value={tareWeight} onChangeText={setTareWeight}
-                      keyboardType="decimal-pad" placeholder="0.0" placeholderTextColor={C.subtle} />
-                  </View>
-                </View>
-                {parseFloat(grossWeight) > 0 && (
-                  <View style={s.netRow}>
-                    <Ionicons name="scale-outline" size={16} color="#15803d" />
-                    <Text style={s.netText}>Net Weight: <Text style={{ fontWeight: '900' }}>{netWeight} kg</Text></Text>
-                  </View>
-                )}
+                <Lbl text="Net Weight (kg)" required />
+                <TextInput
+                  style={s.input}
+                  value={grossWeight}
+                  onChangeText={setGrossWeight}
+                  keyboardType="decimal-pad"
+                  placeholder="0.0"
+                  placeholderTextColor={C.subtle}
+                />
               </View>
 
               <View style={s.section}>
