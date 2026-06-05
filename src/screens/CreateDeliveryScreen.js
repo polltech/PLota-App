@@ -132,7 +132,11 @@ export default function CreateDeliveryScreen() {
                 { text: 'Done', onPress: () => navigation.goBack() },
               ]);
             } catch (e) {
-              Alert.alert('Error', e.response?.data?.detail || 'Failed to record delivery.');
+              const detail = e.response?.data?.detail;
+              const msg = Array.isArray(detail)
+                ? detail.map(d => d.msg || String(d)).join('\n')
+                : (typeof detail === 'string' ? detail : 'Failed to record delivery.');
+              Alert.alert('Error', msg);
             } finally {
               setSubmitting(false);
             }
