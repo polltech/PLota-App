@@ -37,6 +37,7 @@ import CoopDeliveriesScreen from '../screens/CoopDeliveriesScreen';
 import CoopBatchesScreen from '../screens/CoopBatchesScreen';
 import CoopConsignmentsScreen from '../screens/CoopConsignmentsScreen';
 import CoopStaffScreen from '../screens/CoopStaffScreen';
+import FarmerDetailScreen from '../screens/FarmerDetailScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
@@ -274,6 +275,7 @@ function CoopTabs() {
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
+            <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
             <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
           </Stack.Navigator>
         )}
