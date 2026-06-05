@@ -81,15 +81,13 @@ export default function CreateDeliveryScreen() {
     })();
   }, []);
 
-  // Farmer search — by name or membership number
   const filteredFarmers = farmerQuery.trim()
     ? allFarmers.filter(f => {
         const q = farmerQuery.toLowerCase();
         const name = `${f.first_name || ''} ${f.last_name || ''}`.toLowerCase();
         const phone = (f.phone || '').toLowerCase();
-        const memberNo = (f.coop_member_no || f.membership_number || '').toLowerCase();
         const email = (f.email || '').toLowerCase();
-        return name.includes(q) || phone.includes(q) || memberNo.includes(q) || email.includes(q);
+        return name.includes(q) || phone.includes(q) || email.includes(q);
       })
     : allFarmers.slice(0, 15);
 
@@ -177,7 +175,7 @@ export default function CreateDeliveryScreen() {
               <View style={s.stepBadge}><Text style={s.stepBadgeText}>1</Text></View>
               <Text style={s.stepTitle}>Select Farmer</Text>
             </View>
-            <Text style={s.stepHint}>Search by name, phone or cooperative membership number</Text>
+            <Text style={s.stepHint}>Search by name or phone number</Text>
 
             {selectedFarmer ? (
               <TouchableOpacity
@@ -194,7 +192,7 @@ export default function CreateDeliveryScreen() {
                   <View>
                     <Text style={s.selectedName}>{selectedFarmer.first_name} {selectedFarmer.last_name}</Text>
                     <Text style={s.selectedSub}>
-                      {[selectedFarmer.phone, selectedFarmer.coop_member_no || selectedFarmer.membership_number].filter(Boolean).join(' · ')}
+                      {selectedFarmer.phone || ''}
                     </Text>
                   </View>
                 </View>
@@ -231,7 +229,7 @@ export default function CreateDeliveryScreen() {
                             <View>
                               <Text style={s.dropName}>{f.first_name} {f.last_name}</Text>
                               <Text style={s.dropSub}>
-                                {[f.phone, f.coop_member_no||f.membership_number].filter(Boolean).join(' · ')}
+                                {f.phone || ''}
                               </Text>
                             </View>
                           </View>
