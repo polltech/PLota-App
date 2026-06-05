@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl, StatusBar, Modal, ScrollView,
@@ -31,6 +31,16 @@ const timeAgo = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 };
 
+const fmtAbsolute = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${time} · ${date}`;
+  } catch { return ''; }
+};
+
 const isProfileUpdateRequest = (n) =>
   (n.title || '').toLowerCase().includes('update') ||
   (n.message || '').toLowerCase().includes('update your profile') ||
@@ -42,6 +52,13 @@ export default function NotificationsScreen() {
   const [loading,       setLoading]       = useState(true);
   const [refreshing,    setRefreshing]    = useState(false);
   const [selected,      setSelected]      = useState(null);
+  const [tick,          setTick]          = useState(0); // drives real-time time label updates
+
+  // Tick every 30 seconds so relative timestamps stay current
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -89,7 +106,9 @@ export default function NotificationsScreen() {
             {!n.is_read && <View style={s.unreadDot} />}
           </View>
           <Text style={s.rowMsg} numberOfLines={2}>{n.message || ''}</Text>
-          <Text style={s.rowTime}>{timeAgo(n.created_at)}</Text>
+          <Text style={s.rowTime}>
+            {timeAgo(n.created_at)}{n.created_at ? `  ·  ${fmtAbsolute(n.created_at)}` : ''}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -158,7 +177,8 @@ export default function NotificationsScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.sheetTitle}>{selected.title || 'Notification'}</Text>
-                    <Text style={s.sheetTime}>{timeAgo(selected.created_at)}</Text>
+                    <Text style={s.sheetTime}>{fmtAbsolute(selected.created_at)}</Text>
+                    <Text style={s.sheetTimeAgo}>{timeAgo(selected.created_at)}</Text>
                   </View>
                   <TouchableOpacity onPress={() => setSelected(null)} style={s.closeBtn}>
                     <Ionicons name="close" size={20} color={C.steel700} />
@@ -255,7 +275,8 @@ const s = StyleSheet.create({
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.steel100 },
   sheetIconCircle: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   sheetTitle: { fontSize: 16, fontWeight: '800', color: C.ink },
-  sheetTime: { fontSize: 12, color: C.muted, marginTop: 3 },
+  sheetTime: { fontSize: 12, color: C.ink, fontWeight: '600', marginTop: 3 },
+  sheetTimeAgo: { fontSize: 11, color: C.muted, marginTop: 1 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },
   sheetBody: { paddingHorizontal: 20, paddingTop: 16 },
   sheetMsg: { fontSize: 15, color: C.ink, lineHeight: 24, marginBottom: 24 },
