@@ -591,7 +591,7 @@ export default function HomeScreen() {
                     style={[s.tableRow, i < recentDeliveries.length - 1 && s.tableRowBorder]}
                   >
                     <View style={{ flex: 2 }}>
-                      <Text style={s.tdFarmName} numberOfLines={1}>{d.batch_number || d.reference || d.delivery_number || `DEL-${i + 1}`}</Text>
+                      <Text style={s.tdFarmName} numberOfLines={1}>{(() => { const r = d.batch_number || d.reference || d.delivery_number || ''; return r.startsWith('PCFDELIVERY/') ? r.replace('PCFDELIVERY/', '') : (r || `D-${i + 1}`); })()}</Text>
                       <View style={[s.statusBadge, { backgroundColor: ds.bg, alignSelf: 'flex-start', marginTop: 2 }]}>
                         <Text style={[s.statusBadgeText, { color: ds.color }]}>{ds.label}</Text>
                       </View>
