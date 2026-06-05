@@ -275,11 +275,20 @@ export default function DeliveryDetailScreen() {
                       <Text style={s.logStep}>{cap(lg.step_type)}</Text>
                       <Text style={s.logDate}>{fmtDate(lg.step_date)}</Text>
                     </View>
+                    {!!lg.log_number && (
+                      <Text style={s.logRef}>{lg.log_number}</Text>
+                    )}
                     {lg.weight_out_kg != null && (
                       <Text style={s.logMeta}>Weight out: {fmtKg(lg.weight_out_kg)}</Text>
                     )}
                     {lg.grade && <Text style={s.logMeta}>Grade: {lg.grade}</Text>}
                     {lg.notes && <Text style={s.logNotes}>{lg.notes}</Text>}
+                    {!!lg.logged_by_name && (
+                      <View style={s.logByRow}>
+                        <Ionicons name="person-circle-outline" size={12} color={C.subtle} />
+                        <Text style={s.logBy}>{lg.logged_by_name}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               );
@@ -398,8 +407,11 @@ const s = StyleSheet.create({
   logHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
   logStep: { fontSize: 14, fontWeight: '800', color: C.ink },
   logDate: { fontSize: 12, color: C.muted, fontWeight: '600' },
+  logRef: { fontSize: 10, fontWeight: '700', color: C.c600, letterSpacing: 0.3, marginBottom: 3 },
   logMeta: { fontSize: 12, color: C.muted, fontWeight: '600' },
   logNotes: { fontSize: 12, color: C.steel600, marginTop: 3, lineHeight: 17, fontStyle: 'italic' },
+  logByRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
+  logBy: { fontSize: 11, color: C.subtle, fontWeight: '600' },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
