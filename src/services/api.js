@@ -197,6 +197,7 @@ export const coopAPI = {
   addProcessingStep: (id, data) => api.post(`/coop/deliveries/${id}/processing`, data),
   getProcessingLog: (id) => api.get(`/coop/deliveries/${id}/processing`),
 
+  getReadyForBatching: () => api.get('/coop/deliveries?status_filter=ready_for_batching'),
   getBatches: () => api.get('/coop/batches'),
   getBatch: (id) => api.get(`/coop/batches/${id}`),
   createBatch: (data) => api.post('/coop/batches', data),

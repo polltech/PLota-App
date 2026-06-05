@@ -109,19 +109,21 @@ export default function CoopBatchesScreen() {
   const [refreshing,  setRefreshing]  = useState(false);
 
   // Create batch modal state
-  const [showCreate,       setShowCreate]       = useState(false);
+  const [showCreate,         setShowCreate]         = useState(false);
   const [selectedDeliveries, setSelectedDeliveries] = useState([]);
-  const [batchYear,        setBatchYear]        = useState(String(new Date().getFullYear()));
-  const [method,           setMethod]           = useState('');
-  const [lotNo,            setLotNo]            = useState('');
-  const [creating,         setCreating]         = useState(false);
+  const [batchRef,           setBatchRef]           = useState('');
+  const [harvestStart,       setHarvestStart]       = useState('');
+  const [harvestEnd,         setHarvestEnd]         = useState('');
+  const [batchNotes,         setBatchNotes]         = useState('');
+  const [releaseNow,         setReleaseNow]         = useState(false);
+  const [creating,           setCreating]           = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
       const [bRes, dRes] = await Promise.allSettled([
         coopAPI.getBatches(),
-        coopAPI.getDeliveries(),
+        coopAPI.getReadyForBatching(),
       ]);
       if (bRes.status === 'fulfilled') {
         const d = bRes.value.data;
@@ -129,10 +131,7 @@ export default function CoopBatchesScreen() {
       }
       if (dRes.status === 'fulfilled') {
         const d = dRes.value.data;
-        // Only show deliveries that are ready_for_batching and not yet batched
-        const available = (Array.isArray(d) ? d : (d?.deliveries || []))
-          .filter(del => del.status === 'ready_for_batching');
-        setDeliveries(available);
+        setDeliveries(Array.isArray(d) ? d : (d?.deliveries || []));
       }
     } catch (e) {
       console.warn('CoopBatches load:', e.message);
@@ -166,23 +165,34 @@ export default function CoopBatchesScreen() {
     );
   };
 
-  const handleCreate = async () => {
-    if (!selectedDeliveries.length) {
-      Alert.alert('Required', 'Select at least one delivery.'); return;
-    }
+  const resetCreate = () => {
+    setSelectedDeliveries([]); setBatchRef(''); setHarvestStart('');
+    setHarvestEnd(''); setBatchNotes(''); setReleaseNow(false);
+  };
+
+  const handleCreate = async (release) => {
+    if (!batchRef.trim()) { Alert.alert('Required', 'Enter a batch reference (e.g. NYR-2025-B04).'); return; }
+    if (!selectedDeliveries.length) { Alert.alert('Required', 'Select at least one delivery.'); return; }
+    if (!harvestStart.trim() || !harvestEnd.trim()) { Alert.alert('Required', 'Enter the harvest period start and end dates.'); return; }
     setCreating(true);
     try {
       await coopAPI.createBatch({
+        batch_number: batchRef.trim(),
+        harvest_start_date: harvestStart.trim() || undefined,
+        harvest_end_date: harvestEnd.trim() || undefined,
+        notes: batchNotes.trim() || undefined,
         delivery_ids: selectedDeliveries,
-        crop_year: batchYear.trim() || undefined,
-        processing_method: method.trim() || undefined,
-        lot_number: lotNo.trim() || undefined,
+        release_immediately: release,
       });
       setShowCreate(false);
-      setSelectedDeliveries([]); setBatchYear(String(new Date().getFullYear()));
-      setMethod(''); setLotNo('');
+      resetCreate();
       await load(true);
-      Alert.alert('Created', 'Batch created. Release it to submit for satellite review.');
+      Alert.alert(
+        release ? 'Released' : 'Draft Saved',
+        release
+          ? `Batch ${batchRef} created and submitted for satellite review.`
+          : `Batch ${batchRef} saved as draft. Release it when ready.`
+      );
     } catch (e) {
       Alert.alert('Error', e.response?.data?.detail || 'Failed to create batch.');
     } finally {
@@ -192,6 +202,13 @@ export default function CoopBatchesScreen() {
 
   const toggleDelivery = (id) =>
     setSelectedDeliveries(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
+
+  // Running totals from selected deliveries
+  const selectedObjs    = deliveries.filter(d => selectedDeliveries.includes(d.id));
+  const selTotalKg      = selectedObjs.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  const selNonCompliant = selectedObjs.filter(d => d.eudr_eligible === false);
+  const selFarmers      = new Set(selectedObjs.map(d => d.farmer_name).filter(Boolean)).size;
 
   // Stat counts
   const totalKg   = batches.reduce((s, b) => s + (b.total_weight_kg || 0), 0);
@@ -260,56 +277,119 @@ export default function CoopBatchesScreen() {
       <Modal visible={showCreate} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Create Batch</Text>
-            <TouchableOpacity onPress={() => setShowCreate(false)}>
+            <TouchableOpacity onPress={() => { setShowCreate(false); resetCreate(); }}>
               <Ionicons name="close" size={24} color={C.ink} />
             </TouchableOpacity>
+            <Text style={s.modalTitle}>New Batch</Text>
+            <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView style={s.modalBody} showsVerticalScrollIndicator={false}>
-            <Text style={s.fieldLabel}>Crop Year</Text>
+          <ScrollView style={s.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {/* ── Batch Reference ── */}
+            <Text style={s.fieldLabel}>Batch Reference *</Text>
             <TextInput
               style={s.input}
-              value={batchYear}
-              onChangeText={setBatchYear}
-              placeholder="e.g. 2025"
+              value={batchRef}
+              onChangeText={setBatchRef}
+              placeholder="e.g. NYR-2025-B04"
               placeholderTextColor={C.subtle}
-              keyboardType="numeric"
+              autoCapitalize="characters"
             />
 
-            <Text style={s.fieldLabel}>Processing Method (optional)</Text>
+            {/* ── Harvest Period ── */}
+            <Text style={s.fieldLabel}>Harvest Period *</Text>
+            <View style={s.dateRow}>
+              <TextInput
+                style={[s.input, s.dateInput]}
+                value={harvestStart}
+                onChangeText={setHarvestStart}
+                placeholder="Start YYYY-MM-DD"
+                placeholderTextColor={C.subtle}
+                keyboardType="numbers-and-punctuation"
+              />
+              <Ionicons name="arrow-forward-outline" size={16} color={C.muted} />
+              <TextInput
+                style={[s.input, s.dateInput]}
+                value={harvestEnd}
+                onChangeText={setHarvestEnd}
+                placeholder="End YYYY-MM-DD"
+                placeholderTextColor={C.subtle}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+
+            {/* ── Notes ── */}
+            <Text style={s.fieldLabel}>Notes (optional)</Text>
             <TextInput
-              style={s.input}
-              value={method}
-              onChangeText={setMethod}
-              placeholder="e.g. Washed, Natural"
+              style={[s.input, s.textarea]}
+              value={batchNotes}
+              onChangeText={setBatchNotes}
+              placeholder="Grade notes, processing method, export market…"
               placeholderTextColor={C.subtle}
+              multiline
+              numberOfLines={3}
             />
 
-            <Text style={s.fieldLabel}>Lot Number (optional)</Text>
-            <TextInput
-              style={s.input}
-              value={lotNo}
-              onChangeText={setLotNo}
-              placeholder="e.g. LOT-001"
-              placeholderTextColor={C.subtle}
-            />
+            {/* ── Deliveries ── */}
+            <View style={s.sectionRow}>
+              <Text style={s.fieldLabel}>Select Deliveries *</Text>
+              <Text style={s.sectionCount}>{selectedDeliveries.length} selected</Text>
+            </View>
 
-            <Text style={[s.fieldLabel, { marginTop: 8 }]}>
-              Select Deliveries ({selectedDeliveries.length} selected)
-            </Text>
+            {/* Running totals */}
+            {selectedDeliveries.length > 0 && (
+              <View style={s.totalsCard}>
+                <View style={s.totalItem}>
+                  <Text style={s.totalVal}>{selFarmers}</Text>
+                  <Text style={s.totalLbl}>Farmers</Text>
+                </View>
+                <View style={s.totalDivider} />
+                <View style={s.totalItem}>
+                  <Text style={s.totalVal}>{fmtKg(selTotalKg)}</Text>
+                  <Text style={s.totalLbl}>Total Weight</Text>
+                </View>
+                <View style={s.totalDivider} />
+                <View style={s.totalItem}>
+                  <Text style={[s.totalVal, { color: '#15803d' }]}>{fmtKg(selEudrKg)}</Text>
+                  <Text style={s.totalLbl}>EUDR Eligible</Text>
+                </View>
+                {selNonCompliant.length > 0 && (
+                  <>
+                    <View style={s.totalDivider} />
+                    <View style={s.totalItem}>
+                      <Text style={[s.totalVal, { color: '#dc2626' }]}>{fmtKg(selTotalKg - selEudrKg)}</Text>
+                      <Text style={s.totalLbl}>Non-Compliant</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* EUDR warning */}
+            {selNonCompliant.length > 0 && (
+              <View style={s.eudrWarning}>
+                <Ionicons name="warning-outline" size={16} color="#b45309" />
+                <Text style={s.eudrWarningText}>
+                  {selNonCompliant.length} selected deliver{selNonCompliant.length > 1 ? 'ies are' : 'y is'} linked to non-compliant or unverified parcels.
+                  Their weight will be excluded from EUDR-eligible totals.
+                </Text>
+              </View>
+            )}
+
             {deliveries.length === 0 ? (
               <View style={s.noDeliveries}>
                 <Ionicons name="information-circle-outline" size={20} color={C.muted} />
-                <Text style={s.noDeliveriesText}>No deliveries ready for batching.</Text>
+                <Text style={s.noDeliveriesText}>No deliveries are ready for batching.</Text>
               </View>
             ) : (
               deliveries.map(d => {
                 const selected = selectedDeliveries.includes(d.id);
+                const compliant = d.eudr_eligible !== false;
                 return (
                   <TouchableOpacity
                     key={d.id}
-                    style={[s.deliveryPick, selected && s.deliveryPickSel]}
+                    style={[s.deliveryPick, selected && s.deliveryPickSel, !compliant && s.deliveryPickWarn]}
                     onPress={() => toggleDelivery(d.id)}
                     activeOpacity={0.8}
                   >
@@ -317,26 +397,58 @@ export default function CoopBatchesScreen() {
                       {selected && <Ionicons name="checkmark" size={12} color={C.white} />}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={s.pickNo}>{d.delivery_number || `D-${d.id}`}</Text>
-                      <Text style={s.pickMeta}>{d.farmer_name || ''} · {fmtKg(d.net_weight_kg)}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={s.pickNo}>{d.delivery_number || `D-${d.id?.slice(0,8)}`}</Text>
+                        {!compliant && (
+                          <View style={s.pickWarnBadge}>
+                            <Text style={s.pickWarnText}>Non-EUDR</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={s.pickMeta}>
+                        {d.farmer_name || '—'} · {fmtKg(d.net_weight_kg)}
+                      </Text>
                     </View>
+                    {compliant && (
+                      <Ionicons name="shield-checkmark-outline" size={14} color="#15803d" />
+                    )}
                   </TouchableOpacity>
                 );
               })
             )}
 
-            <TouchableOpacity
-              style={[s.submitBtn, creating && { opacity: 0.6 }]}
-              onPress={handleCreate}
-              disabled={creating}
-              activeOpacity={0.8}
-            >
-              {creating
-                ? <ActivityIndicator color={C.white} size="small" />
-                : <Text style={s.submitBtnText}>Create Batch</Text>
-              }
-            </TouchableOpacity>
-            <View style={{ height: 40 }} />
+            {/* Action buttons */}
+            <View style={s.actionRow}>
+              <TouchableOpacity
+                style={[s.draftBtn, creating && { opacity: 0.6 }]}
+                onPress={() => handleCreate(false)}
+                disabled={creating}
+                activeOpacity={0.85}
+              >
+                {creating
+                  ? <ActivityIndicator color={C.c700} size="small" />
+                  : <>
+                      <Ionicons name="save-outline" size={16} color={C.c700} />
+                      <Text style={s.draftBtnText}>Save Draft</Text>
+                    </>
+                }
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.releaseCreateBtn, creating && { opacity: 0.6 }]}
+                onPress={() => handleCreate(true)}
+                disabled={creating}
+                activeOpacity={0.85}
+              >
+                {creating
+                  ? <ActivityIndicator color={C.white} size="small" />
+                  : <>
+                      <Ionicons name="rocket-outline" size={16} color={C.white} />
+                      <Text style={s.releaseCreateBtnText}>Save & Release</Text>
+                    </>
+                }
+              </TouchableOpacity>
+            </View>
+            <View style={{ height: 50 }} />
           </ScrollView>
         </View>
       </Modal>
@@ -387,18 +499,42 @@ const s = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '800', color: C.ink },
   modalBody: { flex: 1, padding: 20 },
 
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: C.steel700, marginBottom: 6, marginTop: 14, textTransform: 'uppercase', letterSpacing: 0.4 },
-  input: { borderWidth: 1, borderColor: C.steel200, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: C.ink, backgroundColor: C.steel100 },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: C.steel600, marginBottom: 6, marginTop: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 6 },
+  sectionCount: { fontSize: 12, fontWeight: '700', color: C.c700 },
+  input: { borderWidth: 1.5, borderColor: C.steel200, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.ink, backgroundColor: C.steel50 || C.steel100 },
+  textarea: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dateInput: { flex: 1, fontSize: 13 },
+
+  // Running totals
+  totalsCard: { flexDirection: 'row', backgroundColor: C.steel100, borderRadius: 14, padding: 14, marginBottom: 10, alignItems: 'center' },
+  totalItem: { flex: 1, alignItems: 'center' },
+  totalVal: { fontSize: 14, fontWeight: '900', color: C.ink },
+  totalLbl: { fontSize: 9, color: C.muted, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
+  totalDivider: { width: 1, height: 28, backgroundColor: C.steel200 },
+
+  // EUDR warning
+  eudrWarning: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fcd34d', borderRadius: 12, padding: 12, marginBottom: 10 },
+  eudrWarningText: { flex: 1, fontSize: 12, color: '#92400e', lineHeight: 18 },
+
   noDeliveries: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, backgroundColor: C.steel100, borderRadius: 10 },
   noDeliveriesText: { fontSize: 13, color: C.muted },
 
-  deliveryPick: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: C.steel200, marginBottom: 6, backgroundColor: C.white },
+  deliveryPick: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 6, backgroundColor: C.white },
   deliveryPickSel: { borderColor: C.c700, backgroundColor: C.c050 },
-  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
+  deliveryPickWarn: { borderColor: '#fcd34d', backgroundColor: '#fffbeb' },
+  checkbox: { width: 22, height: 22, borderRadius: 7, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkboxSel: { backgroundColor: C.c700, borderColor: C.c700 },
-  pickNo: { fontSize: 14, fontWeight: '700', color: C.ink },
-  pickMeta: { fontSize: 12, color: C.muted, marginTop: 1 },
+  pickNo: { fontSize: 13, fontWeight: '800', color: C.ink },
+  pickMeta: { fontSize: 12, color: C.muted, marginTop: 2 },
+  pickWarnBadge: { backgroundColor: '#fef3c7', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
+  pickWarnText: { fontSize: 9, fontWeight: '800', color: '#b45309' },
 
-  submitBtn: { backgroundColor: C.c700, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
-  submitBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
+  // Action buttons
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 24 },
+  draftBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 2, borderColor: C.c700, borderRadius: 14, paddingVertical: 14 },
+  draftBtnText: { color: C.c700, fontSize: 14, fontWeight: '800' },
+  releaseCreateBtn: { flex: 1.3, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#15803d', borderRadius: 14, paddingVertical: 14 },
+  releaseCreateBtnText: { color: C.white, fontSize: 14, fontWeight: '800' },
 });
