@@ -128,6 +128,15 @@ export default function DeliveryDetailScreen() {
   const logs = detail.processing_log || [];
   const canAddStep = !['batched', 'rejected'].includes((detail.status || '').toLowerCase());
 
+  // Weight trace
+  const receivedWeight = detail.net_weight_kg || 0;
+  const weightLogs = logs.filter(lg => lg.weight_out_kg != null);
+  const currentWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight_out_kg : receivedWeight;
+  const weightLoss = receivedWeight - currentWeight;
+  const outturn = receivedWeight > 0 ? (currentWeight / receivedWeight) * 100 : 0;
+  const refWeight = currentWeight;
+  const refLabel = weightLogs.length > 0 ? cap(weightLogs[weightLogs.length - 1].step_type) : 'Received';
+
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" />
@@ -245,6 +254,79 @@ export default function DeliveryDetailScreen() {
           ) : null)}
         </View>
 
+        {/* Weight Trace */}
+        <View style={s.card}>
+          <Text style={s.sectionTitle}>Weight Trace</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+            <View style={s.wtChain}>
+              {/* Received node */}
+              <View style={s.wtNode}>
+                <View style={[s.wtDot, { backgroundColor: C.c050, borderColor: C.c300 }]}>
+                  <Ionicons name="archive-outline" size={13} color={C.c700} />
+                </View>
+                <Text style={s.wtKg}>{fmtKg(receivedWeight)}</Text>
+                <Text style={s.wtLabel}>Received</Text>
+              </View>
+              {/* Step nodes */}
+              {weightLogs.map((lg, i) => {
+                const col = STEP_COLORS[lg.step_type] || C.c700;
+                const icon = STEP_ICONS[lg.step_type] || 'checkmark-outline';
+                const isFinal = i === weightLogs.length - 1;
+                return (
+                  <React.Fragment key={lg.id || i}>
+                    <View style={s.wtArrow}>
+                      <Ionicons name="chevron-forward-outline" size={14} color={C.steel300} />
+                    </View>
+                    <View style={s.wtNode}>
+                      <View style={[s.wtDot, { backgroundColor: col + '22', borderColor: col + '66' }, isFinal && { borderWidth: 2.5, borderColor: col }]}>
+                        <Ionicons name={icon} size={13} color={col} />
+                      </View>
+                      <Text style={[s.wtKg, isFinal && { color: col }]}>{fmtKg(lg.weight_out_kg)}</Text>
+                      <Text style={[s.wtLabel, isFinal && { color: col, fontWeight: '700' }]}>{cap(lg.step_type)}</Text>
+                    </View>
+                  </React.Fragment>
+                );
+              })}
+              {/* Pending final node when no weight yet */}
+              {weightLogs.length === 0 && (
+                <>
+                  <View style={s.wtArrow}>
+                    <Ionicons name="chevron-forward-outline" size={14} color={C.steel300} />
+                  </View>
+                  <View style={s.wtNode}>
+                    <View style={[s.wtDot, { backgroundColor: C.steel100, borderColor: C.steel200, borderStyle: 'dashed' }]}>
+                      <Ionicons name="hourglass-outline" size={13} color={C.steel400} />
+                    </View>
+                    <Text style={[s.wtKg, { color: C.muted }]}>— kg</Text>
+                    <Text style={s.wtLabel}>Final</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </ScrollView>
+          {/* Summary row */}
+          <View style={s.wtSummary}>
+            <View style={s.wtStat}>
+              <Text style={s.wtStatVal}>{fmtKg(currentWeight)}</Text>
+              <Text style={s.wtStatLbl}>Current</Text>
+            </View>
+            <View style={s.wtStatDivider} />
+            <View style={s.wtStat}>
+              <Text style={[s.wtStatVal, weightLoss > 0 && { color: '#dc2626' }]}>
+                {weightLoss > 0 ? `−${fmtKg(weightLoss)}` : fmtKg(0)}
+              </Text>
+              <Text style={s.wtStatLbl}>Loss</Text>
+            </View>
+            <View style={s.wtStatDivider} />
+            <View style={s.wtStat}>
+              <Text style={[s.wtStatVal, { color: outturn >= 70 ? '#15803d' : outturn >= 50 ? '#d97706' : '#dc2626' }]}>
+                {outturn.toFixed(1)}%
+              </Text>
+              <Text style={s.wtStatLbl}>Outturn</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Notes */}
         {!!detail.notes && (
           <View style={s.card}>
@@ -286,9 +368,20 @@ export default function DeliveryDetailScreen() {
                     {!!lg.log_number && (
                       <Text style={s.logRef}>{lg.log_number}</Text>
                     )}
-                    {lg.weight_out_kg != null && (
-                      <Text style={s.logMeta}>Weight out: {fmtKg(lg.weight_out_kg)}</Text>
-                    )}
+                    {lg.weight_out_kg != null && (() => {
+                      const pct = receivedWeight > 0 ? (lg.weight_out_kg / receivedWeight * 100).toFixed(1) : null;
+                      const loss = receivedWeight - lg.weight_out_kg;
+                      return (
+                        <View style={s.logWeightRow}>
+                          <Text style={s.logMeta}>Weight out: {fmtKg(lg.weight_out_kg)}</Text>
+                          {pct != null && (
+                            <Text style={s.logWeightPct}>
+                              {pct}% · −{fmtKg(loss)} from received
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })()}
                     {lg.step_type === 'grading' && lg.grade && <Text style={s.logMeta}>Grade: {lg.grade}</Text>}
                     {lg.notes && <Text style={s.logNotes}>{lg.notes}</Text>}
                     {!!lg.logged_by_name && (
@@ -344,6 +437,12 @@ export default function DeliveryDetailScreen() {
               keyboardType="decimal-pad"
               placeholder={STEP_HINTS[stepType]?.weight || 'e.g. 48.5 kg'}
               placeholderTextColor={C.subtle} />
+            <View style={s.weightRefRow}>
+              <Ionicons name="scale-outline" size={12} color={C.subtle} />
+              <Text style={s.weightRefText}>
+                {'Received: ' + fmtKg(receivedWeight) + (weightLogs.length > 0 ? '  ·  Last (' + refLabel + '): ' + fmtKg(refWeight) : '  ·  No steps yet')}
+              </Text>
+            </View>
 
             {stepType === 'grading' && (
               <>
@@ -414,6 +513,19 @@ const s = StyleSheet.create({
 
   notesText: { fontSize: 13, color: C.ink, lineHeight: 20 },
 
+  // Weight trace
+  wtChain: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 2 },
+  wtNode: { alignItems: 'center', width: 74 },
+  wtDot: { width: 38, height: 38, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+  wtArrow: { paddingHorizontal: 2, marginBottom: 18 },
+  wtKg: { fontSize: 11, fontWeight: '800', color: C.ink, textAlign: 'center' },
+  wtLabel: { fontSize: 10, color: C.muted, fontWeight: '600', textAlign: 'center', marginTop: 2 },
+  wtSummary: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.steel100, borderRadius: 12, padding: 12, marginTop: 4 },
+  wtStat: { flex: 1, alignItems: 'center' },
+  wtStatVal: { fontSize: 14, fontWeight: '800', color: C.ink },
+  wtStatLbl: { fontSize: 10, color: C.muted, fontWeight: '600', marginTop: 2 },
+  wtStatDivider: { width: 1, height: 28, backgroundColor: C.steel200 },
+
   // Log
   emptyLog: { alignItems: 'center', paddingVertical: 20, gap: 8 },
   emptyLogText: { fontSize: 13, color: C.muted },
@@ -425,9 +537,15 @@ const s = StyleSheet.create({
   logDate: { fontSize: 12, color: C.muted, fontWeight: '600' },
   logRef: { fontSize: 10, fontWeight: '700', color: C.c600, letterSpacing: 0.3, marginBottom: 3 },
   logMeta: { fontSize: 12, color: C.muted, fontWeight: '600' },
+  logWeightRow: { gap: 1 },
+  logWeightPct: { fontSize: 11, color: C.subtle, fontWeight: '600' },
   logNotes: { fontSize: 12, color: C.steel600, marginTop: 3, lineHeight: 17, fontStyle: 'italic' },
   logByRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
   logBy: { fontSize: 11, color: C.subtle, fontWeight: '600' },
+
+  // Modal weight ref
+  weightRefRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, marginBottom: 4 },
+  weightRefText: { fontSize: 11, color: C.subtle, fontWeight: '600', flex: 1 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
