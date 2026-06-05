@@ -173,7 +173,7 @@ export default function DeliveriesScreen() {
               onPress={() => setActiveFilter(activeFilter === k.key ? 'all' : k.key)}
               activeOpacity={0.8}
             >
-              <Ionicons name={k.icon} size={16} color={k.color} />
+              <Ionicons name={k.icon} size={22} color={k.color} />
               <Text style={[s.miniCount, { color: k.color }]}>{counts[k.key] ?? 0}</Text>
               <Text style={[s.miniLabel, { color: k.color }]}>{k.label}</Text>
             </TouchableOpacity>
@@ -266,11 +266,15 @@ const s = StyleSheet.create({
   verifiedPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 2 },
   verifiedPillText:{ fontSize: 12, fontWeight: '700', color: '#15803d' },
 
-  // 5 stat mini-cards — identical to FarmsListScreen
-  summaryWrap: { flexDirection: 'row', backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, paddingHorizontal: 10, paddingVertical: 10, gap: 6 },
-  miniCard:    { flex: 1, alignItems: 'center', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2, gap: 2, borderWidth: 1.5 },
-  miniCount:   { fontSize: 16, fontWeight: '900' },
-  miniLabel:   { fontSize: 8, fontWeight: '700', textAlign: 'center', lineHeight: 10 },
+  // 5 stat mini-cards — 3-per-row wrapping grid so each card is square
+  summaryWrap: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center',
+    backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200,
+    padding: 12, gap: 8,
+  },
+  miniCard:  { width: '31%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 14, gap: 4, borderWidth: 1.5 },
+  miniCount: { fontSize: 22, fontWeight: '900' },
+  miniLabel: { fontSize: 9,  fontWeight: '700', textAlign: 'center' },
 
   // Scroll
   scroll:        { flex: 1 },
