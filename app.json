@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0d0803"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "africa.plotra.polygon",
@@ -42,7 +44,8 @@
       "favicon": "./assets/icon.png"
     },
     "plugins": [
-      "expo-location"
+      "expo-location",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
