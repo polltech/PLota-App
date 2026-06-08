@@ -209,6 +209,7 @@ export default function CoopBatchesScreen() {
   const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + (d.net_weight_kg || 0), 0);
   const selNonCompliant = selectedObjs.filter(d => d.eudr_eligible === false);
   const selFarmers      = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
+  const selFarms        = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
 
   // Stat counts
   const totalKg   = batches.reduce((s, b) => s + (b.total_weight_kg || 0), 0);
@@ -343,6 +344,11 @@ export default function CoopBatchesScreen() {
                 <View style={s.totalItem}>
                   <Text style={s.totalVal}>{selFarmers}</Text>
                   <Text style={s.totalLbl}>Farmers</Text>
+                </View>
+                <View style={s.totalDivider} />
+                <View style={s.totalItem}>
+                  <Text style={s.totalVal}>{selFarms}</Text>
+                  <Text style={s.totalLbl}>Farms</Text>
                 </View>
                 <View style={s.totalDivider} />
                 <View style={s.totalItem}>
