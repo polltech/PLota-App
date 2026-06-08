@@ -11,10 +11,13 @@ on:
         options:
           - android
           - ios
-  push:
-    tags:
-      - 'v*'
-      - 'release-*'
+# NOTE: Automatic tag-triggered builds are temporarily disabled to avoid
+# running CI on every push while doing UI/content changes locally.
+# To re-enable automatic builds, restore the `push` trigger below.
+# push:
+#   tags:
+#     - 'v*'
+#     - 'release-*'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -43,9 +46,14 @@ jobs:
           else
             eas build --profile production --platform ios --non-interactive
           fi
-      - name: Submit to stores
-        run: |
-          eas submit --platform ${{ github.event.inputs.platform }} --latest --non-interactive || true
+      # Submit to stores is disabled temporarily to avoid automatic submissions
+      # during UI/content work. To re-enable, uncomment the block below and
+      # ensure CI has the required credentials (Google service account /
+      # App Store Connect API key) stored in GitHub Secrets or checked in
+      # securely as files referenced by `eas.json`.
+      # - name: Submit to stores
+      #   run: |
+      #     eas submit --platform ${{ github.event.inputs.platform }} --latest --non-interactive || true
 
   build-auto:
     name: Automatic production build on tag
@@ -67,8 +75,11 @@ jobs:
         run: eas build --profile apk --platform android --non-interactive
       - name: Build on EAS (iOS)
         run: eas build --profile production --platform ios --non-interactive
-      - name: Submit to stores
-        if: github.event_name == 'push'
-        run: |
-          eas submit --platform android --latest --non-interactive || true
-          eas submit --platform ios --latest --non-interactive || true
+      # Submit to stores (disabled)
+      # If you want automatic submission on tag push, uncomment and configure
+      # the service account / API credentials first.
+      # - name: Submit to stores
+      #   if: github.event_name == 'push'
+      #   run: |
+      #     eas submit --platform android --latest --non-interactive || true
+      #     eas submit --platform ios --latest --non-interactive || true
