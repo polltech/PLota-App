@@ -37,7 +37,7 @@ const StatCard = ({ value, label, color, bg }) => (
 );
 
 const BatchRow = ({ item, onPress, onRelease }) => {
-  const ss = batchStatusStyle(item.status);
+  const ss = batchStatusStyle(item.batch_status);
   const cs = complianceStyle(item.compliance_status);
   const eudrPct = item.total_weight_kg > 0
     ? ((item.eudr_eligible_kg || 0) / item.total_weight_kg * 100).toFixed(0)
@@ -50,7 +50,7 @@ const BatchRow = ({ item, onPress, onRelease }) => {
         <View style={s.rowTop}>
           <Text style={s.batchNo} numberOfLines={1}>{item.batch_reference}</Text>
           <View style={[s.badge, { backgroundColor: ss.bg }]}>
-            <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.status || 'Draft')}</Text>
+            <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.batch_status || 'Draft')}</Text>
           </View>
         </View>
 
@@ -85,7 +85,7 @@ const BatchRow = ({ item, onPress, onRelease }) => {
         </View>
 
         {/* Action: Release if draft */}
-        {(item.status === 'draft' || !item.status) && (
+        {(item.batch_status === 'draft' || !item.batch_status) && (
           <TouchableOpacity
             style={s.releaseBtn}
             onPress={(e) => { e.stopPropagation?.(); onRelease(item); }}
@@ -154,7 +154,7 @@ export default function CoopBatchesScreen() {
           try {
             await coopAPI.releaseBatch(batch.id, '');
             setBatches(prev => prev.map(b =>
-              b.id === batch.id ? { ...b, status: 'released' } : b
+              b.id === batch.id ? { ...b, batch_status: 'released' } : b
             ));
             Alert.alert('Released', `${batch.batch_reference} submitted for satellite screening.`);
           } catch (e) {
@@ -208,13 +208,13 @@ export default function CoopBatchesScreen() {
   const selTotalKg      = selectedObjs.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
   const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + (d.net_weight_kg || 0), 0);
   const selNonCompliant = selectedObjs.filter(d => d.eudr_eligible === false);
-  const selFarmers      = new Set(selectedObjs.map(d => d.farmer_name).filter(Boolean)).size;
+  const selFarmers      = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
 
   // Stat counts
   const totalKg   = batches.reduce((s, b) => s + (b.total_weight_kg || 0), 0);
   const eudrKg    = batches.reduce((s, b) => s + (b.eudr_eligible_kg || 0), 0);
-  const released  = batches.filter(b => b.status === 'released' || b.status === 'under_satellite_review').length;
-  const draft     = batches.filter(b => !b.status || b.status === 'draft').length;
+  const released  = batches.filter(b => b.batch_status === 'released' || b.batch_status === 'under_satellite_review').length;
+  const draft     = batches.filter(b => !b.batch_status || b.batch_status === 'draft').length;
 
   return (
     <View style={s.container}>
