@@ -44,7 +44,9 @@
       "favicon": "./assets/icon.png"
     },
     "plugins": [
-      "expo-location"
+      "expo-location",
+      "expo-secure-store",
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {

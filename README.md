@@ -383,7 +383,7 @@ npm install -g eas-cli
 eas login
 
 # Build
-eas build --platform android --profile preview
+eas build --platform android --profile apk
 ```
 
 Download APK from expo.dev when complete (~15 min).
@@ -397,7 +397,7 @@ Dependencies: expo, react-native-maps, turf, expo-sqlite, expo-location, axios
 
 ### `eas.json` build profiles
 - **preview** → APK (debuggable, for testing)
-- **production** → AAB (Google Play Store)
+- **production** → APK (release-ready, production build)
 
 ### Permissions (Android)
 ```json
