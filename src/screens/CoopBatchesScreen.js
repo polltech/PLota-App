@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView,
-  ActivityIndicator, RefreshControl, StatusBar, Alert, TextInput,
+  ActivityIndicator, RefreshControl, StatusBar, Alert, TextInput, Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,6 +118,20 @@ export default function CoopBatchesScreen() {
   const [batchNotes,         setBatchNotes]         = useState('');
   const [releaseNow,         setReleaseNow]         = useState(false);
   const [creating,           setCreating]           = useState(false);
+  const [showStartPicker,    setShowStartPicker]    = useState(false);
+  const [showEndPicker,      setShowEndPicker]      = useState(false);
+
+  const toISO = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const parseISO = (str) => {
+    if (!str) return new Date();
+    const [y, mo, d] = str.split('-').map(Number);
+    return new Date(y, mo - 1, d);
+  };
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -304,24 +319,52 @@ export default function CoopBatchesScreen() {
             {/* ── Harvest Period ── */}
             <Text style={s.fieldLabel}>Harvest Period *</Text>
             <View style={s.dateRow}>
-              <TextInput
-                style={[s.input, s.dateInput]}
-                value={harvestStart}
-                onChangeText={setHarvestStart}
-                placeholder="Start YYYY-MM-DD"
-                placeholderTextColor={C.subtle}
-                keyboardType="numbers-and-punctuation"
-              />
+              <TouchableOpacity
+                style={[s.input, s.datePicker]}
+                onPress={() => setShowStartPicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={15} color={harvestStart ? C.c700 : C.subtle} />
+                <Text style={[s.datePickerText, !harvestStart && { color: C.subtle }]}>
+                  {harvestStart || 'Start date'}
+                </Text>
+              </TouchableOpacity>
               <Ionicons name="arrow-forward-outline" size={16} color={C.muted} />
-              <TextInput
-                style={[s.input, s.dateInput]}
-                value={harvestEnd}
-                onChangeText={setHarvestEnd}
-                placeholder="End YYYY-MM-DD"
-                placeholderTextColor={C.subtle}
-                keyboardType="numbers-and-punctuation"
-              />
+              <TouchableOpacity
+                style={[s.input, s.datePicker]}
+                onPress={() => setShowEndPicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={15} color={harvestEnd ? C.c700 : C.subtle} />
+                <Text style={[s.datePickerText, !harvestEnd && { color: C.subtle }]}>
+                  {harvestEnd || 'End date'}
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {showStartPicker && (
+              <DateTimePicker
+                value={parseISO(harvestStart)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(_, selected) => {
+                  setShowStartPicker(Platform.OS === 'ios');
+                  if (selected) setHarvestStart(toISO(selected));
+                }}
+              />
+            )}
+            {showEndPicker && (
+              <DateTimePicker
+                value={parseISO(harvestEnd)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                minimumDate={harvestStart ? parseISO(harvestStart) : undefined}
+                onChange={(_, selected) => {
+                  setShowEndPicker(Platform.OS === 'ios');
+                  if (selected) setHarvestEnd(toISO(selected));
+                }}
+              />
+            )}
 
             {/* ── Notes ── */}
             <Text style={s.fieldLabel}>Notes (optional)</Text>
@@ -514,7 +557,8 @@ const s = StyleSheet.create({
   input: { borderWidth: 1.5, borderColor: C.steel200, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.ink, backgroundColor: C.steel50 || C.steel100 },
   textarea: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateInput: { flex: 1, fontSize: 13 },
+  datePicker: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  datePickerText: { fontSize: 14, color: C.ink, flex: 1 },
 
   // Running totals
   totalsCard: { flexDirection: 'row', backgroundColor: C.steel100, borderRadius: 14, padding: 14, marginBottom: 10, alignItems: 'center' },
