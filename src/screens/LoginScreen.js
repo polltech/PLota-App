@@ -160,7 +160,7 @@ export default function LoginScreen({ navigation }) {
 
                 <View style={s.divider}>
                   <View style={s.line} />
-                  <Text style={s.divText}>New farmer?</Text>
+                  <Text style={s.divText}>New user?</Text>
                   <View style={s.line} />
                 </View>
 
@@ -169,18 +169,12 @@ export default function LoginScreen({ navigation }) {
                   onPress={() => navigation.navigate('Register')}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.registerText}>Create a Farmer Account</Text>
+                  <Text style={s.registerText}>Create Account</Text>
                 </TouchableOpacity>
 
-                <View style={s.footer}>
-                  <View style={s.dot} />
-                  <Text style={s.footText}>
-                    Digital Farming Solutions for Sustainable Growth
-                  </Text>
-                </View>
               </Animated.View>
 
-              <Text style={s.version}>Plotra Agent App • v1.1.0</Text>
+              <Text style={s.version}>Plotra App • v1.1.0</Text>
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>

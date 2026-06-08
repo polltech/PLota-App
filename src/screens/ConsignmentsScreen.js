@@ -22,9 +22,81 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-dig
 const fmtKg = (v) => v != null ? `${Number(v).toFixed(1)} kg` : '—';
 
 const EU_COUNTRIES = [
-  'AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HR','HU',
-  'IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK',
+  { code: 'AT', name: 'Austria',        flag: '🇦🇹' },
+  { code: 'BE', name: 'Belgium',        flag: '🇧🇪' },
+  { code: 'BG', name: 'Bulgaria',       flag: '🇧🇬' },
+  { code: 'CY', name: 'Cyprus',         flag: '🇨🇾' },
+  { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿' },
+  { code: 'DE', name: 'Germany',        flag: '🇩🇪' },
+  { code: 'DK', name: 'Denmark',        flag: '🇩🇰' },
+  { code: 'EE', name: 'Estonia',        flag: '🇪🇪' },
+  { code: 'ES', name: 'Spain',          flag: '🇪🇸' },
+  { code: 'FI', name: 'Finland',        flag: '🇫🇮' },
+  { code: 'FR', name: 'France',         flag: '🇫🇷' },
+  { code: 'GR', name: 'Greece',         flag: '🇬🇷' },
+  { code: 'HR', name: 'Croatia',        flag: '🇭🇷' },
+  { code: 'HU', name: 'Hungary',        flag: '🇭🇺' },
+  { code: 'IE', name: 'Ireland',        flag: '🇮🇪' },
+  { code: 'IT', name: 'Italy',          flag: '🇮🇹' },
+  { code: 'LT', name: 'Lithuania',      flag: '🇱🇹' },
+  { code: 'LU', name: 'Luxembourg',     flag: '🇱🇺' },
+  { code: 'LV', name: 'Latvia',         flag: '🇱🇻' },
+  { code: 'MT', name: 'Malta',          flag: '🇲🇹' },
+  { code: 'NL', name: 'Netherlands',    flag: '🇳🇱' },
+  { code: 'PL', name: 'Poland',         flag: '🇵🇱' },
+  { code: 'PT', name: 'Portugal',       flag: '🇵🇹' },
+  { code: 'RO', name: 'Romania',        flag: '🇷🇴' },
+  { code: 'SE', name: 'Sweden',         flag: '🇸🇪' },
+  { code: 'SI', name: 'Slovenia',       flag: '🇸🇮' },
+  { code: 'SK', name: 'Slovakia',       flag: '🇸🇰' },
 ];
+
+const CountryPicker = ({ visible, selected, onClose, onSelect }) => (
+  <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <View style={cp.overlay}>
+      <View style={cp.sheet}>
+        <View style={cp.header}>
+          <Text style={cp.title}>Select EU Country</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={22} color={C.ink} />
+          </TouchableOpacity>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {EU_COUNTRIES.map(c => (
+            <TouchableOpacity
+              key={c.code}
+              style={[cp.row, selected === c.code && cp.rowActive]}
+              onPress={() => onSelect(c.code)}
+              activeOpacity={0.7}
+            >
+              <Text style={cp.flag}>{c.flag}</Text>
+              <Text style={[cp.countryName, selected === c.code && cp.countryNameActive]}>
+                {c.name}
+              </Text>
+              <Text style={cp.code}>{c.code}</Text>
+              {selected === c.code && (
+                <Ionicons name="checkmark" size={18} color={C.c700} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  </Modal>
+);
+
+const cp = StyleSheet.create({
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', paddingBottom: 24 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  title:       { fontSize: 17, fontWeight: '700', color: C.ink },
+  row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
+  rowActive:   { backgroundColor: '#f0fdf4' },
+  flag:        { fontSize: 26, marginRight: 14 },
+  countryName: { fontSize: 15, color: C.ink, flex: 1 },
+  countryNameActive: { fontWeight: '600', color: C.c700 },
+  code:        { fontSize: 13, color: C.muted, marginLeft: 8 },
+});
 
 export default function ConsignmentsScreen() {
   const navigation = useNavigation();
@@ -38,6 +110,7 @@ export default function ConsignmentsScreen() {
   const [selectedBatches, setSelectedBatches] = useState([]);
   const [ref, setRef] = useState('');
   const [country, setCountry] = useState('');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [importer, setImporter] = useState('');
   const [shipDate, setShipDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -151,7 +224,10 @@ export default function ConsignmentsScreen() {
                 <View style={s.cardMeta}>
                   <View style={s.metaItem}>
                     <Ionicons name="flag-outline" size={13} color={C.muted} />
-                    <Text style={s.metaText}>{item.destination_country} · {item.importer_name}</Text>
+                    <Text style={s.metaText}>
+                      {(() => { const c = EU_COUNTRIES.find(x => x.code === item.destination_country); return c ? `${c.flag} ${c.name}` : item.destination_country; })()}
+                      {' · '}{item.importer_name}
+                    </Text>
                   </View>
                   <View style={s.metaItem}>
                     <Ionicons name="scale-outline" size={13} color={C.muted} />
@@ -213,20 +289,37 @@ export default function ConsignmentsScreen() {
                 placeholder="Auto-generated if blank" placeholderTextColor={C.subtle}
                 autoCapitalize="characters" />
 
-              <Text style={s.fieldLabel}>Destination Country (ISO) *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                <View style={s.countryRow}>
-                  {EU_COUNTRIES.map(c => (
-                    <TouchableOpacity
-                      key={c}
-                      style={[s.countryChip, country === c && s.countryChipActive]}
-                      onPress={() => setCountry(c)} activeOpacity={0.8}
-                    >
-                      <Text style={[s.countryChipText, country === c && { color: C.white }]}>{c}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <Text style={s.fieldLabel}>Destination Country (EU) *</Text>
+              {(() => {
+                const sel = EU_COUNTRIES.find(c => c.code === country);
+                return (
+                  <TouchableOpacity
+                    style={[s.input, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}
+                    onPress={() => setShowCountryPicker(true)}
+                    activeOpacity={0.8}
+                  >
+                    {sel ? (
+                      <>
+                        <Text style={{ fontSize: 22 }}>{sel.flag}</Text>
+                        <Text style={{ fontSize: 15, color: C.ink, flex: 1 }}>{sel.name}</Text>
+                        <Text style={{ fontSize: 13, color: C.muted }}>{sel.code}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Ionicons name="earth-outline" size={18} color={C.subtle} />
+                        <Text style={{ fontSize: 15, color: C.subtle, flex: 1 }}>— Select EU country —</Text>
+                        <Ionicons name="chevron-down" size={16} color={C.subtle} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                );
+              })()}
+              <CountryPicker
+                visible={showCountryPicker}
+                selected={country}
+                onClose={() => setShowCountryPicker(false)}
+                onSelect={(code) => { setCountry(code); setShowCountryPicker(false); }}
+              />
 
               <Text style={s.fieldLabel}>Importer Name *</Text>
               <TextInput style={s.input} value={importer} onChangeText={setImporter}

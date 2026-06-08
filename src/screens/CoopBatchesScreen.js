@@ -37,7 +37,7 @@ const StatCard = ({ value, label, color, bg }) => (
 );
 
 const BatchRow = ({ item, onPress, onRelease }) => {
-  const ss = batchStatusStyle(item.status);
+  const ss = batchStatusStyle(item.batch_status);
   const cs = complianceStyle(item.compliance_status);
   const eudrPct = item.total_weight_kg > 0
     ? ((item.eudr_eligible_kg || 0) / item.total_weight_kg * 100).toFixed(0)
@@ -50,7 +50,7 @@ const BatchRow = ({ item, onPress, onRelease }) => {
         <View style={s.rowTop}>
           <Text style={s.batchNo} numberOfLines={1}>{item.batch_reference}</Text>
           <View style={[s.badge, { backgroundColor: ss.bg }]}>
-            <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.status || 'Draft')}</Text>
+            <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.batch_status || 'Draft')}</Text>
           </View>
         </View>
 
@@ -85,7 +85,7 @@ const BatchRow = ({ item, onPress, onRelease }) => {
         </View>
 
         {/* Action: Release if draft */}
-        {(item.status === 'draft' || !item.status) && (
+        {(item.batch_status === 'draft' || !item.batch_status) && (
           <TouchableOpacity
             style={s.releaseBtn}
             onPress={(e) => { e.stopPropagation?.(); onRelease(item); }}
@@ -100,6 +100,115 @@ const BatchRow = ({ item, onPress, onRelease }) => {
     </TouchableOpacity>
   );
 };
+
+// ── Pure-JS Calendar Picker (no native modules required) ─────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+const CalendarPicker = ({ visible, value, minimumDate, onClose, onSelect }) => {
+  const today = new Date();
+  const initYear  = value ? parseInt(value.split('-')[0]) : today.getFullYear();
+  const initMonth = value ? parseInt(value.split('-')[1]) - 1 : today.getMonth();
+  const [yr, setYr] = useState(initYear);
+  const [mo, setMo] = useState(initMonth);
+
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+  const startDay    = new Date(yr, mo, 1).getDay();
+  const cells       = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const isDisabled = (day) => {
+    if (!minimumDate || !day) return false;
+    const [my, mm, md] = minimumDate.split('-').map(Number);
+    if (yr < my) return true;
+    if (yr === my && mo + 1 < mm) return true;
+    if (yr === my && mo + 1 === mm && day < md) return true;
+    return false;
+  };
+  const isSelected = (day) => {
+    if (!value || !day) return false;
+    const [vy, vm, vd] = value.split('-').map(Number);
+    return vy === yr && vm === mo + 1 && vd === day;
+  };
+  const isToday = (day) => day && today.getFullYear() === yr && today.getMonth() === mo && today.getDate() === day;
+
+  const prevMonth = () => mo === 0 ? (setYr(yr - 1), setMo(11)) : setMo(mo - 1);
+  const nextMonth = () => mo === 11 ? (setYr(yr + 1), setMo(0)) : setMo(mo + 1);
+
+  const select = (day) => {
+    if (!day || isDisabled(day)) return;
+    const m = String(mo + 1).padStart(2, '0');
+    const d = String(day).padStart(2, '0');
+    onSelect(`${yr}-${m}-${d}`);
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={cal.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={cal.card} onStartShouldSetResponder={() => true}>
+          <View style={cal.header}>
+            <TouchableOpacity onPress={prevMonth} style={cal.navBtn}>
+              <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
+            </TouchableOpacity>
+            <Text style={cal.monthLabel}>{MONTH_NAMES[mo]} {yr}</Text>
+            <TouchableOpacity onPress={nextMonth} style={cal.navBtn}>
+              <Ionicons name="chevron-forward" size={22} color="#1a1a1a" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={cal.weekRow}>
+            {DAY_LABELS.map(d => <Text key={d} style={cal.dayLabel}>{d}</Text>)}
+          </View>
+
+          <View style={cal.grid}>
+            {cells.map((day, i) => {
+              const sel = isSelected(day);
+              const dis = isDisabled(day);
+              const tod = isToday(day);
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[cal.cell, sel && cal.cellSel, tod && !sel && cal.cellToday]}
+                  onPress={() => select(day)}
+                  disabled={!day || dis}
+                  activeOpacity={0.7}
+                >
+                  {!!day && (
+                    <Text style={[cal.cellText, sel && cal.cellTextSel, dis && cal.cellTextDis]}>
+                      {day}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity style={cal.cancelBtn} onPress={onClose}>
+            <Text style={cal.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+const cal = StyleSheet.create({
+  overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  card:         { backgroundColor: '#fff', borderRadius: 20, padding: 16, width: 320, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 12 },
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  navBtn:       { padding: 8 },
+  monthLabel:   { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  weekRow:      { flexDirection: 'row', marginBottom: 6 },
+  dayLabel:     { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' },
+  grid:         { flexDirection: 'row', flexWrap: 'wrap' },
+  cell:         { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 100 },
+  cellSel:      { backgroundColor: '#15803d' },
+  cellToday:    { borderWidth: 1.5, borderColor: '#15803d' },
+  cellText:     { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  cellTextSel:  { color: '#fff', fontWeight: '800' },
+  cellTextDis:  { color: '#cbd5e1' },
+  cancelBtn:    { marginTop: 14, alignItems: 'center', paddingVertical: 10 },
+  cancelText:   { fontSize: 14, fontWeight: '700', color: '#64748b' },
+});
 
 export default function CoopBatchesScreen() {
   const navigation = useNavigation();
@@ -117,6 +226,8 @@ export default function CoopBatchesScreen() {
   const [batchNotes,         setBatchNotes]         = useState('');
   const [releaseNow,         setReleaseNow]         = useState(false);
   const [creating,           setCreating]           = useState(false);
+  const [showStartPicker,    setShowStartPicker]    = useState(false);
+  const [showEndPicker,      setShowEndPicker]      = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -154,7 +265,7 @@ export default function CoopBatchesScreen() {
           try {
             await coopAPI.releaseBatch(batch.id, '');
             setBatches(prev => prev.map(b =>
-              b.id === batch.id ? { ...b, status: 'released' } : b
+              b.id === batch.id ? { ...b, batch_status: 'released' } : b
             ));
             Alert.alert('Released', `${batch.batch_reference} submitted for satellite screening.`);
           } catch (e) {
@@ -204,17 +315,21 @@ export default function CoopBatchesScreen() {
     setSelectedDeliveries(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
 
   // Running totals from selected deliveries
+  // packed_weight_kg = weight_out_kg from the PACKING processing step (final weight into batch)
+  // falls back to net_weight_kg (intake weight) if PACKING step not yet logged
   const selectedObjs    = deliveries.filter(d => selectedDeliveries.includes(d.id));
-  const selTotalKg      = selectedObjs.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
-  const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  const effKg           = (d) => d.packed_weight_kg ?? d.net_weight_kg ?? 0;
+  const selTotalKg      = selectedObjs.reduce((s, d) => s + effKg(d), 0);
+  const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + effKg(d), 0);
   const selNonCompliant = selectedObjs.filter(d => d.eudr_eligible === false);
-  const selFarmers      = new Set(selectedObjs.map(d => d.farmer_name).filter(Boolean)).size;
+  const selFarmers      = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
+  const selFarms        = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
 
   // Stat counts
   const totalKg   = batches.reduce((s, b) => s + (b.total_weight_kg || 0), 0);
   const eudrKg    = batches.reduce((s, b) => s + (b.eudr_eligible_kg || 0), 0);
-  const released  = batches.filter(b => b.status === 'released' || b.status === 'under_satellite_review').length;
-  const draft     = batches.filter(b => !b.status || b.status === 'draft').length;
+  const released  = batches.filter(b => b.batch_status === 'released' || b.batch_status === 'under_satellite_review').length;
+  const draft     = batches.filter(b => !b.batch_status || b.batch_status === 'draft').length;
 
   return (
     <View style={s.container}>
@@ -300,24 +415,42 @@ export default function CoopBatchesScreen() {
             {/* ── Harvest Period ── */}
             <Text style={s.fieldLabel}>Harvest Period *</Text>
             <View style={s.dateRow}>
-              <TextInput
-                style={[s.input, s.dateInput]}
-                value={harvestStart}
-                onChangeText={setHarvestStart}
-                placeholder="Start YYYY-MM-DD"
-                placeholderTextColor={C.subtle}
-                keyboardType="numbers-and-punctuation"
-              />
+              <TouchableOpacity
+                style={[s.input, s.datePicker]}
+                onPress={() => setShowStartPicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={15} color={harvestStart ? C.c700 : C.subtle} />
+                <Text style={[s.datePickerText, !harvestStart && { color: C.subtle }]}>
+                  {harvestStart || 'Start date'}
+                </Text>
+              </TouchableOpacity>
               <Ionicons name="arrow-forward-outline" size={16} color={C.muted} />
-              <TextInput
-                style={[s.input, s.dateInput]}
-                value={harvestEnd}
-                onChangeText={setHarvestEnd}
-                placeholder="End YYYY-MM-DD"
-                placeholderTextColor={C.subtle}
-                keyboardType="numbers-and-punctuation"
-              />
+              <TouchableOpacity
+                style={[s.input, s.datePicker]}
+                onPress={() => setShowEndPicker(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={15} color={harvestEnd ? C.c700 : C.subtle} />
+                <Text style={[s.datePickerText, !harvestEnd && { color: C.subtle }]}>
+                  {harvestEnd || 'End date'}
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            <CalendarPicker
+              visible={showStartPicker}
+              value={harvestStart}
+              onClose={() => setShowStartPicker(false)}
+              onSelect={(iso) => { setHarvestStart(iso); setShowStartPicker(false); }}
+            />
+            <CalendarPicker
+              visible={showEndPicker}
+              value={harvestEnd}
+              minimumDate={harvestStart || undefined}
+              onClose={() => setShowEndPicker(false)}
+              onSelect={(iso) => { setHarvestEnd(iso); setShowEndPicker(false); }}
+            />
 
             {/* ── Notes ── */}
             <Text style={s.fieldLabel}>Notes (optional)</Text>
@@ -343,6 +476,11 @@ export default function CoopBatchesScreen() {
                 <View style={s.totalItem}>
                   <Text style={s.totalVal}>{selFarmers}</Text>
                   <Text style={s.totalLbl}>Farmers</Text>
+                </View>
+                <View style={s.totalDivider} />
+                <View style={s.totalItem}>
+                  <Text style={s.totalVal}>{selFarms}</Text>
+                  <Text style={s.totalLbl}>Farms</Text>
                 </View>
                 <View style={s.totalDivider} />
                 <View style={s.totalItem}>
@@ -505,7 +643,8 @@ const s = StyleSheet.create({
   input: { borderWidth: 1.5, borderColor: C.steel200, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.ink, backgroundColor: C.steel50 || C.steel100 },
   textarea: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateInput: { flex: 1, fontSize: 13 },
+  datePicker: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  datePickerText: { fontSize: 14, color: C.ink, flex: 1 },
 
   // Running totals
   totalsCard: { flexDirection: 'row', backgroundColor: C.steel100, borderRadius: 14, padding: 14, marginBottom: 10, alignItems: 'center' },

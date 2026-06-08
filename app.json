@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0d0803"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "africa.plotra.polygon",
