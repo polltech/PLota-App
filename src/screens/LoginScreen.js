@@ -174,7 +174,7 @@ export default function LoginScreen({ navigation }) {
 
               </Animated.View>
 
-              <Text style={s.version}>Plotra Agent App • v1.1.0</Text>
+              <Text style={s.version}>Plotra App • v1.1.0</Text>
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
