@@ -27,7 +27,7 @@ npm install -g eas-cli
 eas login
 
 # 5. Build APK
-eas build --platform android --profile preview
+eas build --platform android --profile apk
 ```
 
 **Result:** APK downloads from https://expo.dev/accounts/ after ~15 min.
@@ -124,7 +124,7 @@ Add to `app.json`:
 | Profile | Output | Use |
 |---------|--------|-----|
 | `preview` | `.apk` (debuggable) | Testing, internal QA |
-| `production` | `.aab` (signed) | Google Play Store |
+| `production` | `.apk` (signed) | Google Play Store or internal install |
 
 ### Build APK (debug)
 
@@ -137,7 +137,7 @@ eas build --platform android --profile preview
 - Enable "Install from unknown sources" on Android
 - Open APK → Install
 
-### Build AAB (release for Play Store)
+### Build APK (release for Play Store / internal install)
 
 ```bash
 eas build --platform android --profile production
