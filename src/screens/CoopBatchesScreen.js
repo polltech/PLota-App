@@ -204,9 +204,12 @@ export default function CoopBatchesScreen() {
     setSelectedDeliveries(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
 
   // Running totals from selected deliveries
+  // packed_weight_kg = weight_out_kg from the PACKING processing step (final weight into batch)
+  // falls back to net_weight_kg (intake weight) if PACKING step not yet logged
   const selectedObjs    = deliveries.filter(d => selectedDeliveries.includes(d.id));
-  const selTotalKg      = selectedObjs.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
-  const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  const effKg           = (d) => d.packed_weight_kg ?? d.net_weight_kg ?? 0;
+  const selTotalKg      = selectedObjs.reduce((s, d) => s + effKg(d), 0);
+  const selEudrKg       = selectedObjs.filter(d => d.eudr_eligible !== false).reduce((s, d) => s + effKg(d), 0);
   const selNonCompliant = selectedObjs.filter(d => d.eudr_eligible === false);
   const selFarmers      = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
   const selFarms        = new Set(selectedObjs.map(d => d.farm_id).filter(Boolean)).size;
