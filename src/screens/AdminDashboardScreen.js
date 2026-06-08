@@ -175,6 +175,12 @@ export default function AdminDashboardScreen() {
                   onPress={() => navigation.navigate('AdminCoops')}
                 />
                 <QuickAction
+                  icon="layers-outline"
+                  label="Batches"
+                  color="#7c3aed"
+                  onPress={() => navigation.navigate('AdminBatches')}
+                />
+                <QuickAction
                   icon="hardware-chip-outline"
                   label="ML Engine"
                   color="#0284c7"
