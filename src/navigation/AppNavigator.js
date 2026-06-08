@@ -30,6 +30,14 @@ import CaptureImportScreen from '../screens/CaptureImportScreen';
 import AdvancedScreen from '../screens/AdvancedScreen';
 import ReviewFarmScreen from '../screens/ReviewFarmScreen';
 
+// ── Admin screens ─────────────────────────────────────────────────────────────
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import AdminUsersScreen from '../screens/AdminUsersScreen';
+import AdminFarmersScreen from '../screens/AdminFarmersScreen';
+import AdminComplianceScreen from '../screens/AdminComplianceScreen';
+import AdminCoopsScreen from '../screens/AdminCoopsScreen';
+import AdminMLScreen from '../screens/AdminMLScreen';
+
 // ── Cooperative Officer screens ───────────────────────────────────────────────
 import CoopDashboardScreen from '../screens/CoopDashboardScreen';
 import CoopFarmersScreen from '../screens/CoopFarmersScreen';
@@ -334,6 +342,79 @@ function DeliveryAgentTabs() {
   );
 }
 
+// ── Admin tabs ────────────────────────────────────────────────────────────────
+function AdminTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            AdminHome:       focused ? 'grid'             : 'grid-outline',
+            AdminBatches:    focused ? 'layers'           : 'layers-outline',
+            AdminUsers:      focused ? 'people'           : 'people-outline',
+            AdminFarmers:    focused ? 'person-add'       : 'person-add-outline',
+            AdminCompliance: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="AdminHome" options={{ tabBarLabel: 'Dashboard' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminDashMain"    component={AdminDashboardScreen} />
+            <Stack.Screen name="AdminCoops"       component={AdminCoopsScreen} />
+            <Stack.Screen name="AdminML"          component={AdminMLScreen} />
+            <Stack.Screen name="AdminFarms"       component={CoopFarmsScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="AdminBatches" options={{ tabBarLabel: 'Batches' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="BatchesList"    component={BatchesScreen} />
+            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="AdminUsers" options={{ tabBarLabel: 'Users' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminUsersList" component={AdminUsersScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="AdminFarmers" options={{ tabBarLabel: 'Farmers' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminFarmersList" component={AdminFarmersScreen} />
+            <Stack.Screen name="FarmerDetail"     component={FarmerDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="AdminCompliance" options={{ tabBarLabel: 'Compliance' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminComplianceMain" component={AdminComplianceScreen} />
+            <Stack.Screen name="FarmDetail"          component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"        component={ParcelDetailScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 // ── Wrong-role screen ─────────────────────────────────────────────────────────
 function WrongRoleScreen() {
   const { user, logout } = useAuth();
@@ -371,6 +452,7 @@ export default function AppNavigator() {
   const isFarmer = !user || role === 'farmer';
   const isCoopOfficer = role === 'cooperative_officer';
   const isDeliveryAgent = role === 'delivery_agent';
+  const isAdmin = role === 'plotra_admin';
 
   return (
     <NavigationContainer>
@@ -382,6 +464,8 @@ export default function AppNavigator() {
             <RootStack.Screen name="CoopMain" component={CoopTabs} />
           ) : isDeliveryAgent ? (
             <RootStack.Screen name="AgentMain" component={DeliveryAgentTabs} />
+          ) : isAdmin ? (
+            <RootStack.Screen name="AdminMain" component={AdminTabs} />
           ) : (
             <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
           )

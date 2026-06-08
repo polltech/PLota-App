@@ -125,7 +125,7 @@ export default function BatchDetailScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <Text style={s.heroTitle} numberOfLines={1}>{detail.batch_number}</Text>
+          <Text style={s.heroTitle} numberOfLines={1}>{detail.batch_reference}</Text>
           <View style={[s.statusChip, { backgroundColor: ss.bg + 'cc' }]}>
             <Text style={[s.statusChipText, { color: ss.color }]}>{cap(detail.status)}</Text>
           </View>
@@ -181,13 +181,13 @@ export default function BatchDetailScreen() {
         <View style={s.card}>
           <Text style={s.sectionTitle}>Batch Details</Text>
           {[
-            { label: 'Batch Number', value: detail.batch_number },
+            { label: 'Batch Number', value: detail.batch_reference },
             { label: 'Lot Number', value: detail.lot_number },
             { label: 'Crop Year', value: detail.crop_year?.toString() },
             { label: 'Processing Method', value: cap(detail.processing_method) },
             { label: 'Quality Grade', value: detail.quality_grade },
-            { label: 'Harvest Start', value: fmtDate(detail.harvest_start_date) },
-            { label: 'Harvest End', value: fmtDate(detail.harvest_end_date) },
+            { label: 'Harvest Start', value: fmtDate(detail.harvest_period_start) },
+            { label: 'Harvest End', value: fmtDate(detail.harvest_period_end) },
             { label: 'Released At', value: fmtDate(detail.released_at) },
           ].map((r, i, arr) => r.value ? (
             <View key={r.label} style={[s.row, i < arr.length - 1 && s.rowBorder]}>

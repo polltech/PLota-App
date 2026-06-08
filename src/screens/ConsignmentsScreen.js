@@ -277,11 +277,11 @@ export default function ConsignmentsScreen() {
                       {selected && <Ionicons name="checkmark" size={14} color={C.white} />}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={s.batchPickerName}>{b.batch_number}</Text>
+                      <Text style={s.batchPickerName}>{b.batch_reference}</Text>
                       <Text style={s.batchPickerMeta}>
                         {fmtKg(b.total_weight_kg)}
                         {b.crop_year ? ` · ${b.crop_year}` : ''}
-                        {b.status ? ` · ${cap(b.status)}` : ''}
+                        {b.batch_status ? ` · ${cap(b.batch_status)}` : ''}
                       </Text>
                     </View>
                   </TouchableOpacity>

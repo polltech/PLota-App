@@ -48,7 +48,7 @@ const BatchRow = ({ item, onPress, onRelease }) => {
       <View style={s.rowMain}>
         {/* Top row: Batch # + Status */}
         <View style={s.rowTop}>
-          <Text style={s.batchNo} numberOfLines={1}>{item.batch_number}</Text>
+          <Text style={s.batchNo} numberOfLines={1}>{item.batch_reference}</Text>
           <View style={[s.badge, { backgroundColor: ss.bg }]}>
             <Text style={[s.badgeText, { color: ss.color }]}>{cap(item.status || 'Draft')}</Text>
           </View>
@@ -147,7 +147,7 @@ export default function CoopBatchesScreen() {
   const handleRelease = (batch) => {
     Alert.alert(
       'Release Batch',
-      `Release batch ${batch.batch_number} for Plotra Admin satellite review?`,
+      `Release batch ${batch.batch_reference} for Plotra Admin satellite review?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Release', onPress: async () => {
@@ -156,7 +156,7 @@ export default function CoopBatchesScreen() {
             setBatches(prev => prev.map(b =>
               b.id === batch.id ? { ...b, status: 'released' } : b
             ));
-            Alert.alert('Released', `${batch.batch_number} submitted for satellite screening.`);
+            Alert.alert('Released', `${batch.batch_reference} submitted for satellite screening.`);
           } catch (e) {
             Alert.alert('Error', e.response?.data?.detail || 'Release failed.');
           }
@@ -177,9 +177,9 @@ export default function CoopBatchesScreen() {
     setCreating(true);
     try {
       await coopAPI.createBatch({
-        batch_number: batchRef.trim(),
-        harvest_start_date: harvestStart.trim() || undefined,
-        harvest_end_date: harvestEnd.trim() || undefined,
+        batch_reference: batchRef.trim(),
+        harvest_period_start: harvestStart.trim() || undefined,
+        harvest_period_end: harvestEnd.trim() || undefined,
         notes: batchNotes.trim() || undefined,
         delivery_ids: selectedDeliveries,
         release_immediately: release,

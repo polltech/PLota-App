@@ -17,7 +17,7 @@ const BatchCard = ({ batch, onPress }) => (
       <Ionicons name="layers-outline" size={20} color={C.c600} />
     </View>
     <View style={s.cardContent}>
-      <Text style={s.batchNo} numberOfLines={1}>{batch.batch_number}</Text>
+      <Text style={s.batchNo} numberOfLines={1}>{batch.batch_reference}</Text>
       <Text style={s.batchMeta}>
         {batch.crop_year ? `Crop ${batch.crop_year}` : ''}
         {batch.processing_method ? `  ·  ${batch.processing_method}` : ''}
@@ -45,7 +45,7 @@ const TraceCard = ({ data }) => {
   return (
     <View>
       <Text style={s.traceSection}>Batch</Text>
-      <View style={s.traceRow}><Text style={s.traceLabel}>Number</Text><Text style={s.traceVal}>{batch?.batch_number}</Text></View>
+      <View style={s.traceRow}><Text style={s.traceLabel}>Number</Text><Text style={s.traceVal}>{batch?.batch_reference}</Text></View>
       <View style={s.traceRow}><Text style={s.traceLabel}>Lot</Text><Text style={s.traceVal}>{batch?.lot_number || '—'}</Text></View>
       <View style={s.traceRow}><Text style={s.traceLabel}>Method</Text><Text style={s.traceVal}>{batch?.processing_method || '—'}</Text></View>
 
@@ -135,7 +135,7 @@ export default function BatchesScreen() {
     setCreating(true);
     try {
       await coopAPI.createBatch({
-        batch_number: batchNo.trim(),
+        batch_reference: batchNo.trim(),
         crop_year: parseInt(cropYear),
         processing_method: method,
         delivery_ids: [],
