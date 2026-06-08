@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView,
-  ActivityIndicator, RefreshControl, StatusBar, Alert, TextInput, Platform,
+  ActivityIndicator, RefreshControl, StatusBar, Alert, TextInput,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,6 +101,115 @@ const BatchRow = ({ item, onPress, onRelease }) => {
   );
 };
 
+// ── Pure-JS Calendar Picker (no native modules required) ─────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+const CalendarPicker = ({ visible, value, minimumDate, onClose, onSelect }) => {
+  const today = new Date();
+  const initYear  = value ? parseInt(value.split('-')[0]) : today.getFullYear();
+  const initMonth = value ? parseInt(value.split('-')[1]) - 1 : today.getMonth();
+  const [yr, setYr] = useState(initYear);
+  const [mo, setMo] = useState(initMonth);
+
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+  const startDay    = new Date(yr, mo, 1).getDay();
+  const cells       = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const isDisabled = (day) => {
+    if (!minimumDate || !day) return false;
+    const [my, mm, md] = minimumDate.split('-').map(Number);
+    if (yr < my) return true;
+    if (yr === my && mo + 1 < mm) return true;
+    if (yr === my && mo + 1 === mm && day < md) return true;
+    return false;
+  };
+  const isSelected = (day) => {
+    if (!value || !day) return false;
+    const [vy, vm, vd] = value.split('-').map(Number);
+    return vy === yr && vm === mo + 1 && vd === day;
+  };
+  const isToday = (day) => day && today.getFullYear() === yr && today.getMonth() === mo && today.getDate() === day;
+
+  const prevMonth = () => mo === 0 ? (setYr(yr - 1), setMo(11)) : setMo(mo - 1);
+  const nextMonth = () => mo === 11 ? (setYr(yr + 1), setMo(0)) : setMo(mo + 1);
+
+  const select = (day) => {
+    if (!day || isDisabled(day)) return;
+    const m = String(mo + 1).padStart(2, '0');
+    const d = String(day).padStart(2, '0');
+    onSelect(`${yr}-${m}-${d}`);
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={cal.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={cal.card} onStartShouldSetResponder={() => true}>
+          <View style={cal.header}>
+            <TouchableOpacity onPress={prevMonth} style={cal.navBtn}>
+              <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
+            </TouchableOpacity>
+            <Text style={cal.monthLabel}>{MONTH_NAMES[mo]} {yr}</Text>
+            <TouchableOpacity onPress={nextMonth} style={cal.navBtn}>
+              <Ionicons name="chevron-forward" size={22} color="#1a1a1a" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={cal.weekRow}>
+            {DAY_LABELS.map(d => <Text key={d} style={cal.dayLabel}>{d}</Text>)}
+          </View>
+
+          <View style={cal.grid}>
+            {cells.map((day, i) => {
+              const sel = isSelected(day);
+              const dis = isDisabled(day);
+              const tod = isToday(day);
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[cal.cell, sel && cal.cellSel, tod && !sel && cal.cellToday]}
+                  onPress={() => select(day)}
+                  disabled={!day || dis}
+                  activeOpacity={0.7}
+                >
+                  {!!day && (
+                    <Text style={[cal.cellText, sel && cal.cellTextSel, dis && cal.cellTextDis]}>
+                      {day}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity style={cal.cancelBtn} onPress={onClose}>
+            <Text style={cal.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+const cal = StyleSheet.create({
+  overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  card:         { backgroundColor: '#fff', borderRadius: 20, padding: 16, width: 320, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 12 },
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  navBtn:       { padding: 8 },
+  monthLabel:   { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  weekRow:      { flexDirection: 'row', marginBottom: 6 },
+  dayLabel:     { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' },
+  grid:         { flexDirection: 'row', flexWrap: 'wrap' },
+  cell:         { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 100 },
+  cellSel:      { backgroundColor: '#15803d' },
+  cellToday:    { borderWidth: 1.5, borderColor: '#15803d' },
+  cellText:     { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  cellTextSel:  { color: '#fff', fontWeight: '800' },
+  cellTextDis:  { color: '#cbd5e1' },
+  cancelBtn:    { marginTop: 14, alignItems: 'center', paddingVertical: 10 },
+  cancelText:   { fontSize: 14, fontWeight: '700', color: '#64748b' },
+});
+
 export default function CoopBatchesScreen() {
   const navigation = useNavigation();
   const [batches,     setBatches]     = useState([]);
@@ -120,18 +228,6 @@ export default function CoopBatchesScreen() {
   const [creating,           setCreating]           = useState(false);
   const [showStartPicker,    setShowStartPicker]    = useState(false);
   const [showEndPicker,      setShowEndPicker]      = useState(false);
-
-  const toISO = (d) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
-  const parseISO = (str) => {
-    if (!str) return new Date();
-    const [y, mo, d] = str.split('-').map(Number);
-    return new Date(y, mo - 1, d);
-  };
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -342,29 +438,19 @@ export default function CoopBatchesScreen() {
               </TouchableOpacity>
             </View>
 
-            {showStartPicker && (
-              <DateTimePicker
-                value={parseISO(harvestStart)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(_, selected) => {
-                  setShowStartPicker(Platform.OS === 'ios');
-                  if (selected) setHarvestStart(toISO(selected));
-                }}
-              />
-            )}
-            {showEndPicker && (
-              <DateTimePicker
-                value={parseISO(harvestEnd)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                minimumDate={harvestStart ? parseISO(harvestStart) : undefined}
-                onChange={(_, selected) => {
-                  setShowEndPicker(Platform.OS === 'ios');
-                  if (selected) setHarvestEnd(toISO(selected));
-                }}
-              />
-            )}
+            <CalendarPicker
+              visible={showStartPicker}
+              value={harvestStart}
+              onClose={() => setShowStartPicker(false)}
+              onSelect={(iso) => { setHarvestStart(iso); setShowStartPicker(false); }}
+            />
+            <CalendarPicker
+              visible={showEndPicker}
+              value={harvestEnd}
+              minimumDate={harvestStart || undefined}
+              onClose={() => setShowEndPicker(false)}
+              onSelect={(iso) => { setHarvestEnd(iso); setShowEndPicker(false); }}
+            />
 
             {/* ── Notes ── */}
             <Text style={s.fieldLabel}>Notes (optional)</Text>
