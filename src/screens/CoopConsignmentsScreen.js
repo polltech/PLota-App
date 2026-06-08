@@ -111,7 +111,7 @@ export default function CoopConsignmentsScreen() {
         const d = bRes.value.data;
         // Show batches that are released or verified (eligible for consignment)
         const eligible = (Array.isArray(d) ? d : (d?.batches || []))
-          .filter(b => ['released', 'under_satellite_review', 'verified', 'dds_submitted'].includes(b.status));
+          .filter(b => ['released', 'under_satellite_review', 'verified', 'dds_submitted'].includes(b.batch_status));
         setBatches(eligible);
       }
     } catch (e) {
@@ -307,8 +307,8 @@ export default function CoopConsignmentsScreen() {
                       {selected && <Ionicons name="checkmark" size={12} color={C.white} />}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={s.pickNo}>{b.batch_number}</Text>
-                      <Text style={s.pickMeta}>{cap(b.status)} · {fmtKg(b.total_weight_kg)} · Grade {b.quality_grade || 'N/A'}</Text>
+                      <Text style={s.pickNo}>{b.batch_reference}</Text>
+                      <Text style={s.pickMeta}>{cap(b.batch_status)} · {fmtKg(b.total_weight_kg)} · Grade {b.quality_grade || 'N/A'}</Text>
                     </View>
                   </TouchableOpacity>
                 );

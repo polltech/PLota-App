@@ -53,7 +53,7 @@ const STAT_KEYS = [
 const DeliveryRow = ({ item, index, isLast }) => {
   const ss = statusStyle(item.status);
   const gs = gradeStyle(item.quality_grade);
-  const rawRef = item.batch_number || item.reference || item.delivery_number || '';
+  const rawRef = item.batch_reference || item.reference || item.delivery_number || '';
   const ref = rawRef.startsWith('PCFDELIVERY/') ? rawRef.replace('PCFDELIVERY/', '') : (rawRef || `D-${index + 1}`);
   const farm = item.farm_name || item.farm?.farm_name;
   const kg   = item.weight_kg ?? item.net_weight_kg;
