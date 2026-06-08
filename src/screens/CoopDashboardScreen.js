@@ -121,16 +121,16 @@ export default function CoopDashboardScreen() {
                   <Text style={s.heroBadgeBtnText}>{pendingFarmers.length} farmers</Text>
                 </TouchableOpacity>
               )}
-              {pendingFarmsCount > 0 && (
-                <TouchableOpacity
-                  style={[s.heroBadgeBtn, { backgroundColor: 'rgba(26,160,83,0.2)', borderColor: 'rgba(26,160,83,0.4)' }]}
-                  onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="leaf-outline" size={14} color="#4ade80" />
-                  <Text style={[s.heroBadgeBtnText, { color: '#4ade80' }]}>{pendingFarmsCount} farms</Text>
-                </TouchableOpacity>
-              )}
+              {/* Profile avatar button — top right */}
+              <TouchableOpacity
+                style={s.profileBtn}
+                onPress={() => navigation.navigate('CoopProfile')}
+                activeOpacity={0.8}
+              >
+                <Text style={s.profileBtnText}>
+                  {((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')).toUpperCase() || 'CO'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
@@ -274,6 +274,8 @@ const s = StyleSheet.create({
   heroActions: { gap: 8, alignItems: 'flex-end' },
   heroBadgeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
   heroBadgeBtnText: { fontSize: 11, fontWeight: '700', color: '#fbbf24' },
+  profileBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
+  profileBtnText: { fontSize: 14, fontWeight: '900', color: C.white },
 
   scroll: { flex: 1 },
   content: { padding: 16 },

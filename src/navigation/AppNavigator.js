@@ -46,6 +46,7 @@ import CoopDeliveriesScreen from '../screens/CoopDeliveriesScreen';
 import CoopBatchesScreen from '../screens/CoopBatchesScreen';
 import CoopConsignmentsScreen from '../screens/CoopConsignmentsScreen';
 import CoopStaffScreen from '../screens/CoopStaffScreen';
+import CoopProfileScreen from '../screens/CoopProfileScreen';
 import FarmerDetailScreen from '../screens/FarmerDetailScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
@@ -247,7 +248,15 @@ function CoopTabs() {
       <Tab.Screen name="CoopHome" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDashMain" component={CoopDashboardScreen} />
+            <Stack.Screen
+              name="CoopDashMain"
+              component={CoopDashboardScreen}
+              options={({ navigation }) => ({
+                headerShown: false,
+                // Profile button injected into dashboard via CoopDashboardScreen itself
+              })}
+            />
+            <Stack.Screen name="CoopProfile" component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
