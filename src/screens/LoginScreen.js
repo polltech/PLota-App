@@ -115,6 +115,9 @@ export default function LoginScreen({ navigation }) {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     returnKeyType="next"
+                    textContentType="username"
+                    autoComplete="username"
+                    importantForAutofill="yes"
                   />
                 </View>
 
@@ -130,6 +133,9 @@ export default function LoginScreen({ navigation }) {
                       secureTextEntry={!showPwd}
                       returnKeyType="done"
                       onSubmitEditing={handleLogin}
+                      textContentType="password"
+                      autoComplete="current-password"
+                      importantForAutofill="yes"
                     />
                     <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd((v) => !v)}>
                       <Text style={s.eyeText}>{showPwd ? '🙈' : '👁️'}</Text>
