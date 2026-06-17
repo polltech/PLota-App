@@ -392,7 +392,7 @@ export default function HomeScreen() {
             label="My Farms"
             value={stats?.farms_count ?? farms.length}
             sub={farmApproved > 0 ? `${farmApproved} approved` : farmPending > 0 ? `${farmPending} pending` : null}
-            color={C.c600}
+            color={C.c700}
             onPress={() => navigation.navigate('Farms')}
           />
           <StatCard
@@ -400,7 +400,7 @@ export default function HomeScreen() {
             label="Deliveries"
             value={stats?.deliveries_count ?? recentDeliveries.length}
             sub={totalKg > 0 ? `${fmt(totalKg.toFixed(0))} kg` : null}
-            color="#0ea5e9"
+            color={C.c700}
             onPress={() => navigation.navigate('Deliveries')}
           />
           <StatCard
@@ -408,16 +408,8 @@ export default function HomeScreen() {
             label="Wallet Balance"
             value={stats?.mbt_balance != null ? `KES ${Number(stats.mbt_balance).toLocaleString()}` : 'KES 0'}
             sub={stats?.returns_trend || 'View wallet'}
-            color="#10b981"
+            color={C.c700}
             onPress={() => navigation.navigate('Wallet')}
-          />
-          <StatCard
-            icon="shield-checkmark-outline"
-            label="Compliance"
-            value={stats?.compliance_score != null ? `${stats.compliance_score}%` : 'N/A'}
-            sub="EUDR Readiness Score"
-            color="#f59e0b"
-            onPress={() => navigation.navigate('Compliance')}
           />
         </View>
 
@@ -455,7 +447,7 @@ export default function HomeScreen() {
             data={groupDeliveriesByMonth(deliveries)}
             valueKey="kg"
             labelKey="label"
-            color="#0ea5e9"
+            color={C.c700}
             unit="kg"
             emptyMsg="No deliveries recorded yet"
           />

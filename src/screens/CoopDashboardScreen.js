@@ -152,24 +152,24 @@ export default function CoopDashboardScreen() {
             onPress={() => navigation.navigate('CoopFarmers')}
           />
           <BigStatCard
-            icon="hourglass-outline"  iconColor="#f86441"
+            icon="hourglass-outline"  iconColor="#15803d"
             value={pendingFarmers.length}
             label="Pending Farmer Approvals"
-            accent="#f86441"
+            accent="#15803d"
             onPress={() => navigation.navigate('CoopFarmers')}
           />
           <BigStatCard
-            icon="location-outline"  iconColor="#1aa053"
+            icon="location-outline"  iconColor="#15803d"
             value={pendingFarmsCount}
             label="Farms Awaiting Approval"
-            accent="#1aa053"
+            accent="#15803d"
             onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
           />
           <BigStatCard
-            icon="cube-outline"  iconColor="#0d6efd"
+            icon="cube-outline"  iconColor="#15803d"
             value={recentDeliveries.length}
             label="Recent Deliveries"
-            accent="#0d6efd"
+            accent="#15803d"
             onPress={() => navigation.navigate('CoopDeliveries')}
           />
         </View>
@@ -178,7 +178,7 @@ export default function CoopDashboardScreen() {
         <View style={s.tableCard}>
           <View style={s.tableCardHeader}>
             <View style={s.tableCardHeaderLeft}>
-              <Ionicons name="time-outline" size={16} color="#0d6efd" />
+              <Ionicons name="time-outline" size={16} color="#15803d" />
               <Text style={s.tableCardTitle}>Recent Deliveries</Text>
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('CoopDeliveries')}>
