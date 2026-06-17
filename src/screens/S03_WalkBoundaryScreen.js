@@ -43,9 +43,9 @@ function redraw(){
   if(polygon){map.removeLayer(polygon);polygon=null;}
   var coords=pts.map(function(m){return m.getLatLng();});
   if(coords.length>=3){
-    polygon=L.polygon(coords,{color:'#5c2d0e',fillColor:'#6f4e37',fillOpacity:0.35,weight:4}).addTo(map);
+    polygon=L.polygon(coords,{color:'#15803d',fillColor:'#16a34a',fillOpacity:0.35,weight:4}).addTo(map);
   } else if(coords.length>=2){
-    polyline=L.polyline(coords,{color:'#5c2d0e',weight:4,dashArray:'8, 12'}).addTo(map);
+    polyline=L.polyline(coords,{color:'#15803d',weight:4,dashArray:'8, 12'}).addTo(map);
   }
 }
 
@@ -69,7 +69,7 @@ window.addEventListener('message',function(e){
         }
       }
     } else if(d.type==='add'){
-      var m=L.circleMarker([d.lat,d.lng],{radius:8,color:'#fff',fillColor:'#5c2d0e',fillOpacity:1,weight:3}).addTo(map);
+      var m=L.circleMarker([d.lat,d.lng],{radius:8,color:'#fff',fillColor:'#15803d',fillOpacity:1,weight:3}).addTo(map);
       pts.push(m); redraw();
     } else if(d.type==='undo'){
       if(pts.length>0){map.removeLayer(pts[pts.length-1]);pts.pop();redraw();}

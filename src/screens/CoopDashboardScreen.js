@@ -145,10 +145,10 @@ export default function CoopDashboardScreen() {
         {/* 4 Stat cards — matching web app */}
         <View style={s.cardsGrid}>
           <BigStatCard
-            icon="people"  iconColor="#6f4e37"
+            icon="people"  iconColor="#16a34a"
             value={farmers.length}
             label="Total Farmers"
-            accent="#6f4e37"
+            accent="#16a34a"
             onPress={() => navigation.navigate('CoopFarmers')}
           />
           <BigStatCard
@@ -239,7 +239,7 @@ export default function CoopDashboardScreen() {
             { icon: 'add-circle-outline', label: 'Record Delivery', color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
             { icon: 'layers-outline', label: 'Manage Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
             { icon: 'airplane-outline', label: 'Consignments', color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
-            { icon: 'person-circle-outline', label: 'Manage Delivery Agents', color: '#6f4e37', nav: () => navigation.navigate('CoopStaff') },
+            { icon: 'person-circle-outline', label: 'Manage Delivery Agents', color: '#16a34a', nav: () => navigation.navigate('CoopStaff') },
           ].map((a, i, arr) => (
             <TouchableOpacity
               key={a.label}

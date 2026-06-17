@@ -31,7 +31,7 @@ window.addEventListener('message',function(e){
     var d=JSON.parse(e.data);
     if(d.type==='polygon'){
       var coords=d.coords.map(function(c){return[c.lat,c.lng];});
-      var poly=L.polygon(coords,{color:'#6f4e37',fillColor:'#6f4e37',fillOpacity:0.5,weight:2}).addTo(map);
+      var poly=L.polygon(coords,{color:'#16a34a',fillColor:'#16a34a',fillOpacity:0.5,weight:2}).addTo(map);
       map.fitBounds(poly.getBounds().pad(0.2));
     }
   }catch(err){}
