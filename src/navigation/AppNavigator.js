@@ -24,7 +24,6 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 // ── Shared detail screens ─────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
-import ComplianceScreen from '../screens/ComplianceScreen';
 import CaptureModeScreen from '../screens/CaptureModeScreen';
 import CaptureImportScreen from '../screens/CaptureImportScreen';
 import AdvancedScreen from '../screens/AdvancedScreen';
@@ -90,7 +89,7 @@ function CaptureStack() {
       <Stack.Screen
         name="CaptureLanding"
         component={LandingScreen}
-        options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }}
+        options={{ animation: 'fade', contentStyle: { backgroundColor: '#052e16' } }}
       />
       <Stack.Screen name="FarmIDEntry"       component={FarmIDEntryScreen} />
       <Stack.Screen name="FarmConfirmation"  component={FarmConfirmationScreen} />
@@ -123,7 +122,6 @@ function FarmerTabs() {
             Dashboard:  focused ? 'grid'               : 'grid-outline',
             Farms:      focused ? 'leaf'               : 'leaf-outline',
             Deliveries: focused ? 'cube'               : 'cube-outline',
-            Compliance: focused ? 'shield-checkmark'   : 'shield-checkmark-outline',
             Wallet:     focused ? 'wallet'             : 'wallet-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
@@ -154,7 +152,7 @@ function FarmerTabs() {
             <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
             {/* Capture flow accessible from FAB */}
             <Stack.Screen name="CaptureLanding" component={LandingScreen}
-              options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }} />
+              options={{ animation: 'fade', contentStyle: { backgroundColor: '#052e16' } }} />
             <Stack.Screen name="FarmIDEntry"      component={FarmIDEntryScreen} />
             <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
             <Stack.Screen name="AddFarm"          component={AddFarmScreen} />
@@ -177,17 +175,6 @@ function FarmerTabs() {
         component={DeliveriesScreen}
         options={{ tabBarLabel: 'Deliveries' }}
       />
-
-      {/* Compliance — KYC Documents + EUDR (matches web sidebar) */}
-      <Tab.Screen name="Compliance" options={{ tabBarLabel: 'Compliance' }}>
-        {() => (
-          <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="ComplianceMain" component={ComplianceScreen} />
-            <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
-            <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
-          </Stack.Navigator>
-        )}
-      </Tab.Screen>
 
       {/* Wallet */}
       <Tab.Screen
