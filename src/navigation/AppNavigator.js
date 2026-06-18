@@ -265,6 +265,7 @@ function CoopTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -277,6 +278,7 @@ function CoopTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -287,6 +289,7 @@ function CoopTabs() {
             <Stack.Screen name="CoopFarmsList" component={CoopFarmsScreen} />
             <Stack.Screen name="FarmDetail"    component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail"  component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -297,6 +300,7 @@ function CoopTabs() {
             <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
             <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
             <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
+            <Stack.Screen name="CoopProfile"     component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -305,6 +309,7 @@ function CoopTabs() {
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="CoopStaffList" component={CoopStaffScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -338,6 +343,7 @@ function DeliveryAgentTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -350,6 +356,7 @@ function DeliveryAgentTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -456,6 +463,7 @@ function WashingStationTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -467,6 +475,7 @@ function WashingStationTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -503,6 +512,7 @@ function PostHarvestTabs() {
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
             <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
             <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -514,6 +524,7 @@ function PostHarvestTabs() {
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -548,6 +559,7 @@ function AgronomistTabs() {
             <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
             <Stack.Screen name="FarmDetail"      component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail"    component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"     component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -557,6 +569,7 @@ function AgronomistTabs() {
             <Stack.Screen name="CoopFarmsList" component={CoopFarmsScreen} />
             <Stack.Screen name="FarmDetail"    component={FarmDetailScreen} />
             <Stack.Screen name="ParcelDetail"  component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -589,6 +602,7 @@ function FinanceAdminTabs() {
             <Stack.Screen name="BatchesList"    component={BatchesScreen} />
             <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
             <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopProfile"    component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -597,6 +611,7 @@ function FinanceAdminTabs() {
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="ConsignmentsList"  component={CoopConsignmentsScreen} />
             <Stack.Screen name="ConsignmentDetail" component={ConsignmentsScreen} />
+            <Stack.Screen name="CoopProfile"       component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
