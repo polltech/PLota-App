@@ -55,6 +55,15 @@ api.interceptors.response.use(
       orig?.url?.includes('/auth/token') ||
       orig?.url?.includes('/auth/refresh');
 
+    // Normalize FastAPI validation errors: detail can be an array of objects.
+    // Convert it to a plain string so any Alert.alert(msg) call gets a string.
+    if (err.response?.data?.detail != null && typeof err.response.data.detail !== 'string') {
+      const d = err.response.data.detail;
+      err.response.data.detail = Array.isArray(d)
+        ? d.map(x => (typeof x === 'object' ? (x.msg || JSON.stringify(x)) : String(x))).join(', ')
+        : String(d);
+    }
+
     if (err.response?.status !== 401 || orig?._retry || isAuthEndpoint) {
       return Promise.reject(err);
     }
