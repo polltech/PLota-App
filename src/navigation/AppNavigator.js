@@ -52,6 +52,8 @@ import FarmerDetailScreen from '../screens/FarmerDetailScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
+import ProcessingStepsScreen from '../screens/ProcessingStepsScreen';
+import AddProcessingStepScreen from '../screens/AddProcessingStepScreen';
 import BatchDetailScreen from '../screens/BatchDetailScreen';
 import ConsignmentsScreen from '../screens/ConsignmentsScreen';
 import PostHarvestScreen from '../screens/PostHarvestScreen';
@@ -258,9 +260,11 @@ function CoopTabs() {
       <Tab.Screen name="CoopDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"      component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -268,9 +272,11 @@ function CoopTabs() {
       <Tab.Screen name="CoopBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
-            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -328,8 +334,10 @@ function DeliveryAgentTabs() {
       <Tab.Screen name="AgentHome" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="AgentDashMain"  component={CoopDashboardScreen} />
-            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="AgentDashMain"       component={CoopDashboardScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -337,9 +345,11 @@ function DeliveryAgentTabs() {
       <Tab.Screen name="AgentDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"      component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -442,17 +452,21 @@ function WashingStationTabs() {
       <Tab.Screen name="WSDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
       <Tab.Screen name="WSBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
-            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -482,20 +496,24 @@ function PostHarvestTabs() {
       <Tab.Screen name="PHLab" options={{ tabBarLabel: 'Lab Results' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="PostHarvestMain"    component={PostHarvestScreen} />
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
-            <Stack.Screen name="BatchesList"        component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"        component={BatchDetailScreen} />
+            <Stack.Screen name="PostHarvestMain"     component={PostHarvestScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
       <Tab.Screen name="PHBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
-            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>

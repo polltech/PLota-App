@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Alert, Modal,
-  TextInput,
+  ActivityIndicator, RefreshControl, StatusBar, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -68,17 +67,6 @@ export default function DeliveryDetailScreen() {
   const [loading, setLoading] = useState(!initial);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Add processing step modal
-  const [stepModal, setStepModal] = useState(false);
-  const [stepType, setStepType] = useState(
-    (ROLE_STEPS[user?.role] || ALL_STEP_TYPES)[0] || 'sorting'
-  );
-  const [stepDate, setStepDate] = useState(new Date().toISOString().slice(0, 10));
-  const [stepWeight, setStepWeight] = useState('');
-  const [stepGrade, setStepGrade] = useState('');
-  const [stepNotes, setStepNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
   const id = deliveryId || initial?.id;
 
   const load = useCallback(async (isRefresh = false) => {
@@ -97,27 +85,6 @@ export default function DeliveryDetailScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(true); };
-
-  const handleAddStep = async () => {
-    if (!stepType) { Alert.alert('Required', 'Select a step type.'); return; }
-    setSubmitting(true);
-    try {
-      await coopAPI.addProcessingStep(id, {
-        step_type: stepType,
-        step_date: stepDate,
-        weight_out_kg: stepWeight ? parseFloat(stepWeight) : undefined,
-        grade: stepGrade.trim() || undefined,
-        notes: stepNotes.trim() || undefined,
-      });
-      setStepModal(false);
-      setStepWeight(''); setStepGrade(''); setStepNotes('');
-      await load(true);
-    } catch (e) {
-      Alert.alert('Error', e.response?.data?.detail || 'Failed to add step');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleStatusChange = async (newStatus) => {
     Alert.alert('Update Status', `Change to "${cap(newStatus)}"?`, [
@@ -143,11 +110,8 @@ export default function DeliveryDetailScreen() {
 
   const ss = statusStyle(detail.status);
   const logs = detail.processing_log || [];
-  // Any staff with assigned step types can add steps (excludes coop officer who manages at higher level)
-  const canAddStep =
-    !['batched', 'rejected'].includes((detail.status || '').toLowerCase()) &&
-    STEP_TYPES.length > 0 &&
-    user?.role !== ROLES.COOP_OFFICER;
+  // Any staff with processing duties can see the processing steps screen
+  const hasProcessingRole = STEP_TYPES.length > 0;
 
   // Weight trace
   const receivedWeight = detail.net_weight_kg || 0;
@@ -169,10 +133,14 @@ export default function DeliveryDetailScreen() {
             <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={22} color={C.white} />
             </TouchableOpacity>
-            {canAddStep && (
-              <TouchableOpacity style={s.heroActionBtn} onPress={() => setStepModal(true)} activeOpacity={0.8}>
-                <Ionicons name="add-outline" size={16} color={C.white} />
-                <Text style={s.heroActionBtnText}>Add Step</Text>
+            {hasProcessingRole && (
+              <TouchableOpacity
+                style={s.heroActionBtn}
+                onPress={() => navigation.navigate('ProcessingSteps', { deliveryId: id, delivery: detail })}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="list-outline" size={16} color={C.white} />
+                <Text style={s.heroActionBtnText}>Processing</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -360,9 +328,12 @@ export default function DeliveryDetailScreen() {
         <View style={s.card}>
           <View style={s.sectionRow}>
             <Text style={s.sectionTitle}>Processing Log ({logs.length})</Text>
-            {canAddStep && (
-              <TouchableOpacity onPress={() => setStepModal(true)} activeOpacity={0.8}>
-                <Text style={s.addStepLink}>+ Add Step</Text>
+            {hasProcessingRole && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ProcessingSteps', { deliveryId: id, delivery: detail })}
+                activeOpacity={0.8}
+              >
+                <Text style={s.addStepLink}>View Steps →</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -420,75 +391,6 @@ export default function DeliveryDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Add Processing Step Modal */}
-      <Modal visible={stepModal} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalCard}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Add Processing Step</Text>
-              <TouchableOpacity onPress={() => setStepModal(false)}>
-                <Ionicons name="close" size={24} color={C.ink} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={s.fieldLabel}>Step Type</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              <View style={s.chipRow}>
-                {STEP_TYPES.map(st => (
-                  <TouchableOpacity
-                    key={st}
-                    style={[s.chip, stepType === st && { backgroundColor: STEP_COLORS[st], borderColor: STEP_COLORS[st] }]}
-                    onPress={() => setStepType(st)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name={STEP_ICONS[st] || 'checkmark-outline'} size={13} color={stepType === st ? C.white : C.steel700} />
-                    <Text style={[s.chipText, stepType === st && { color: C.white }]}>{cap(st)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-
-            <Text style={s.fieldLabel}>Date</Text>
-            <TextInput style={s.input} value={stepDate} onChangeText={setStepDate}
-              placeholder="YYYY-MM-DD" placeholderTextColor={C.subtle} />
-
-            <Text style={s.fieldLabel}>Weight Out (kg) — optional</Text>
-            <TextInput style={s.input} value={stepWeight} onChangeText={setStepWeight}
-              keyboardType="decimal-pad"
-              placeholder={STEP_HINTS[stepType]?.weight || 'e.g. 48.5 kg'}
-              placeholderTextColor={C.subtle} />
-            <View style={s.weightRefRow}>
-              <Ionicons name="scale-outline" size={12} color={C.subtle} />
-              <Text style={s.weightRefText}>
-                {'Received: ' + fmtKg(receivedWeight) + (weightLogs.length > 0 ? '  ·  Last (' + refLabel + '): ' + fmtKg(refWeight) : '  ·  No steps yet')}
-              </Text>
-            </View>
-
-            {stepType === 'grading' && (
-              <>
-                <Text style={s.fieldLabel}>Grade (AA, AB, PB, C, etc.)</Text>
-                <TextInput style={s.input} value={stepGrade} onChangeText={setStepGrade}
-                  placeholder="e.g. AA — assigned after screen-size & defect count"
-                  placeholderTextColor={C.subtle} autoCapitalize="characters" />
-              </>
-            )}
-
-            <Text style={s.fieldLabel}>Notes — optional</Text>
-            <TextInput style={[s.input, s.textarea]} value={stepNotes} onChangeText={setStepNotes}
-              placeholder={STEP_HINTS[stepType]?.notes || 'Add observations for this step…'}
-              placeholderTextColor={C.subtle}
-              multiline numberOfLines={3} />
-
-            <TouchableOpacity
-              style={[s.submitBtn, submitting && s.btnDisabled]}
-              onPress={handleAddStep} disabled={submitting} activeOpacity={0.85}
-            >
-              {submitting ? <ActivityIndicator color={C.white} /> : <Text style={s.submitBtnText}>Save Step</Text>}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -564,22 +466,4 @@ const s = StyleSheet.create({
   logByRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
   logBy: { fontSize: 11, color: C.subtle, fontWeight: '600' },
 
-  // Modal weight ref
-  weightRefRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, marginBottom: 4 },
-  weightRefText: { fontSize: 11, color: C.subtle, fontWeight: '600', flex: 1 },
-
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: C.ink },
-  fieldLabel: { fontSize: 11, fontWeight: '800', color: C.steel600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 12 },
-  input: { backgroundColor: C.steel100, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 14, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200 },
-  textarea: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
-  chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: C.steel100, borderWidth: 1.5, borderColor: C.steel200 },
-  chipText: { fontSize: 12, fontWeight: '700', color: C.steel700 },
-  submitBtn: { backgroundColor: C.c700, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 20 },
-  btnDisabled: { backgroundColor: C.steel300 },
-  submitBtnText: { color: C.white, fontSize: 15, fontWeight: '800' },
 });
