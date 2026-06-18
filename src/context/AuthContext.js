@@ -104,6 +104,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithOtp = async (phone, code) => {
+    const { authAPI } = require('../services/api');
+    try {
+      const res = await authAPI.verifyOtp(phone.trim(), code.trim());
+      const access_token = res.data?.access_token || res.data?.token;
+      if (!access_token || typeof access_token !== 'string') {
+        return { success: false, error: `Unexpected server response. Fields: ${Object.keys(res.data || {}).join(', ')}` };
+      }
+      await SecureStore.setItemAsync('access_token', access_token);
+
+      const meRes = await authAPI.me();
+      const userData = meRes.data;
+      await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+      await SecureStore.setItemAsync('offline_id', phone.trim().toLowerCase());
+
+      setUser(userData);
+      return { success: true };
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e.message || 'OTP verification failed';
+      return { success: false, error: msg };
+    }
+  };
+
   const logout = useCallback(async () => {
     try {
       await SecureStore.deleteItemAsync('access_token');
@@ -138,7 +162,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, dbReady, authReady, login, register, logout, refreshSession, updateUser }}>
+    <AuthContext.Provider value={{ user, dbReady, authReady, login, loginWithOtp, register, logout, refreshSession, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

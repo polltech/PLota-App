@@ -8,10 +8,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+import { ROLES } from '../utils/roles';
 
 const STATUS_FLOW = ['received', 'in_processing', 'ready_for_batching', 'batched'];
-const STEP_TYPES = ['sorting', 'washing', 'drying', 'milling', 'grading', 'packing'];
+const ALL_STEP_TYPES = ['sorting', 'washing', 'drying', 'milling', 'grading', 'packing'];
+
+// Steps each role is allowed to log
+const ROLE_STEPS = {
+  [ROLES.DELIVERY_AGENT]:   ['sorting'],
+  [ROLES.WASHING_STATION]:  ['sorting', 'washing'],
+  [ROLES.POST_HARVEST]:     ['drying', 'milling', 'grading', 'packing'],
+  [ROLES.COOP_OFFICER]:     ALL_STEP_TYPES,
+  [ROLES.ADMIN]:            ALL_STEP_TYPES,
+};
 
 const statusStyle = (s) => {
   const u = (s || '').toLowerCase();
@@ -47,7 +58,11 @@ const STEP_HINTS = {
 export default function DeliveryDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const { deliveryId, delivery: initial } = route.params || {};
+
+  // Steps this user can log (fall back to all steps for unknown roles)
+  const STEP_TYPES = ROLE_STEPS[user?.role] || ALL_STEP_TYPES;
 
   const [detail, setDetail] = useState(initial || null);
   const [loading, setLoading] = useState(!initial);
@@ -55,7 +70,9 @@ export default function DeliveryDetailScreen() {
 
   // Add processing step modal
   const [stepModal, setStepModal] = useState(false);
-  const [stepType, setStepType] = useState('sorting');
+  const [stepType, setStepType] = useState(
+    (ROLE_STEPS[user?.role] || ALL_STEP_TYPES)[0] || 'sorting'
+  );
   const [stepDate, setStepDate] = useState(new Date().toISOString().slice(0, 10));
   const [stepWeight, setStepWeight] = useState('');
   const [stepGrade, setStepGrade] = useState('');
@@ -126,7 +143,9 @@ export default function DeliveryDetailScreen() {
 
   const ss = statusStyle(detail.status);
   const logs = detail.processing_log || [];
-  const canAddStep = !['batched', 'rejected'].includes((detail.status || '').toLowerCase());
+  const canAddStep =
+    !['batched', 'rejected'].includes((detail.status || '').toLowerCase()) &&
+    user?.role !== ROLES.COOP_OFFICER;
 
   // Weight trace
   const receivedWeight = detail.net_weight_kg || 0;

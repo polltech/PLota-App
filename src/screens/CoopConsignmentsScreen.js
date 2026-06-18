@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
@@ -170,7 +171,7 @@ export default function CoopConsignmentsScreen() {
 
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Consignments</Text>
             <Text style={s.headerSub}>{consignments.length} total · {fmtKg(totalKg)} EUDR export</Text>
           </View>
@@ -178,6 +179,7 @@ export default function CoopConsignmentsScreen() {
             <Ionicons name="add" size={18} color={C.white} />
             <Text style={s.newBtnText}>New</Text>
           </TouchableOpacity>
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -185,10 +187,10 @@ export default function CoopConsignmentsScreen() {
       {!loading && (
         <View style={s.statsRow}>
           {[
-            { val: consignments.length, label: 'Total',         color: C.c700,    bg: C.c050 },
-            { val: pending,             label: 'Pending DDS',   color: '#b45309', bg: '#fef3c7' },
-            { val: ddsReady,            label: 'DDS Ready',     color: '#1d4ed8', bg: '#dbeafe' },
-            { val: submitted,           label: 'DDS Submitted', color: '#15803d', bg: '#dcfce7' },
+            { val: consignments.length, label: 'Total',         color: C.c700, bg: C.c050 },
+            { val: pending,             label: 'Pending DDS',   color: C.c700, bg: C.c050 },
+            { val: ddsReady,            label: 'DDS Ready',     color: C.c700, bg: C.c050 },
+            { val: submitted,           label: 'DDS Submitted', color: C.c700, bg: C.c050 },
           ].map(c => (
             <View key={c.label} style={[s.statCard, { backgroundColor: c.bg, borderLeftColor: c.color }]}>
               <Text style={[s.statVal, { color: c.color }]}>{c.val}</Text>

@@ -121,14 +121,14 @@ export default function AdminDashboardScreen() {
                   icon="business"
                   label="Cooperatives"
                   value={stats?.total_cooperatives}
-                  color="#6366f1"
+                  color={C.c700}
                 />
                 <StatCard
                   icon="cube"
                   label="Deliveries"
                   value={stats?.total_deliveries}
                   sub={`${stats?.total_kg != null ? Number(stats.total_kg).toFixed(0) : 0} kg`}
-                  color="#0284c7"
+                  color={C.c700}
                 />
                 <StatCard
                   icon="shield-checkmark"
@@ -171,19 +171,19 @@ export default function AdminDashboardScreen() {
                 <QuickAction
                   icon="business-outline"
                   label="Cooperatives"
-                  color="#6366f1"
+                  color={C.c700}
                   onPress={() => navigation.navigate('AdminCoops')}
                 />
                 <QuickAction
                   icon="layers-outline"
                   label="Batches"
-                  color="#7c3aed"
+                  color={C.c700}
                   onPress={() => navigation.navigate('AdminBatches')}
                 />
                 <QuickAction
                   icon="hardware-chip-outline"
                   label="ML Engine"
-                  color="#0284c7"
+                  color={C.c700}
                   onPress={() => navigation.navigate('AdminML')}
                 />
                 <QuickAction

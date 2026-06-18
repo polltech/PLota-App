@@ -1,20 +1,11 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  ImageBackground,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import { polygonAPI } from '../services/api';
 import { C } from '../theme';
@@ -24,6 +15,7 @@ const FarmIDEntryScreen = () => {
   const [touched, setTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [focused, setFocused] = useState(false);
   const navigation = useNavigation();
 
   const hasError = touched && !farmId.trim();
@@ -36,14 +28,11 @@ const FarmIDEntryScreen = () => {
     setIsLoading(true);
     try {
       const net = await Network.getNetworkStateAsync();
-      // Only attempt fetch if we have a connection AND internet is potentially reachable
       if (net.isConnected && net.isInternetReachable !== false) {
         try {
           const res = await polygonAPI.getFarm(farmId.trim());
-
           if (res.status === 200) {
-            const farm = res.data;
-            navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm });
+            navigation.navigate('FarmConfirmation', { farmId: farmId.trim(), farm: res.data });
             return;
           }
         } catch (error) {
@@ -51,7 +40,6 @@ const FarmIDEntryScreen = () => {
             setApiError('Farm ID not found. Check the ID and try again.');
             return;
           }
-          // If fetch fails (timeout or network), we still allow proceeding to WalkBoundary
         }
       }
       navigation.navigate('WalkBoundary', { farmId: farmId.trim() });
@@ -61,236 +49,177 @@ const FarmIDEntryScreen = () => {
   };
 
   return (
-    <View style={s.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f3f2f1" />
+      <SafeAreaView style={s.safe}>
+        <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-      <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1000&auto=format&fit=crop' }}
-        style={s.bgImage}
-      >
-        <View style={s.overlay} />
+          {/* Top bar */}
+          <View style={s.topBar}>
+            <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={20} color={C.ink} />
+            </TouchableOpacity>
+            <Text style={s.topTitle}>Farm Capture</Text>
+            <View style={{ width: 40 }} />
+          </View>
 
-        <SafeAreaView style={s.safe}>
-          <KeyboardAvoidingView
-            style={s.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          <ScrollView
+            contentContainerStyle={s.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <ScrollView
-              contentContainerStyle={s.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+            {/* Page heading */}
+            <Text style={s.heading}>Enter Farm ID</Text>
+            <Text style={s.subheading}>
+              Look up an existing farm by its ID or code to capture its boundary.
+            </Text>
+
+            {/* Input card */}
+            <View style={s.card}>
+              <Text style={s.label}>Farm ID / Code</Text>
+              <View style={[s.inputWrap, focused && s.inputWrapFocused, hasError && s.inputWrapError]}>
+                <Ionicons name="search-outline" size={18} color={focused ? C.c700 : C.subtle} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={s.input}
+                  value={farmId}
+                  onChangeText={v => { setFarmId(v); setTouched(false); setApiError(null); }}
+                  onBlur={() => { setTouched(true); setFocused(false); }}
+                  onFocus={() => setFocused(true)}
+                  placeholder="e.g. KIR-001 or 1042"
+                  placeholderTextColor={C.subtle}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="go"
+                  onSubmitEditing={handleContinue}
+                />
+              </View>
+              {hasError
+                ? <Text style={s.errorText}>Please enter a Farm ID</Text>
+                : apiError
+                  ? <Text style={s.errorText}>{apiError}</Text>
+                  : <Text style={s.hintText}>Verify against the farmer's documentation before proceeding.</Text>
+              }
+
+              <TouchableOpacity
+                style={[s.primaryBtn, (!farmId.trim() || isLoading) && s.primaryBtnDisabled]}
+                onPress={handleContinue}
+                disabled={isLoading || !farmId.trim()}
+                activeOpacity={0.85}
+              >
+                {isLoading
+                  ? <ActivityIndicator color={C.white} size="small" />
+                  : <Text style={s.primaryBtnText}>Confirm identity</Text>
+                }
+              </TouchableOpacity>
+            </View>
+
+            {/* Divider */}
+            <View style={s.divRow}>
+              <View style={s.divLine} />
+              <Text style={s.divText}>New farm</Text>
+              <View style={s.divLine} />
+            </View>
+
+            {/* Add Farm */}
+            <TouchableOpacity
+              style={s.addFarmBtn}
+              onPress={() => navigation.navigate('AddFarm')}
+              activeOpacity={0.85}
             >
-              <View style={s.header}>
-                <View style={s.logoMiniContainer}>
-                  <Image
-                    source={require('../../assets/logo.jpeg')}
-                    style={s.logoMini}
-                    resizeMode="cover"
-                  />
-                </View>
-                <Text style={s.headerTitle}>PLOTRA</Text>
-              </View>
+              <Ionicons name="add-circle-outline" size={18} color={C.white} />
+              <Text style={s.addFarmBtnText}>Add Farm</Text>
+            </TouchableOpacity>
 
-              <View style={s.card}>
-                <Text style={s.title}>Farm Capture</Text>
-                <Text style={s.subtitle}>
-                  Enter an existing Farm ID to map its boundary, or add a brand-new farm below.
-                </Text>
+            {/* Queue */}
+            <TouchableOpacity
+              style={s.outlineBtn}
+              onPress={() => navigation.navigate('QueueList')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="cloud-upload-outline" size={16} color={C.steel700} />
+              <Text style={s.outlineBtnText}>View Offline Queue</Text>
+            </TouchableOpacity>
 
-                <View style={s.inputWrapper}>
-                  <Text style={s.label}>Farm ID / Code</Text>
-                  <View style={[s.inputContainer, hasError && s.inputContainerError]}>
-                    <Text style={s.inputIcon}>#</Text>
-                    <TextInput
-                      style={s.input}
-                      value={farmId}
-                      onChangeText={(v) => {
-                        setFarmId(v);
-                        setTouched(false);
-                        setApiError(null);
-                      }}
-                      onBlur={() => setTouched(true)}
-                      placeholder="e.g. 1042"
-                      placeholderTextColor={C.subtle}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="default"
-                      returnKeyType="go"
-                      onSubmitEditing={handleContinue}
-                    />
-                  </View>
-
-                  {hasError ? (
-                    <Text style={s.errorText}>Please enter a valid Farm ID</Text>
-                  ) : apiError ? (
-                    <Text style={s.errorText}>{apiError}</Text>
-                  ) : (
-                    <Text style={s.hintText}>Verify against farmer's documentation.</Text>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[s.primaryBtn, (!farmId.trim() || isLoading) && s.btnDisabled]}
-                  onPress={handleContinue}
-                  disabled={isLoading || !farmId.trim()}
-                  activeOpacity={0.8}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <Text style={s.primaryBtnText}>Confirm Identity</Text>
-                  )}
-                </TouchableOpacity>
-
-                <View style={s.dividerContainer}>
-                  <View style={s.line} />
-                  <Text style={s.dividerText}>NEW FARM</Text>
-                  <View style={s.line} />
-                </View>
-
-                <TouchableOpacity
-                  style={s.addFarmBtn}
-                  onPress={() => navigation.navigate('AddFarm')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={s.addFarmBtnText}>+ Add Farm</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={s.secondaryBtn}
-                  onPress={() => navigation.navigate('QueueList')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.secondaryBtnText}>View Offline Queue</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={s.footer}>
-                 <Text style={s.footerText}>Offline mode is enabled for remote areas.</Text>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </ImageBackground>
+            {/* Offline note */}
+            <View style={s.offlineNote}>
+              <Ionicons name="wifi-outline" size={14} color={C.muted} />
+              <Text style={s.offlineNoteText}>Boundary capture works offline and syncs when you reconnect.</Text>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  bgImage: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.45)' },
+  root: { flex: 1, backgroundColor: '#f3f2f1' },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
 
-  header: {
-    position: 'absolute',
-    top: 20,
-    left: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 10,
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200,
   },
-  logoMiniContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginRight: 10,
-    backgroundColor: C.white,
-    padding: 2,
-  },
-  logoMini: { width: '100%', height: '100%', borderRadius: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: C.white, letterSpacing: 2 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
+  topTitle: { fontSize: 16, fontWeight: '600', color: C.ink },
+
+  scroll: { padding: 20, paddingTop: 24 },
+
+  heading: { fontSize: 22, fontWeight: '600', color: C.ink, marginBottom: 6 },
+  subheading: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 20 },
 
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderRadius: 28,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.2,
-    shadowRadius: 25,
-    elevation: 15,
+    backgroundColor: C.white, borderRadius: 8, padding: 20,
+    borderWidth: 1, borderColor: C.steel200,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    marginBottom: 24,
   },
 
-  title: { fontSize: 32, fontWeight: '800', color: C.c900, marginBottom: 12 },
-  subtitle: { fontSize: 16, color: C.muted, lineHeight: 24, marginBottom: 35 },
-
-  inputWrapper: { marginBottom: 30 },
-  label: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: C.c700,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 12,
-    marginLeft: 4,
+  label: { fontSize: 13, fontWeight: '600', color: C.steel700, marginBottom: 8 },
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: C.steel300, borderRadius: 6,
+    paddingHorizontal: 12, height: 42, backgroundColor: C.white,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.steel100,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: C.steel200,
-    paddingHorizontal: 20,
-    height: 64,
-  },
-  inputContainerError: { borderColor: C.failedText, backgroundColor: C.failedBg },
-  inputIcon: { fontSize: 20, color: C.c400, fontWeight: '800', marginRight: 15 },
-  input: { flex: 1, fontSize: 18, color: C.c900, fontWeight: '700' },
+  inputWrapFocused: { borderColor: C.c700, borderWidth: 1.5 },
+  inputWrapError: { borderColor: '#dc2626', backgroundColor: '#fef2f2' },
+  input: { flex: 1, fontSize: 15, color: C.ink, fontWeight: '500', height: 42 },
 
-  hintText: { fontSize: 13, color: C.subtle, marginTop: 12, marginLeft: 4, fontWeight: '500' },
-  errorText: { fontSize: 13, color: C.failedText, fontWeight: '700', marginTop: 12, marginLeft: 4 },
+  hintText: { fontSize: 12, color: C.subtle, marginTop: 6, lineHeight: 16 },
+  errorText: { fontSize: 12, color: '#dc2626', fontWeight: '600', marginTop: 6 },
 
   primaryBtn: {
-    backgroundColor: C.c700,
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: C.c700,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.c700, height: 42, borderRadius: 6, marginTop: 16,
   },
-  btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0, elevation: 0 },
-  primaryBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  primaryBtnDisabled: { backgroundColor: C.steel300 },
+  primaryBtnText: { color: C.white, fontSize: 14, fontWeight: '600' },
 
-  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 35 },
-  line: { flex: 1, height: 1.5, backgroundColor: C.steel200 },
-  dividerText: { marginHorizontal: 20, fontSize: 13, fontWeight: '800', color: C.steel300 },
+  divRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  divLine: { flex: 1, height: 1, backgroundColor: C.steel200 },
+  divText: { fontSize: 12, color: C.subtle, fontWeight: '500' },
 
   addFarmBtn: {
-    height: 60,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.c600,
-    marginBottom: 14,
-    shadowColor: C.c600,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: C.c700, height: 42, borderRadius: 6, marginBottom: 12,
   },
-  addFarmBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
+  addFarmBtnText: { color: C.white, fontSize: 14, fontWeight: '600' },
 
-  secondaryBtn: {
-    height: 60,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: C.steel200,
+  outlineBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 42, borderRadius: 6, borderWidth: 1.5, borderColor: C.steel300,
+    backgroundColor: C.white,
   },
-  secondaryBtnText: { color: C.steel700, fontSize: 16, fontWeight: '800' },
 
-  footer: { marginTop: 30, paddingHorizontal: 20 },
-  footerText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center', fontWeight: '500' },
+  outlineBtnText: { fontSize: 14, fontWeight: '600', color: C.steel700 },
+
+  offlineNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: C.steel200,
+  },
+  offlineNoteText: { flex: 1, fontSize: 12, color: C.muted, lineHeight: 17 },
 });
 
 export default FarmIDEntryScreen;

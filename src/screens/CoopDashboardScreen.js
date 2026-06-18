@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 const fmtDate = (d) => {
   if (!d) return '—';
@@ -121,16 +122,7 @@ export default function CoopDashboardScreen() {
                   <Text style={s.heroBadgeBtnText}>{pendingFarmers.length} farmers</Text>
                 </TouchableOpacity>
               )}
-              {/* Profile avatar button — top right */}
-              <TouchableOpacity
-                style={s.profileBtn}
-                onPress={() => navigation.navigate('CoopProfile')}
-                activeOpacity={0.8}
-              >
-                <Text style={s.profileBtnText}>
-                  {((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')).toUpperCase() || 'CO'}
-                </Text>
-              </TouchableOpacity>
+              <ProfileAvatar />
             </View>
           </View>
         </SafeAreaView>

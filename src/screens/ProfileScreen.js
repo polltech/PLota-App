@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, StatusBar, TextInput,
+  ActivityIndicator, Alert, StatusBar, TextInput, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { WebView } from 'react-native-webview';
 import { useAuth } from '../context/AuthContext';
 import { farmerAPI, authAPI } from '../services/api';
 import { C } from '../theme';
@@ -43,6 +44,114 @@ const EditField = ({ label, value, onChangeText, keyboardType, placeholder }) =>
     />
   </View>
 );
+
+// ── Farmer QR Card ────────────────────────────────────────────────────────────
+const buildQRHtml = (payload) => `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#f0fdf4; display:flex; align-items:center; justify-content:center; height:100vh; }
+  #qr canvas, #qr img { display:block; }
+  #err { font-family:sans-serif; font-size:12px; color:#64748b; text-align:center; padding:16px; }
+</style>
+</head>
+<body>
+<div id="qr"><p id="err">Loading QR…</p></div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script>
+(function(){
+  var data=${JSON.stringify(payload)};
+  if(typeof QRCode==='undefined'){document.getElementById('err').textContent='Offline — QR unavailable';return;}
+  QRCode.toCanvas(data,{width:200,margin:1,color:{dark:'#052e16',light:'#f0fdf4'}},function(err,canvas){
+    var el=document.getElementById('qr');
+    el.innerHTML='';
+    if(err){el.innerHTML='<p id="err">'+err.message+'</p>';return;}
+    el.appendChild(canvas);
+  });
+})();
+</script>
+</body>
+</html>`;
+
+const FarmerIDCard = ({ user, memberNo }) => {
+  const qrPayload = [
+    'PLOTRA:FARMER',
+    user?.id           || '',
+    user?.national_id  || '',
+    memberNo           || user?.coop_member_no || '',
+    [user?.first_name, user?.last_name].filter(Boolean).join(' '),
+  ].join(':');
+
+  const shareID = async () => {
+    try {
+      await Share.share({ message: `Plotra Farmer ID\nName: ${[user?.first_name, user?.last_name].filter(Boolean).join(' ')}\nMember No: ${memberNo || user?.coop_member_no || '—'}\nNational ID: ${user?.national_id || '—'}` });
+    } catch (_) {}
+  };
+
+  return (
+    <View style={qr.card}>
+      <View style={qr.header}>
+        <Ionicons name="qr-code-outline" size={18} color={C.c700} />
+        <Text style={qr.headerText}>Farmer Identity Card</Text>
+        <TouchableOpacity onPress={shareID} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="share-outline" size={18} color={C.muted} />
+        </TouchableOpacity>
+      </View>
+      <View style={qr.body}>
+        <View style={qr.qrBox}>
+          <WebView
+            source={{ html: buildQRHtml(qrPayload) }}
+            style={{ width: 200, height: 200, backgroundColor: '#f0fdf4' }}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            overScrollMode="never"
+          />
+        </View>
+        <View style={qr.idInfo}>
+          <Text style={qr.idName} numberOfLines={1}>
+            {[user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Farmer'}
+          </Text>
+          {(memberNo || user?.coop_member_no) ? (
+            <View style={qr.idRow}>
+              <Text style={qr.idLabel}>Member No</Text>
+              <Text style={qr.idValue}>{memberNo || user?.coop_member_no}</Text>
+            </View>
+          ) : null}
+          {user?.national_id ? (
+            <View style={qr.idRow}>
+              <Text style={qr.idLabel}>National ID</Text>
+              <Text style={qr.idValue}>{user.national_id}</Text>
+            </View>
+          ) : null}
+          {user?.cooperative_name ? (
+            <View style={qr.idRow}>
+              <Text style={qr.idLabel}>Cooperative</Text>
+              <Text style={qr.idValue} numberOfLines={1}>{user.cooperative_name}</Text>
+            </View>
+          ) : null}
+          <Text style={qr.idHint}>Show this QR at the delivery point to verify your identity.</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const qr = StyleSheet.create({
+  card: { backgroundColor: C.white, borderRadius: 18, marginHorizontal: 16, marginBottom: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  headerText: { flex: 1, fontSize: 13, fontWeight: '800', color: C.ink, textTransform: 'uppercase', letterSpacing: 0.4 },
+  body: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 16 },
+  qrBox: { width: 200, height: 200, borderRadius: 12, overflow: 'hidden', backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: C.c200 },
+  idInfo: { flex: 1, justifyContent: 'center' },
+  idName: { fontSize: 15, fontWeight: '900', color: C.ink, marginBottom: 10 },
+  idRow: { marginBottom: 6 },
+  idLabel: { fontSize: 10, fontWeight: '700', color: C.subtle, textTransform: 'uppercase', letterSpacing: 0.3 },
+  idValue: { fontSize: 13, fontWeight: '700', color: C.ink, marginTop: 1 },
+  idHint: { fontSize: 10, color: C.muted, lineHeight: 15, marginTop: 10 },
+});
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
@@ -248,6 +357,12 @@ export default function ProfileScreen() {
         {/* ── VIEW MODE ──────────────────────────────────────────────────── */}
         {!editing && (
           <>
+            {/* Farmer QR Identity Card */}
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Identity</Text>
+            </View>
+            <FarmerIDCard user={user} memberNo={memberNo} />
+
             {/* Account info */}
             <View style={s.section}>
               <Text style={s.sectionTitle}>Account</Text>
@@ -286,51 +401,8 @@ export default function ProfileScreen() {
                 <MenuItem
                   icon="document-text-outline"
                   label="KYC Documents"
-                  onPress={() => Alert.alert('KYC Documents', 'Upload and manage your identity verification documents via the Plotra web dashboard at dev.plotra.eu')}
+                  onPress={() => navigation.navigate('Documents')}
                 />
-                <MenuItem
-                  icon="shield-checkmark-outline"
-                  label="EUDR Compliance"
-                  onPress={() => Alert.alert('EUDR Compliance', 'View detailed EUDR compliance reports, generate Due Diligence Statements, and review satellite findings for your farms.')}
-                />
-                <MenuItem
-                  icon="analytics-outline"
-                  label="Satellite Reports"
-                  onPress={() => navigation.navigate('Farms')}
-                />
-                <MenuItem
-                  icon="information-circle-outline"
-                  label="About Plotra"
-                  onPress={() => Alert.alert('Plotra v1.1.0', 'EUDR-compliant agricultural intelligence platform. Copernicus Sentinel-2 · Hansen GFC · XGBoost ML. All spatial data encrypted at rest.')}
-                />
-              </View>
-            </View>
-
-            {/* EUDR Compliance */}
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Compliance</Text>
-              <View style={s.card}>
-                <View style={s.complianceRow}>
-                  <View style={[s.compDot, { backgroundColor: '#22c55e' }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.compTitle}>EUDR Regulation (EU) 2023/1115</Text>
-                    <Text style={s.compDesc}>Data collected through this app supports EUDR due diligence. All spatial data is encrypted at rest.</Text>
-                  </View>
-                </View>
-                <View style={s.complianceRow}>
-                  <View style={[s.compDot, { backgroundColor: '#6366f1' }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.compTitle}>Copernicus Sentinel-2</Text>
-                    <Text style={s.compDesc}>Satellite indices (NDVI, BSI, NBR) sourced from CDSE free-tier API.</Text>
-                  </View>
-                </View>
-                <View style={s.complianceRow}>
-                  <View style={[s.compDot, { backgroundColor: '#f59e0b' }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.compTitle}>Hansen Global Forest Change</Text>
-                    <Text style={s.compDesc}>Deforestation baseline uses Hansen GFC data (2000–2020).</Text>
-                  </View>
-                </View>
               </View>
             </View>
 
@@ -349,7 +421,6 @@ export default function ProfileScreen() {
           </>
         )}
 
-        <Text style={s.version}>Plotra Agent App • v1.1.0 • © 2025 Plotra</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
 

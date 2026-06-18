@@ -186,10 +186,10 @@ export default function WalletScreen() {
 
         {/* ── 4 Stat Cards ────────────────────────────────────────────── */}
         <View style={s.statsGrid}>
-          <StatCard icon="layers-outline"       label="Staked MBT"        value={fmt(stakedMbt)}      sub={stats?.staked_trend}    color={C.c600} />
-          <StatCard icon="trending-up-outline"  label="Annual Interest"   value={fmt(annualInterest)} sub={stats?.interest_trend}  color="#10b981" />
-          <StatCard icon="checkmark-done-outline" label="Total Payouts"   value={fmt(totalPayouts)}   sub="All time"               color="#3b82f6" />
-          <StatCard icon="time-outline"         label="Escrow Balance"    value={fmt(escrowBalance)}  sub="Pending verification"   color="#f59e0b" />
+          <StatCard icon="layers-outline"       label="Staked MBT"        value={fmt(stakedMbt)}      sub={stats?.staked_trend}    color={C.c700} />
+          <StatCard icon="trending-up-outline"  label="Annual Interest"   value={fmt(annualInterest)} sub={stats?.interest_trend}  color={C.c700} />
+          <StatCard icon="checkmark-done-outline" label="Total Payouts"   value={fmt(totalPayouts)}   sub="All time"               color={C.c700} />
+          <StatCard icon="time-outline"         label="Escrow Balance"    value={fmt(escrowBalance)}  sub="Pending verification"   color={C.c700} />
         </View>
 
         {/* ── Payment Trends Chart ─────────────────────────────────────── */}

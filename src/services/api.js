@@ -144,6 +144,8 @@ export const farmerAPI = {
   getFarms: () => api.get('/farmer/farm'),
   getFarm: (farmId) => api.get(`/farmer/farm/${farmId}`),
   createFarm: (data) => api.post('/farmer/farm', data),
+  updateFarm: (farmId, data) => api.patch(`/farmer/farm/${farmId}`, data),
+  acknowledgeUpdate: (farmId) => api.patch(`/farmer/farm/${farmId}/acknowledge-update`),
 
   getParcels: (farmId) => api.get(`/farmer/farm/${farmId}/parcels`),
   getParcel: (farmId, parcelId) => api.get(`/farmer/farm/${farmId}/parcels/${parcelId}`),
@@ -204,6 +206,7 @@ export const coopAPI = {
   getBatchTraceability: (batchId) => api.get(`/coop/batches/${batchId}/traceability`),
   releaseBatch: (id, notes) => api.post(`/coop/batches/${id}/release`, { notes }),
   updateBatchStatus: (id, status) => api.patch(`/coop/batches/${id}/status`, { status }),
+  addBatchLabResults: (id, data) => api.post(`/coop/batches/${id}/lab-results`, data),
 
   requestUpdate: (userId, issue) => api.patch(`/coop/farmers/${userId}/request-update`, { issue }),
 
@@ -214,9 +217,16 @@ export const coopAPI = {
   getPendingFarms: () => api.get('/coop/farms/pending'),
   getPendingFarmers: () => api.get('/coop/farmers/pending'),
 
-  // Farm approval (coop officer)
+  // Staff management
+  deleteStaff:     (id) => api.delete(`/coop/staff/${id}`),
+  deactivateStaff: (id) => api.patch(`/coop/staff/${id}/deactivate`),
+  activateStaff:   (id) => api.patch(`/coop/staff/${id}/activate`),
+
+  // Farm detail + approval (coop officer)
+  getFarm: (id) => api.get(`/coop/farms/${id}`),
   approveFarm: (id, reason) => api.patch(`/coop/farms/${id}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
   rejectFarm:  (id, reason) => api.patch(`/coop/farms/${id}/reject`  + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
+  requestFarmUpdate: (farmId, issue) => api.patch(`/coop/farms/${farmId}/request-update`, { issue }),
 
   // Farmer approval (coop officer)
   approveFarmer: (userId, reason) => api.patch(`/coop/farmers/${userId}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),

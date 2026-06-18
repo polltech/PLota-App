@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
@@ -127,7 +128,7 @@ export default function CoopDeliveriesScreen() {
 
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Deliveries</Text>
             <Text style={s.headerSub}>{deliveries.length} total · {fmtKg(totalKg)}</Text>
           </View>
@@ -139,6 +140,7 @@ export default function CoopDeliveriesScreen() {
             <Ionicons name="add" size={18} color={C.white} />
             <Text style={s.newBtnText}>Record</Text>
           </TouchableOpacity>
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
