@@ -54,6 +54,7 @@ import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
 import ProcessingStepsScreen from '../screens/ProcessingStepsScreen';
 import AddProcessingStepScreen from '../screens/AddProcessingStepScreen';
+import ProcessingDashboardScreen from '../screens/ProcessingDashboardScreen';
 import BatchDetailScreen from '../screens/BatchDetailScreen';
 import ConsignmentsScreen from '../screens/ConsignmentsScreen';
 import PostHarvestScreen from '../screens/PostHarvestScreen';
@@ -339,7 +340,7 @@ function DeliveryAgentTabs() {
       <Tab.Screen name="AgentHome" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="AgentDashMain"       component={CoopDashboardScreen} />
+            <Stack.Screen name="AgentDashMain"       component={ProcessingDashboardScreen} />
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
@@ -449,17 +450,17 @@ function WashingStationTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            WSDeliveries: focused ? 'cube'   : 'cube-outline',
-            WSBatches:    focused ? 'layers' : 'layers-outline',
+            WSDash:       focused ? 'grid' : 'grid-outline',
+            WSDeliveries: focused ? 'cube' : 'cube-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="WSDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
+      <Tab.Screen name="WSDash" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="WSDashMain"          component={ProcessingDashboardScreen} />
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
@@ -467,11 +468,10 @@ function WashingStationTabs() {
           </Stack.Navigator>
         )}
       </Tab.Screen>
-      <Tab.Screen name="WSBatches" options={{ tabBarLabel: 'Batches' }}>
+      <Tab.Screen name="WSDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
@@ -495,32 +495,28 @@ function PostHarvestTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            PHLab:     focused ? 'flask'   : 'flask-outline',
-            PHBatches: focused ? 'layers'  : 'layers-outline',
+            PHDash:       focused ? 'grid' : 'grid-outline',
+            PHDeliveries: focused ? 'cube' : 'cube-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="PHLab" options={{ tabBarLabel: 'Lab Results' }}>
+      <Tab.Screen name="PHDash" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="PostHarvestMain"     component={PostHarvestScreen} />
-            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="PHDashMain"          component={ProcessingDashboardScreen} />
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
-            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
             <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
-      <Tab.Screen name="PHBatches" options={{ tabBarLabel: 'Batches' }}>
+      <Tab.Screen name="PHDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
             <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
             <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
             <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />

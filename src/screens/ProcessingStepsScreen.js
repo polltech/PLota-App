@@ -14,10 +14,10 @@ import { ROLES } from '../utils/roles';
 // Global ordered chain — all steps in sequence
 const STEP_SEQUENCE = ['sorting', 'washing', 'drying', 'milling', 'grading', 'packing'];
 
-// Steps each role is permitted to record
+// Steps each role is permitted to record — exactly their own step(s), no more
 const ROLE_STEPS = {
   [ROLES.DELIVERY_AGENT]:  ['sorting'],
-  [ROLES.WASHING_STATION]: ['sorting', 'washing'],
+  [ROLES.WASHING_STATION]: ['washing'],
   [ROLES.POST_HARVEST]:    ['drying', 'milling', 'grading', 'packing'],
   [ROLES.COOP_OFFICER]:    STEP_SEQUENCE,
   [ROLES.ADMIN]:           STEP_SEQUENCE,
@@ -76,7 +76,9 @@ export default function ProcessingStepsScreen() {
       const res = await coopAPI.getDelivery(id);
       setDetail(res.data);
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.detail || 'Failed to load delivery');
+      const d = e.response?.data?.detail;
+      const msg = typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg || String(x)).join(', ') : 'Failed to load delivery';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
       setRefreshing(false);

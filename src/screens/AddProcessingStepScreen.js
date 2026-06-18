@@ -70,7 +70,9 @@ export default function AddProcessingStepScreen() {
       });
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Failed to save', e.response?.data?.detail || 'An error occurred');
+      const d = e.response?.data?.detail;
+      const msg = typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg || String(x)).join(', ') : 'An error occurred';
+      Alert.alert('Failed to save', msg);
     } finally {
       setSaving(false);
     }
