@@ -231,6 +231,12 @@ export const coopAPI = {
   deactivateStaff: (id) => api.patch(`/coop/staff/${id}/deactivate`),
   activateStaff:   (id) => api.patch(`/coop/staff/${id}/activate`),
 
+  // Payment apportionment (finance admin)
+  getBatchApportionment:    (batchId, rate, anonymise = false) =>
+    api.get(`/coop/batches/${batchId}/apportionment`, { params: { rate, anonymise } }),
+  submitBatchApportionment: (batchId, rateKesPerKg) =>
+    api.post(`/coop/batches/${batchId}/apportionment`, { rate_kes_per_kg: rateKesPerKg }),
+
   // Farm detail + approval (coop officer)
   getFarm: (id) => api.get(`/coop/farms/${id}`),
   approveFarm: (id, reason) => api.patch(`/coop/farms/${id}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),

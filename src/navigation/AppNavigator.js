@@ -58,6 +58,7 @@ import ProcessingDashboardScreen from '../screens/ProcessingDashboardScreen';
 import BatchDetailScreen from '../screens/BatchDetailScreen';
 import ConsignmentsScreen from '../screens/ConsignmentsScreen';
 import PostHarvestScreen from '../screens/PostHarvestScreen';
+import PaymentManagementScreen from '../screens/PaymentManagementScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -495,8 +496,9 @@ function PostHarvestTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            PHDash:       focused ? 'grid' : 'grid-outline',
-            PHDeliveries: focused ? 'cube' : 'cube-outline',
+            PHDash:       focused ? 'grid'  : 'grid-outline',
+            PHDeliveries: focused ? 'cube'  : 'cube-outline',
+            PHLab:        focused ? 'flask' : 'flask-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -524,6 +526,15 @@ function PostHarvestTabs() {
           </Stack.Navigator>
         )}
       </Tab.Screen>
+      <Tab.Screen name="PHLab" options={{ tabBarLabel: 'Lab Results' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="PostHarvestMain"     component={PostHarvestScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -540,8 +551,9 @@ function AgronomistTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            AgroFarmers: focused ? 'people'      : 'people-outline',
-            AgroFarms:   focused ? 'leaf'        : 'leaf-outline',
+            AgroFarmers:   focused ? 'people'           : 'people-outline',
+            AgroFarms:     focused ? 'leaf'             : 'leaf-outline',
+            AgroCompliance: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -569,6 +581,17 @@ function AgronomistTabs() {
           </Stack.Navigator>
         )}
       </Tab.Screen>
+      <Tab.Screen name="AgroCompliance" options={{ tabBarLabel: 'Compliance' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminComplianceMain" component={AdminComplianceScreen} />
+            <Stack.Screen name="FarmDetail"          component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"        component={ParcelDetailScreen} />
+            <Stack.Screen name="FarmerDetail"        component={FarmerDetailScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -585,8 +608,9 @@ function FinanceAdminTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = {
-            FinBatches:       focused ? 'layers'   : 'layers-outline',
-            FinConsignments:  focused ? 'airplane' : 'airplane-outline',
+            FinBatches:      focused ? 'layers'   : 'layers-outline',
+            FinConsignments: focused ? 'airplane' : 'airplane-outline',
+            FinPayments:     focused ? 'cash'     : 'cash-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
@@ -595,7 +619,7 @@ function FinanceAdminTabs() {
       <Tab.Screen name="FinBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"    component={BatchesScreen} />
+            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
             <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
             <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
             <Stack.Screen name="CoopProfile"    component={CoopProfileScreen} />
@@ -608,6 +632,15 @@ function FinanceAdminTabs() {
             <Stack.Screen name="ConsignmentsList"  component={CoopConsignmentsScreen} />
             <Stack.Screen name="ConsignmentDetail" component={ConsignmentsScreen} />
             <Stack.Screen name="CoopProfile"       component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="FinPayments" options={{ tabBarLabel: 'Payments' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="PaymentsList"   component={PaymentManagementScreen} />
+            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
+            <Stack.Screen name="CoopProfile"    component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
