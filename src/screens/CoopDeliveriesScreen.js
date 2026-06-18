@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
 import ProfileAvatar from '../components/ProfileAvatar';
@@ -94,6 +95,8 @@ const DeliveryRow = ({ item, onPress }) => {
 
 export default function CoopDeliveriesScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const canRecord = user?.role !== 'washing_station' && user?.role !== 'station_clerk';
   const [deliveries, setDeliveries] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -132,14 +135,16 @@ export default function CoopDeliveriesScreen() {
             <Text style={s.headerTitle}>Deliveries</Text>
             <Text style={s.headerSub}>{deliveries.length} total · {fmtKg(totalKg)}</Text>
           </View>
-          <TouchableOpacity
-            style={s.newBtn}
-            onPress={() => navigation.navigate('CreateDelivery')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={18} color={C.white} />
-            <Text style={s.newBtnText}>Record</Text>
-          </TouchableOpacity>
+          {canRecord && (
+            <TouchableOpacity
+              style={s.newBtn}
+              onPress={() => navigation.navigate('CreateDelivery')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={18} color={C.white} />
+              <Text style={s.newBtnText}>Record</Text>
+            </TouchableOpacity>
+          )}
           <ProfileAvatar />
         </View>
       </SafeAreaView>

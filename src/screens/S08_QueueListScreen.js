@@ -187,7 +187,7 @@ const QueueListScreen = () => {
               <Text style={s.backBtnText}>✕</Text>
             </TouchableOpacity>
             <View style={s.logoBadge}>
-               <Image source={require('../../assets/logo.jpeg')} style={s.logoBadgeImg} />
+               <Image source={require('../../assets/plotra-logo.png')} style={s.logoBadgeImg} />
             </View>
           </View>
 

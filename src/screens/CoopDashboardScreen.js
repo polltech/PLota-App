@@ -43,41 +43,52 @@ export default function CoopDashboardScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
 
-  const [farmers,           setFarmers]          = useState([]);
-  const [farms,             setFarms]             = useState([]);
-  const [pendingFarmers,    setPendingFarmers]    = useState([]);
-  const [recentDeliveries,  setRecentDeliveries]  = useState([]);
-  const [loading,           setLoading]           = useState(true);
-  const [refreshing,        setRefreshing]        = useState(false);
+  const isAgent = user?.role === 'delivery_agent';
 
-  const firstName = user?.first_name || 'Officer';
+  const [farmers,          setFarmers]         = useState([]);
+  const [farms,            setFarms]            = useState([]);
+  const [pendingFarmers,   setPendingFarmers]   = useState([]);
+  const [recentDeliveries, setRecentDeliveries] = useState([]);
+  const [loading,          setLoading]          = useState(true);
+  const [refreshing,       setRefreshing]       = useState(false);
+
+  const firstName = user?.first_name || (isAgent ? 'Agent' : 'Officer');
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const roleTitle = isAgent ? 'Delivery Agent' : 'Cooperative Officer';
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      const [fRes, farmRes, pfRes, dRes] = await Promise.allSettled([
-        coopAPI.getFarmers(),
-        coopAPI.getFarms(),
-        coopAPI.getPendingFarmers(),
-        coopAPI.getDeliveries(),
-      ]);
-      if (fRes.status === 'fulfilled') {
-        const d = fRes.value.data;
-        setFarmers(Array.isArray(d) ? d : []);
-      }
-      if (farmRes.status === 'fulfilled') {
-        const d = farmRes.value.data;
-        setFarms(Array.isArray(d) ? d : (d?.farms || []));
-      }
-      if (pfRes.status === 'fulfilled') {
-        const d = pfRes.value.data;
-        setPendingFarmers(Array.isArray(d) ? d : []);
-      }
-      if (dRes.status === 'fulfilled') {
-        const d = dRes.value.data;
-        setRecentDeliveries((Array.isArray(d) ? d : (d?.deliveries || [])).slice(0, 5));
+      if (isAgent) {
+        const dRes = await Promise.allSettled([coopAPI.getDeliveries()]);
+        if (dRes[0].status === 'fulfilled') {
+          const d = dRes[0].value.data;
+          setRecentDeliveries((Array.isArray(d) ? d : (d?.deliveries || [])).slice(0, 5));
+        }
+      } else {
+        const [fRes, farmRes, pfRes, dRes] = await Promise.allSettled([
+          coopAPI.getFarmers(),
+          coopAPI.getFarms(),
+          coopAPI.getPendingFarmers(),
+          coopAPI.getDeliveries(),
+        ]);
+        if (fRes.status === 'fulfilled') {
+          const d = fRes.value.data;
+          setFarmers(Array.isArray(d) ? d : []);
+        }
+        if (farmRes.status === 'fulfilled') {
+          const d = farmRes.value.data;
+          setFarms(Array.isArray(d) ? d : (d?.farms || []));
+        }
+        if (pfRes.status === 'fulfilled') {
+          const d = pfRes.value.data;
+          setPendingFarmers(Array.isArray(d) ? d : []);
+        }
+        if (dRes.status === 'fulfilled') {
+          const d = dRes.value.data;
+          setRecentDeliveries((Array.isArray(d) ? d : (d?.deliveries || [])).slice(0, 5));
+        }
       }
     } catch (e) {
       console.warn('CoopDashboard load:', e.message);
@@ -85,7 +96,7 @@ export default function CoopDashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isAgent]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(true); };
@@ -98,6 +109,21 @@ export default function CoopDashboardScreen() {
     !f.coop_status || f.coop_status === 'pending' || f.coop_status === 'update_requested'
   ).length;
 
+  // Quick actions by role
+  const officerActions = [
+    { icon: 'person-add-outline', label: 'Review Farmer Applications', color: '#f86441', nav: () => navigation.navigate('CoopFarmers') },
+    { icon: 'map-outline',         label: 'Review Farm Submissions',    color: '#1aa053', nav: () => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' }) },
+    { icon: 'add-circle-outline',  label: 'Record Delivery',            color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
+    { icon: 'layers-outline',      label: 'Manage Batches',             color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
+    { icon: 'airplane-outline',    label: 'Consignments',               color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
+    { icon: 'person-circle-outline', label: 'Manage Delivery Agents',   color: '#16a34a', nav: () => navigation.navigate('CoopStaff') },
+  ];
+  const agentActions = [
+    { icon: 'add-circle-outline', label: 'Record New Delivery', color: '#0d6efd', nav: () => navigation.navigate('AgentDeliveries', { screen: 'CreateDelivery' }) },
+    { icon: 'list-outline',       label: 'View All Deliveries', color: '#16a34a', nav: () => navigation.navigate('AgentDeliveries') },
+  ];
+  const quickActions = isAgent ? agentActions : officerActions;
+
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" />
@@ -109,10 +135,10 @@ export default function CoopDashboardScreen() {
             <View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
-              <Text style={s.roleTag}>Cooperative Officer</Text>
+              <Text style={s.roleTag}>{roleTitle}</Text>
             </View>
             <View style={s.heroActions}>
-              {pendingFarmers.length > 0 && (
+              {!isAgent && pendingFarmers.length > 0 && (
                 <TouchableOpacity
                   style={s.heroBadgeBtn}
                   onPress={() => navigation.navigate('CoopFarmers')}
@@ -134,36 +160,57 @@ export default function CoopDashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.c700} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* 4 Stat cards — matching web app */}
+        {/* Stat cards */}
         <View style={s.cardsGrid}>
-          <BigStatCard
-            icon="people"  iconColor="#16a34a"
-            value={farmers.length}
-            label="Total Farmers"
-            accent="#16a34a"
-            onPress={() => navigation.navigate('CoopFarmers')}
-          />
-          <BigStatCard
-            icon="hourglass-outline"  iconColor="#15803d"
-            value={pendingFarmers.length}
-            label="Pending Farmer Approvals"
-            accent="#15803d"
-            onPress={() => navigation.navigate('CoopFarmers')}
-          />
-          <BigStatCard
-            icon="location-outline"  iconColor="#15803d"
-            value={pendingFarmsCount}
-            label="Farms Awaiting Approval"
-            accent="#15803d"
-            onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
-          />
-          <BigStatCard
-            icon="cube-outline"  iconColor="#15803d"
-            value={recentDeliveries.length}
-            label="Recent Deliveries"
-            accent="#15803d"
-            onPress={() => navigation.navigate('CoopDeliveries')}
-          />
+          {isAgent ? (
+            <>
+              <BigStatCard
+                icon="cube-outline" iconColor="#15803d"
+                value={recentDeliveries.length}
+                label="Recent Deliveries"
+                accent="#15803d"
+                onPress={() => navigation.navigate('AgentDeliveries')}
+              />
+              <BigStatCard
+                icon="add-circle-outline" iconColor="#0d6efd"
+                value="+"
+                label="Record Delivery"
+                accent="#0d6efd"
+                onPress={() => navigation.navigate('AgentDeliveries', { screen: 'CreateDelivery' })}
+              />
+            </>
+          ) : (
+            <>
+              <BigStatCard
+                icon="people"  iconColor="#16a34a"
+                value={farmers.length}
+                label="Total Farmers"
+                accent="#16a34a"
+                onPress={() => navigation.navigate('CoopFarmers')}
+              />
+              <BigStatCard
+                icon="hourglass-outline"  iconColor="#15803d"
+                value={pendingFarmers.length}
+                label="Pending Farmer Approvals"
+                accent="#15803d"
+                onPress={() => navigation.navigate('CoopFarmers')}
+              />
+              <BigStatCard
+                icon="location-outline"  iconColor="#15803d"
+                value={pendingFarmsCount}
+                label="Farms Awaiting Approval"
+                accent="#15803d"
+                onPress={() => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' })}
+              />
+              <BigStatCard
+                icon="cube-outline"  iconColor="#15803d"
+                value={recentDeliveries.length}
+                label="Recent Deliveries"
+                accent="#15803d"
+                onPress={() => navigation.navigate('CoopDeliveries')}
+              />
+            </>
+          )}
         </View>
 
         {/* Recent Deliveries table */}
@@ -173,7 +220,7 @@ export default function CoopDashboardScreen() {
               <Ionicons name="time-outline" size={16} color="#15803d" />
               <Text style={s.tableCardTitle}>Recent Deliveries</Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('CoopDeliveries')}>
+            <TouchableOpacity onPress={() => navigation.navigate(isAgent ? 'AgentDeliveries' : 'CoopDeliveries')}>
               <Text style={s.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -225,14 +272,7 @@ export default function CoopDashboardScreen() {
               <Text style={s.tableCardTitle}>Quick Actions</Text>
             </View>
           </View>
-          {[
-            { icon: 'person-add-outline', label: 'Review Farmer Applications', color: '#f86441', nav: () => navigation.navigate('CoopFarmers') },
-            { icon: 'map-outline', label: 'Review Farm Submissions', color: '#1aa053', nav: () => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' }) },
-            { icon: 'add-circle-outline', label: 'Record Delivery', color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
-            { icon: 'layers-outline', label: 'Manage Batches', color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
-            { icon: 'airplane-outline', label: 'Consignments', color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
-            { icon: 'person-circle-outline', label: 'Manage Delivery Agents', color: '#16a34a', nav: () => navigation.navigate('CoopStaff') },
-          ].map((a, i, arr) => (
+          {quickActions.map((a, i, arr) => (
             <TouchableOpacity
               key={a.label}
               style={[s.actionRow, i < arr.length - 1 && s.tableRowBorder]}
@@ -266,13 +306,10 @@ const s = StyleSheet.create({
   heroActions: { gap: 8, alignItems: 'flex-end' },
   heroBadgeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)' },
   heroBadgeBtnText: { fontSize: 11, fontWeight: '700', color: '#fbbf24' },
-  profileBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
-  profileBtnText: { fontSize: 14, fontWeight: '900', color: C.white },
 
   scroll: { flex: 1 },
   content: { padding: 16 },
 
-  // 4 big stat cards (2×2 grid)
   cardsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
   bigCard: {
     width: '47.5%', backgroundColor: C.white, borderRadius: 16, padding: 16,
@@ -283,7 +320,6 @@ const s = StyleSheet.create({
   bigCardVal: { fontSize: 28, fontWeight: '900', color: C.ink, marginBottom: 4 },
   bigCardLabel: { fontSize: 11, fontWeight: '700', color: C.muted, lineHeight: 14 },
 
-  // Table cards
   tableCard: { backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   tableCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: C.steel100 },
   tableCardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -301,7 +337,6 @@ const s = StyleSheet.create({
   badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
   badgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
 
-  // Quick actions
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
   actionIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   actionLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: C.ink },

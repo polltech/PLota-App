@@ -22,7 +22,7 @@ const SubmittedScreen = () => {
         <SafeAreaView style={s.safe}>
           <View style={s.miniHeader}>
             <View style={s.miniLogoWrap}>
-              <Image source={require('../../assets/logo.jpeg')} style={s.miniLogo} />
+              <Image source={require('../../assets/plotra-logo.png')} style={s.miniLogo} />
             </View>
             <Text style={s.miniBrand}>PLOTRA</Text>
           </View>

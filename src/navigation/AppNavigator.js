@@ -207,7 +207,7 @@ function SplashLoader() {
 
   return (
     <View style={s.splash}>
-      <Image source={require('../../assets/logo-plotra.png')} style={s.splashLogo} resizeMode="contain" />
+      <Image source={require('../../assets/plotra-logo.png')} style={s.splashLogo} resizeMode="contain" />
       <Animated.View style={{ transform: [{ rotate }], marginTop: 32 }}>
         <Ionicons name="reload-outline" size={30} color={C.c700} />
       </Animated.View>
@@ -443,7 +443,6 @@ function WashingStationTabs() {
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
             <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
           </Stack.Navigator>
         )}

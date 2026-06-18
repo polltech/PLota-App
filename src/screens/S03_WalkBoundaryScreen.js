@@ -341,7 +341,7 @@ const WalkBoundaryScreen = () => {
         </TouchableOpacity>
 
         <View style={s.logoMiniWrap}>
-          <Image source={require('../../assets/logo.jpeg')} style={s.logoMini} />
+          <Image source={require('../../assets/plotra-logo.png')} style={s.logoMini} />
         </View>
 
         <View style={s.headerInfo}>

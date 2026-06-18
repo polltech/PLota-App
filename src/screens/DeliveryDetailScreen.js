@@ -143,8 +143,10 @@ export default function DeliveryDetailScreen() {
 
   const ss = statusStyle(detail.status);
   const logs = detail.processing_log || [];
+  // Any staff with assigned step types can add steps (excludes coop officer who manages at higher level)
   const canAddStep =
     !['batched', 'rejected'].includes((detail.status || '').toLowerCase()) &&
+    STEP_TYPES.length > 0 &&
     user?.role !== ROLES.COOP_OFFICER;
 
   // Weight trace

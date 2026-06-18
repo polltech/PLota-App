@@ -118,7 +118,7 @@ const ReviewPolygonScreen = () => {
           <Text style={s.backBtnText}>✕</Text>
         </TouchableOpacity>
         <View style={s.headerLogoWrap}>
-          <Image source={require('../../assets/logo.jpeg')} style={s.headerLogo} />
+          <Image source={require('../../assets/plotra-logo.png')} style={s.headerLogo} />
         </View>
         <Text style={s.headerTitle}>Review</Text>
         <View style={{ width: 44 }} />

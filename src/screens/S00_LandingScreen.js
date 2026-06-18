@@ -59,7 +59,7 @@ export default function LandingScreen() {
             >
               <View style={s.imageShadow}>
                 <Image
-                  source={require('../../assets/logo.jpeg')}
+                  source={require('../../assets/plotra-logo.png')}
                   style={s.logo}
                   resizeMode="cover"
                 />

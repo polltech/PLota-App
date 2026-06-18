@@ -145,10 +145,7 @@ export default function LoginScreen({ navigation }) {
           >
             {/* Brand header */}
             <View style={s.brandWrap}>
-              <View style={s.logoBox}>
-                <Image source={require('../../assets/icon.png')} style={s.logo} resizeMode="contain" />
-              </View>
-              <Text style={s.brandName}>PLOTRA</Text>
+              <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
               <Text style={s.brandTag}>Traceable Farms, Trusted Futures</Text>
             </View>
 
@@ -474,13 +471,7 @@ const s = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingVertical: 48 },
 
   brandWrap: { alignItems: 'center', marginBottom: 32 },
-  logoBox: {
-    width: 96, height: 96, borderRadius: 48, overflow: 'hidden',
-    backgroundColor: C.white, marginBottom: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 5,
-    borderWidth: 1, borderColor: C.steel200,
-  },
-  logo: { width: '100%', height: '100%' },
+  logo: { width: 160, height: 160, marginBottom: 4 },
   brandName: { fontSize: 22, fontWeight: '800', color: C.ink, letterSpacing: 3, marginBottom: 4 },
   brandTag: { fontSize: 12, color: C.muted, fontWeight: '400', letterSpacing: 0.3 },
 

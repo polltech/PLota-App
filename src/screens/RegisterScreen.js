@@ -449,7 +449,7 @@ export default function RegisterScreen({ navigation }) {
               {/* Logo */}
               <View style={s.logoWrap}>
                 <View style={s.logoCircle}>
-                  <Image source={require('../../assets/logo-plotra.png')} style={s.logo} resizeMode="contain" />
+                  <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
                 </View>
                 <Text style={s.brand}>PLOTRA</Text>
                 <Text style={s.tagline}>Mapping Sustainability, Empowering Farmers</Text>
