@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Plotra",
-    "slug": "plotra-app",
+    "slug": "plotra",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -50,9 +50,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "3f1c95e3-a601-46cf-ae88-22c43b40e579"
+        "projectId": "61dc89e2-8086-496e-934c-c98981dd2bae"
       }
     },
-    "owner": "polldevv"
+    "owner": "polldeveloperss-organization"
   }
 }
