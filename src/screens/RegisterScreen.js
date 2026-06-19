@@ -422,12 +422,8 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // ── Step 4: Labor & Land ───────────────────────────────────────────────
+    // ── Step 4: Labor & Land (all optional — skip or fill freely) ────────────
     if (step === 4) {
-      if (!landDocType) return fail('Please select your land documentation type.');
-      if (!laborType) return fail('Please select your labor system.');
-      if (childrenInvolved === null) return fail('Please answer the child labor question.');
-      if (workersCanLeave === null) return fail('Please answer the worker freedom question.');
       setStep(5);
       setTouched(false);
       return;
@@ -817,19 +813,17 @@ export default function RegisterScreen({ navigation }) {
                 {step === 4 && (
                   <>
                     <Text style={s.title}>Labor & Land Screening</Text>
-                    <Text style={s.subtitle}>Required for sustainability due diligence. All answers are confidential.</Text>
+                    <Text style={s.subtitle}>Optional — for sustainability due diligence. All answers are confidential.</Text>
 
-                    <Text style={s.label}>Land Documentation *</Text>
+                    <Text style={s.label}>Land Documentation <Text style={s.optional}>(optional)</Text></Text>
                     <Text style={s.fieldHint}>What type of land rights documentation do you have?</Text>
                     <ChipGroup options={LAND_DOC_OPTIONS} value={landDocType} onChange={setLandDocType} />
-                    {touched && !landDocType && <Text style={s.errText}>Required</Text>}
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Labor System *</Text>
+                    <Text style={[s.label, { marginTop: 20 }]}>Labor System <Text style={s.optional}>(optional)</Text></Text>
                     <Text style={s.fieldHint}>Who works on your farm?</Text>
                     <ChipGroup options={LABOR_TYPE_OPTIONS} value={laborType} onChange={setLaborType} />
-                    {touched && !laborType && <Text style={s.errText}>Required</Text>}
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Are children (under 15) involved in farm work? *</Text>
+                    <Text style={[s.label, { marginTop: 20 }]}>Are children (under 15) involved in farm work? <Text style={s.optional}>(optional)</Text></Text>
                     <View style={s.yesNoRow}>
                       {[['Yes', true], ['No', false]].map(([label, val]) => (
                         <TouchableOpacity
@@ -842,7 +836,6 @@ export default function RegisterScreen({ navigation }) {
                         </TouchableOpacity>
                       ))}
                     </View>
-                    {touched && childrenInvolved === null && <Text style={s.errText}>Required</Text>}
 
                     {childrenInvolved && (
                       <View style={s.warningBox}>
@@ -850,7 +843,7 @@ export default function RegisterScreen({ navigation }) {
                       </View>
                     )}
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Are all workers free to leave employment at any time? *</Text>
+                    <Text style={[s.label, { marginTop: 20 }]}>Are all workers free to leave employment at any time? <Text style={s.optional}>(optional)</Text></Text>
                     <View style={s.yesNoRow}>
                       {[['Yes', true], ['No', false]].map(([label, val]) => (
                         <TouchableOpacity
@@ -863,7 +856,6 @@ export default function RegisterScreen({ navigation }) {
                         </TouchableOpacity>
                       ))}
                     </View>
-                    {touched && workersCanLeave === null && <Text style={s.errText}>Required</Text>}
                   </>
                 )}
 
