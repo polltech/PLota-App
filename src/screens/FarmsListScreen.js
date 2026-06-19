@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, TextInput, Dimensions,
+  ActivityIndicator, RefreshControl, StatusBar, TextInput, Dimensions, Alert,
 } from 'react-native';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -158,6 +158,24 @@ const FarmCard = ({ farm, onPress, onCapture, onAnalyse, onEdit }) => {
       )}
     </View>
   );
+};
+
+// ── Verification helper ───────────────────────────────────────────────────────
+// Farmer must be approved by BOTH admin (verification_status === 'verified')
+// AND cooperative officer (coop_status === 'coop_approved') before adding farms.
+const isFullyVerified = (user) => {
+  const adminOk = user?.verification_status === 'verified';
+  const coopOk  = user?.coop_status === 'coop_approved';
+  return adminOk && coopOk;
+};
+
+const verificationMessage = (user) => {
+  const adminOk = user?.verification_status === 'verified';
+  const coopOk  = user?.coop_status === 'coop_approved';
+  if (!adminOk && !coopOk) return 'Pending approval from your cooperative and Plotra admin.';
+  if (!coopOk)             return 'Pending approval from your cooperative officer.';
+  if (!adminOk)            return 'Pending final approval from Plotra admin.';
+  return null;
 };
 
 // ── Main screen ────────────────────────────────────────────────────────────────
@@ -382,14 +400,24 @@ export default function FarmsListScreen() {
         />
       )}
 
-      {/* FAB — Add Farm */}
+      {/* FAB — Add Farm (locked until fully verified by coop + admin) */}
       <TouchableOpacity
-        style={s.fab}
-        onPress={() => navigation.navigate('AddFarm')}
+        style={[s.fab, !isFullyVerified(user) && s.fabLocked]}
+        onPress={() => {
+          if (!isFullyVerified(user)) {
+            Alert.alert(
+              'Account Pending Verification',
+              verificationMessage(user) + '\n\nYou can browse your farms but cannot add new ones until your account is fully verified.',
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+          navigation.navigate('AddFarm');
+        }}
         activeOpacity={0.85}
       >
-        <Ionicons name="add" size={20} color={C.white} />
-        <Text style={s.fabLabel}>Add Farm</Text>
+        <Ionicons name={isFullyVerified(user) ? 'add' : 'lock-closed-outline'} size={20} color={C.white} />
+        <Text style={s.fabLabel}>{isFullyVerified(user) ? 'Add Farm' : 'Pending Verification'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -478,5 +506,6 @@ const s = StyleSheet.create({
   emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 8, lineHeight: 20 },
 
   fab: { position: 'absolute', bottom: 28, right: 20, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.c700, borderRadius: 28, paddingHorizontal: 20, paddingVertical: 14, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 8 },
+  fabLocked: { backgroundColor: C.steel500 },
   fabLabel: { fontSize: 14, fontWeight: '800', color: C.white },
 });

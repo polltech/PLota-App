@@ -173,6 +173,7 @@ export default function RegisterScreen({ navigation }) {
   const [resendTimer,  setResendTimer]  = useState(0);
   const [otpVerified,  setOtpVerified]  = useState(false);
   const [verifying,    setVerifying]    = useState(false);
+  const [devCode,      setDevCode]      = useState('');
   const otpRefs = useRef([]);
 
   // ── Step 3: Location & Cooperative ───────────────────────────────────────
@@ -206,13 +207,35 @@ export default function RegisterScreen({ navigation }) {
   const [showConfirmPwd,  setShowConfirmPwd]  = useState(false);
 
   // ── UI ────────────────────────────────────────────────────────────────────
-  const [step,    setStep]    = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
-  const [touched, setTouched] = useState(false);
+  const [step,        setStep]        = useState(0);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+  const [touched,     setTouched]     = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [checking,    setChecking]    = useState({});
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const fullPhone = `${country.code}${phoneLocal.replace(/^0/, '')}`;
+
+  // ── Duplicate field check (on blur) ──────────────────────────────────────
+  const checkDuplicate = async (field, value) => {
+    if (!value || !value.trim()) return;
+    setChecking(prev => ({ ...prev, [field]: true }));
+    try {
+      const { authAPI } = require('../services/api');
+      const res = await authAPI.checkField(field, value.trim());
+      if (!res.data?.available) {
+        const labels = { email: 'Email', phone: 'Phone number', national_id: 'ID number' };
+        setFieldErrors(prev => ({ ...prev, [field]: `${labels[field] || field} is already registered.` }));
+      } else {
+        setFieldErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+      }
+    } catch (_) {
+      // silently ignore — server will catch duplicates at submit time
+    } finally {
+      setChecking(prev => { const next = { ...prev }; delete next[field]; return next; });
+    }
+  };
 
   // ── Shake animation ───────────────────────────────────────────────────────
   const shake = () =>
@@ -262,6 +285,7 @@ export default function RegisterScreen({ navigation }) {
       const { authAPI } = require('../services/api');
       await authAPI.verifyOtp(fullPhone, code);
       setOtpVerified(true);
+      setDevCode('');
       // Short delay so user sees the success state, then advance
       setTimeout(() => {
         setStep(2);
@@ -291,9 +315,7 @@ export default function RegisterScreen({ navigation }) {
     setOtp(['', '', '', '', '', '']);
     setTimeout(() => otpRefs.current[0]?.focus(), 300);
     if (res.data?.dev_code) {
-      // Dev mode: show code in error area temporarily
-      setError(`Dev mode — OTP: ${res.data.dev_code}`);
-      setTimeout(() => setError(''), 8000);
+      setDevCode(res.data.dev_code);
     }
     return res;
   };
@@ -332,13 +354,31 @@ export default function RegisterScreen({ navigation }) {
     setTouched(true);
     setError('');
 
-    // ── Step 0: validate then send OTP ─────────────────────────────────────
+    // ── Step 0: validate → check duplicates → send OTP ────────────────────
     if (step === 0) {
       if (!firstName.trim() || !lastName.trim() || !phoneLocal.trim()) {
         return fail('First name, last name and phone are required.');
       }
       setLoading(true);
       try {
+        const { authAPI } = require('../services/api');
+
+        // Always check phone before wasting OTP credits
+        const phoneRes = await authAPI.checkField('phone', fullPhone);
+        if (!phoneRes.data?.available) {
+          setFieldErrors(prev => ({ ...prev, phone: 'Phone number is already registered.' }));
+          return fail('This phone number is already registered. Please sign in instead.');
+        }
+
+        // Check email only if provided
+        if (email.trim()) {
+          const emailRes = await authAPI.checkField('email', email.trim().toLowerCase());
+          if (!emailRes.data?.available) {
+            setFieldErrors(prev => ({ ...prev, email: 'Email is already registered.' }));
+            return fail('This email address is already registered.');
+          }
+        }
+
         await sendOtp();
         setStep(1);
         setTouched(false);
@@ -375,6 +415,7 @@ export default function RegisterScreen({ navigation }) {
     // ── Step 3: Profile ────────────────────────────────────────────────────
     if (step === 3) {
       if (!gender) return fail('Please select your gender.');
+      if (fieldErrors.national_id) return fail(fieldErrors.national_id);
       if (!termsAccepted) return fail('You must accept the Terms of Use to continue.');
       setStep(4);
       setTouched(false);
@@ -509,12 +550,15 @@ export default function RegisterScreen({ navigation }) {
                         <Text style={s.caret}>▾</Text>
                       </TouchableOpacity>
                       <TextInput
-                        style={[s.input, s.phoneInput, touched && !phoneLocal.trim() && s.inputError]}
-                        value={phoneLocal} onChangeText={setPhoneLocal}
+                        style={[s.input, s.phoneInput, (touched && !phoneLocal.trim() || fieldErrors.phone) && s.inputError]}
+                        value={phoneLocal}
+                        onChangeText={(v) => { setPhoneLocal(v); setFieldErrors(prev => { const n = { ...prev }; delete n.phone; return n; }); }}
+                        onBlur={() => { if (phoneLocal.trim().length >= 7) checkDuplicate('phone', `${country.code}${phoneLocal.replace(/^0/, '')}`); }}
                         placeholder="712 345 678" placeholderTextColor={C.subtle}
                         keyboardType="phone-pad" maxLength={10}
                       />
                     </View>
+                    {!!fieldErrors.phone && <Text style={s.errText}>{fieldErrors.phone}</Text>}
                     {showCountry && (
                       <View style={s.countryMenu}>
                         {COUNTRY_OPTIONS.map(c => (
@@ -528,10 +572,14 @@ export default function RegisterScreen({ navigation }) {
 
                     <Text style={s.label}>Email <Text style={s.optional}>(optional)</Text></Text>
                     <TextInput
-                      style={s.input} value={email} onChangeText={setEmail}
+                      style={[s.input, fieldErrors.email && s.inputError]}
+                      value={email}
+                      onChangeText={(v) => { setEmail(v); setFieldErrors(prev => { const n = { ...prev }; delete n.email; return n; }); }}
+                      onBlur={() => { if (email.trim()) checkDuplicate('email', email.trim().toLowerCase()); }}
                       placeholder="email@example.com" placeholderTextColor={C.subtle}
                       autoCapitalize="none" keyboardType="email-address"
                     />
+                    {!!fieldErrors.email && <Text style={[s.errText, { marginTop: -10, marginBottom: 12 }]}>{fieldErrors.email}</Text>}
                   </>
                 )}
 
@@ -565,6 +613,14 @@ export default function RegisterScreen({ navigation }) {
                         />
                       ))}
                     </View>
+
+                    {/* Dev-mode OTP banner — stays until verified */}
+                    {!!devCode && !otpVerified && (
+                      <View style={s.devCodeBanner}>
+                        <Text style={s.devCodeLabel}>DEV MODE — Your OTP code:</Text>
+                        <Text style={s.devCodeValue}>{devCode}</Text>
+                      </View>
+                    )}
 
                     {/* Verified banner */}
                     {otpVerified && (
@@ -735,9 +791,13 @@ export default function RegisterScreen({ navigation }) {
                       <>
                         <Text style={[s.label, { marginTop: 16 }]}>ID Number</Text>
                         <TextInput
-                          style={s.input} value={idNumber} onChangeText={setIdNumber}
+                          style={[s.input, fieldErrors.national_id && s.inputError]}
+                          value={idNumber}
+                          onChangeText={(v) => { setIdNumber(v); setFieldErrors(prev => { const n = { ...prev }; delete n.national_id; return n; }); }}
+                          onBlur={() => { if (idNumber.trim()) checkDuplicate('national_id', idNumber.trim()); }}
                           placeholder="Enter your ID number" placeholderTextColor={C.subtle}
                         />
+                        {!!fieldErrors.national_id && <Text style={[s.errText, { marginTop: -10, marginBottom: 12 }]}>{fieldErrors.national_id}</Text>}
                       </>
                     )}
 
@@ -874,6 +934,25 @@ export default function RegisterScreen({ navigation }) {
                     )}
                   </TouchableOpacity>
                 </View>
+
+                {/* Skip Step — Labor & Land only */}
+                {step === 4 && (
+                  <TouchableOpacity
+                    style={s.skipBtn}
+                    onPress={() => {
+                      setLandDocType('');
+                      setLaborType('');
+                      setChildrenInvolved(null);
+                      setWorkersCanLeave(null);
+                      setError('');
+                      setTouched(false);
+                      setStep(5);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={s.skipBtnText}>Skip this step  →</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Sign in link — only on first step */}
                 {step === 0 && (
@@ -1017,6 +1096,9 @@ const s = StyleSheet.create({
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 12, marginTop: 14, borderWidth: 1, borderColor: '#fecaca' },
   errorText: { fontSize: 13, color: '#dc2626', fontWeight: '700' },
   devBox: { backgroundColor: '#fff8e1', borderColor: '#fbbf24' },
+  devCodeBanner: { backgroundColor: '#fffbeb', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 2, borderColor: '#f59e0b', alignItems: 'center' },
+  devCodeLabel: { fontSize: 10, fontWeight: '800', color: '#92400e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
+  devCodeValue: { fontSize: 32, fontWeight: '900', color: '#92400e', letterSpacing: 8 },
   devText: { color: '#92400e' },
 
   // Buttons
@@ -1026,6 +1108,8 @@ const s = StyleSheet.create({
   btnText: { color: C.white, fontSize: 15, fontWeight: '800' },
   backBtn: { flex: 1, height: 58, borderRadius: 16, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
   backBtnText: { fontSize: 15, fontWeight: '800', color: C.steel700 },
+  skipBtn: { marginTop: 12, height: 48, borderRadius: 14, borderWidth: 2, borderColor: C.c700, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  skipBtnText: { fontSize: 14, fontWeight: '800', color: C.c700, letterSpacing: 0.3 },
 
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 22 },
   line: { flex: 1, height: 1, backgroundColor: C.steel200 },

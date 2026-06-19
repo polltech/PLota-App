@@ -143,6 +143,8 @@ export const authAPI = {
   searchCooperatives: (term) => api.get('/coop/cooperatives/search', { params: { code: term, q: term } }),
 
   validateCoopCode: (code) => api.get('/coop/cooperatives/validate-code', { params: { code } }),
+
+  checkField: (field, value) => api.get('/auth/check-field', { params: { field, value } }),
 };
 
 // ── Farmer API ────────────────────────────────────────────────────────────────
