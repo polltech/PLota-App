@@ -29,7 +29,7 @@ window.addEventListener('message',function(e){
     var d=JSON.parse(e.data);
     if(d.type==='polygon'){
       var coords=d.coords.map(function(c){return[c.latitude,c.longitude];});
-      var poly=L.polygon(coords,{color:'#6f4e37',fillColor:'#6f4e37',fillOpacity:0.3,weight:3}).addTo(map);
+      var poly=L.polygon(coords,{color:'#16a34a',fillColor:'#16a34a',fillOpacity:0.3,weight:3}).addTo(map);
       map.fitBounds(poly.getBounds().pad(0.3));
     }
   }catch(err){}
@@ -118,7 +118,7 @@ const ReviewPolygonScreen = () => {
           <Text style={s.backBtnText}>✕</Text>
         </TouchableOpacity>
         <View style={s.headerLogoWrap}>
-          <Image source={require('../../assets/logo.jpeg')} style={s.headerLogo} />
+          <Image source={require('../../assets/plotra-logo.png')} style={s.headerLogo} />
         </View>
         <Text style={s.headerTitle}>Review</Text>
         <View style={{ width: 44 }} />

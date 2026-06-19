@@ -6,8 +6,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
+import { ROLES } from '../utils/roles';
+
+// Steps owned by each processing role (mirrors ProcessingStepsScreen)
+const ROLE_STEPS = {
+  [ROLES.DELIVERY_AGENT]:  ['sorting'],
+  [ROLES.WASHING_STATION]: ['washing'],
+  [ROLES.POST_HARVEST]:    ['drying', 'milling', 'grading', 'packing'],
+};
 
 const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
@@ -93,6 +103,12 @@ const DeliveryRow = ({ item, onPress }) => {
 
 export default function CoopDeliveriesScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const role = user?.role;
+  const mySteps = ROLE_STEPS[role] || [];
+  const isProcessingRole = mySteps.length > 0;
+  const canRecord = role !== ROLES.WASHING_STATION && role !== 'station_clerk';
+
   const [deliveries, setDeliveries] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,11 +131,24 @@ export default function CoopDeliveriesScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(true); };
 
-  const totalKg = deliveries.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
+  // For processing roles: show ONLY deliveries where the user still has a step to record.
+  // Once every step this user owns is in processing_log the delivery disappears from their list.
+  // Statuses that mean "fully closed" are excluded regardless of log state.
+  // Coop officers / admins see all deliveries.
+  const CLOSED = new Set(['batched', 'rejected', 'ready_for_batching', 'processed']);
+  const roleFiltered = isProcessingRole
+    ? deliveries.filter(d => {
+        if (CLOSED.has((d.status || '').toLowerCase())) return false;
+        const done = new Set((d.processing_log || []).map(l => l.step_type));
+        return mySteps.some(step => !done.has(step));
+      })
+    : deliveries;
+
+  const totalKg = roleFiltered.reduce((s, d) => s + (d.net_weight_kg || 0), 0);
 
   const filtered = filter === 'all'
-    ? deliveries
-    : deliveries.filter(d => (d.status || 'received').toLowerCase() === filter);
+    ? roleFiltered
+    : roleFiltered.filter(d => (d.status || 'received').toLowerCase() === filter);
 
   return (
     <View style={s.container}>
@@ -127,18 +156,25 @@ export default function CoopDeliveriesScreen() {
 
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Deliveries</Text>
-            <Text style={s.headerSub}>{deliveries.length} total · {fmtKg(totalKg)}</Text>
+            <Text style={s.headerSub}>
+              {isProcessingRole
+                ? `${roleFiltered.length} need${roleFiltered.length === 1 ? 's' : ''} your attention · ${fmtKg(totalKg)}`
+                : `${deliveries.length} total · ${fmtKg(totalKg)}`}
+            </Text>
           </View>
-          <TouchableOpacity
-            style={s.newBtn}
-            onPress={() => navigation.navigate('CreateDelivery')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={18} color={C.white} />
-            <Text style={s.newBtnText}>Record</Text>
-          </TouchableOpacity>
+          {canRecord && (
+            <TouchableOpacity
+              style={s.newBtn}
+              onPress={() => navigation.navigate('CreateDelivery')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={18} color={C.white} />
+              <Text style={s.newBtnText}>Record</Text>
+            </TouchableOpacity>
+          )}
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -151,8 +187,8 @@ export default function CoopDeliveriesScreen() {
       >
         {FILTERS.map(f => {
           const cnt = f.key === 'all'
-            ? deliveries.length
-            : deliveries.filter(d => (d.status || 'received').toLowerCase() === f.key).length;
+            ? roleFiltered.length
+            : roleFiltered.filter(d => (d.status || 'received').toLowerCase() === f.key).length;
           const active = filter === f.key;
           return (
             <TouchableOpacity
@@ -195,7 +231,11 @@ export default function CoopDeliveriesScreen() {
               <Ionicons name="cube-outline" size={48} color={C.steel300} />
               <Text style={s.emptyTitle}>No deliveries</Text>
               <Text style={s.emptyMsg}>
-                {filter !== 'all' ? `No ${filter} deliveries.` : 'Record the first delivery.'}
+                {filter !== 'all'
+              ? `No ${filter} deliveries.`
+              : isProcessingRole
+                ? 'All your steps are done — no deliveries need attention.'
+                : 'Record the first delivery.'}
               </Text>
             </View>
           }

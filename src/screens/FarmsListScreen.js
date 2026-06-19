@@ -13,6 +13,7 @@ import * as Network from 'expo-network';
 import { farmerAPI, polygonAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const verifyBadge = (vs) => {
@@ -38,15 +39,17 @@ const fmt = (n, dec = 2) => n != null && n !== 0 ? Number(n).toFixed(dec) : '—
 
 // ── Summary filter config ──────────────────────────────────────────────────────
 const FILTERS = [
-  { key: 'all',           label: 'Total',         icon: 'leaf-outline',             color: C.c700,    bg: C.c050 },
-  { key: 'pending',       label: 'Pending',        icon: 'time-outline',             color: '#b45309', bg: '#fef3c7' },
-  { key: 'approved',      label: 'Verified',       icon: 'checkmark-circle-outline', color: '#15803d', bg: '#dcfce7' },
-  { key: 'compliant',     label: 'Compliant',      icon: 'shield-checkmark-outline', color: '#1d4ed8', bg: '#dbeafe' },
-  { key: 'non_compliant', label: 'Non-Compliant',  icon: 'warning-outline',          color: '#dc2626', bg: '#fee2e2' },
+  { key: 'all',              label: 'Total',         icon: 'leaf-outline',             color: C.c700,    bg: C.c050 },
+  { key: 'pending',          label: 'Pending',        icon: 'time-outline',             color: '#b45309', bg: '#fef3c7' },
+  { key: 'approved',         label: 'Verified',       icon: 'checkmark-circle-outline', color: '#15803d', bg: '#dcfce7' },
+  { key: 'compliant',        label: 'Compliant',      icon: 'shield-checkmark-outline', color: '#1d4ed8', bg: '#dbeafe' },
+  { key: 'non_compliant',    label: 'Non-EUDR',       icon: 'warning-outline',          color: '#dc2626', bg: '#fee2e2' },
+  { key: 'update_requested', label: 'Needs Update',   icon: 'alert-circle-outline',     color: '#d97706', bg: '#fef3c7' },
 ];
 
 const matchFilter = (farm, key) => {
   if (key === 'all') return true;
+  if (key === 'update_requested') return !!farm.update_requested;
   if (key === 'pending')       return !farm.verification_status || farm.verification_status === 'pending' || farm.verification_status === 'draft';
   if (key === 'approved')      return farm.verification_status === 'admin_approved' || farm.verification_status === 'coop_approved';
   if (key === 'compliant') {
@@ -61,17 +64,22 @@ const matchFilter = (farm, key) => {
 };
 
 // ── Farm Card — compact 2-column grid ────────────────────────────────────────
-const FarmCard = ({ farm, onPress, onCapture, onAnalyse }) => {
+const FarmCard = ({ farm, onPress, onCapture, onAnalyse, onEdit }) => {
   const vb = verifyBadge(farm.verification_status);
   const cb = complianceBadge(farm.eudr_risk_level || farm.compliance_status);
   const hasPolygon = farm.parcels_count > 0;
   const areaStr = fmt(farm.total_area_hectares) !== '—' ? `${fmt(farm.total_area_hectares)} ha` : null;
+  const needsUpdate = !!farm.update_requested;
 
   return (
-    <View style={[s.card, { borderTopColor: vb.color, width: CARD_W }]}>
-      {/* Update dot */}
-      {farm.update_requested && (
-        <View style={s.updateDot} />
+    <View style={[s.card, { borderTopColor: needsUpdate ? '#d97706' : vb.color, width: CARD_W }]}>
+
+      {/* Update requested banner */}
+      {needsUpdate && (
+        <View style={s.updateBanner}>
+          <Ionicons name="alert-circle" size={11} color="#92400e" />
+          <Text style={s.updateBannerText}>Update required</Text>
+        </View>
       )}
 
       <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={{ flex: 1 }}>
@@ -111,28 +119,43 @@ const FarmCard = ({ farm, onPress, onCapture, onAnalyse }) => {
       </TouchableOpacity>
 
       {/* Action icon row */}
-      <View style={s.cardActions}>
-        <TouchableOpacity style={s.actionBtn} onPress={onPress} activeOpacity={0.8}>
-          <Ionicons name="eye-outline" size={15} color={C.c700} />
-          <Text style={s.actionBtnText}>View</Text>
-        </TouchableOpacity>
-        <View style={s.actionDivider} />
-        <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
-          <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={15} color={hasPolygon ? '#b45309' : '#15803d'} />
-          <Text style={[s.actionBtnText, { color: hasPolygon ? '#b45309' : '#15803d' }]}>
-            {hasPolygon ? 'Redo' : 'Capture'}
-          </Text>
-        </TouchableOpacity>
-        <View style={s.actionDivider} />
-        <TouchableOpacity
-          style={[s.actionBtn, !hasPolygon && s.actionBtnDisabled]}
-          onPress={hasPolygon ? onAnalyse : null}
-          activeOpacity={hasPolygon ? 0.8 : 1}
-        >
-          <Ionicons name="analytics-outline" size={15} color={hasPolygon ? '#1d4ed8' : C.subtle} />
-          <Text style={[s.actionBtnText, { color: hasPolygon ? '#1d4ed8' : C.subtle }]}>Analyse</Text>
-        </TouchableOpacity>
-      </View>
+      {needsUpdate ? (
+        // Update-requested mode: prioritise Update + Recapture
+        <View style={s.cardActions}>
+          <TouchableOpacity style={s.actionBtn} onPress={onEdit} activeOpacity={0.8}>
+            <Ionicons name="create-outline" size={15} color="#d97706" />
+            <Text style={[s.actionBtnText, { color: '#d97706' }]}>Update</Text>
+          </TouchableOpacity>
+          <View style={s.actionDivider} />
+          <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
+            <Ionicons name="map-outline" size={15} color="#1d4ed8" />
+            <Text style={[s.actionBtnText, { color: '#1d4ed8' }]}>Recapture</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={s.cardActions}>
+          <TouchableOpacity style={s.actionBtn} onPress={onPress} activeOpacity={0.8}>
+            <Ionicons name="eye-outline" size={15} color={C.c700} />
+            <Text style={s.actionBtnText}>View</Text>
+          </TouchableOpacity>
+          <View style={s.actionDivider} />
+          <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
+            <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={15} color={hasPolygon ? '#b45309' : '#15803d'} />
+            <Text style={[s.actionBtnText, { color: hasPolygon ? '#b45309' : '#15803d' }]}>
+              {hasPolygon ? 'Redo' : 'Capture'}
+            </Text>
+          </TouchableOpacity>
+          <View style={s.actionDivider} />
+          <TouchableOpacity
+            style={[s.actionBtn, !hasPolygon && s.actionBtnDisabled]}
+            onPress={hasPolygon ? onAnalyse : null}
+            activeOpacity={hasPolygon ? 0.8 : 1}
+          >
+            <Ionicons name="analytics-outline" size={15} color={hasPolygon ? '#1d4ed8' : C.subtle} />
+            <Text style={[s.actionBtnText, { color: hasPolygon ? '#1d4ed8' : C.subtle }]}>Analyse</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -212,12 +235,15 @@ export default function FarmsListScreen() {
 
   const filtered = farms.filter(f => matchFilter(f, activeFilter));
 
+  const updateRequests = farms.filter(f => f.update_requested);
+
   const renderItem = ({ item }) => (
     <FarmCard
       farm={item}
       onPress={() => navigation.navigate('FarmDetail', { farm: item })}
       onCapture={() => navigation.navigate('CaptureMode', { farmId: item.farm_code || item.id, farm: item })}
       onAnalyse={() => navigation.navigate('FarmDetail', { farm: item, openTab: 'eudr' })}
+      onEdit={() => navigation.navigate('EditFarm', { farm: item })}
     />
   );
 
@@ -228,7 +254,7 @@ export default function FarmsListScreen() {
       {/* Header */}
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>My Farms</Text>
             <Text style={s.headerSub}>
               {activeFilter === 'all'
@@ -240,18 +266,35 @@ export default function FarmsListScreen() {
             <Ionicons name="cloud-upload-outline" size={16} color={C.c700} />
             <Text style={s.queueBtnText}>Offline Queue</Text>
           </TouchableOpacity>
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
-      {/* 5 Stat cards — single row */}
+      {/* Update requests alert */}
+      {!loading && updateRequests.length > 0 && (
+        <TouchableOpacity
+          style={s.updateAlert}
+          onPress={() => setActiveFilter('update_requested')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="alert-circle" size={18} color="#92400e" />
+          <Text style={s.updateAlertText}>
+            {updateRequests.length} farm{updateRequests.length !== 1 ? 's need' : ' needs'} updating — your cooperative has requested changes.
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color="#92400e" />
+        </TouchableOpacity>
+      )}
+
+      {/* Stat cards — single row */}
       {!loading && (
         <View style={s.summaryWrap}>
           {[
-            { key: 'all',           icon: 'leaf-outline',             label: 'Total',      color: C.c700,    bg: C.c050 },
-            { key: 'approved',      icon: 'checkmark-circle-outline', label: 'Verified',   color: '#15803d', bg: '#dcfce7' },
-            { key: 'pending',       icon: 'time-outline',             label: 'Pending',    color: '#b45309', bg: '#fef3c7' },
-            { key: 'compliant',     icon: 'shield-checkmark-outline', label: 'Compliant',  color: '#1d4ed8', bg: '#dbeafe' },
-            { key: 'non_compliant', icon: 'warning-outline',          label: 'Non-EUDR',   color: '#dc2626', bg: '#fee2e2' },
+            { key: 'all',              icon: 'leaf-outline',             label: 'Total',      color: C.c700,    bg: C.c050 },
+            { key: 'approved',         icon: 'checkmark-circle-outline', label: 'Verified',   color: '#15803d', bg: '#dcfce7' },
+            { key: 'pending',          icon: 'time-outline',             label: 'Pending',    color: '#b45309', bg: '#fef3c7' },
+            { key: 'compliant',        icon: 'shield-checkmark-outline', label: 'Compliant',  color: '#1d4ed8', bg: '#dbeafe' },
+            { key: 'non_compliant',    icon: 'warning-outline',          label: 'Non-EUDR',   color: '#dc2626', bg: '#fee2e2' },
+            ...(updateRequests.length > 0 ? [{ key: 'update_requested', icon: 'alert-circle-outline', label: 'Update', color: '#d97706', bg: '#fef3c7' }] : []),
           ].map((f) => (
             <TouchableOpacity
               key={f.key}
@@ -393,7 +436,19 @@ const s = StyleSheet.create({
     flex: 1,
   },
 
-  updateDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#f59e0b', zIndex: 1 },
+  updateAlert: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: '#fef3c7', paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#fcd34d',
+  },
+  updateAlertText: { flex: 1, fontSize: 12, color: '#92400e', fontWeight: '600', lineHeight: 17 },
+
+  updateBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#fef3c7', paddingHorizontal: 10, paddingVertical: 5,
+    borderBottomWidth: 1, borderBottomColor: '#fcd34d',
+  },
+  updateBannerText: { fontSize: 9, fontWeight: '800', color: '#92400e' },
 
   cardTop:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, paddingBottom: 4 },
   farmName: { fontSize: 13, fontWeight: '800', color: C.ink, paddingHorizontal: 10, paddingBottom: 6, lineHeight: 18 },

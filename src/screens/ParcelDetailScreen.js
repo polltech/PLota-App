@@ -49,7 +49,7 @@ var m=L.map('m',{zoomControl:false,dragging:false,scrollWheelZoom:false,touchZoo
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
 var c=${JSON.stringify(coords)};
 if(c&&c.length>2){
-  var p=L.polygon(c.map(function(x){return[x.lat||x[1],x.lng||x[0]];}),{color:'#5c2d0e',fillColor:'#8B5E3C',fillOpacity:0.5,weight:3}).addTo(m);
+  var p=L.polygon(c.map(function(x){return[x.lat||x[1],x.lng||x[0]];}),{color:'#15803d',fillColor:'#16a34a',fillOpacity:0.5,weight:3}).addTo(m);
   m.fitBounds(p.getBounds().pad(0.25));
 }
 </script></body></html>`;

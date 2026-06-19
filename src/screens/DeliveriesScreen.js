@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { farmerAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const statusStyle = (s) => {
@@ -144,7 +145,7 @@ export default function DeliveriesScreen() {
       {/* ── Header ─────────────────────────────────── */}
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Deliveries</Text>
             <Text style={s.headerSub}>
               {activeFilter === 'all'
@@ -158,6 +159,7 @@ export default function DeliveriesScreen() {
               <Text style={s.verifiedPillText}>{fmtKg(verifiedKg)} verified</Text>
             </View>
           )}
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 

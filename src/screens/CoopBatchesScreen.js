@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
@@ -337,7 +338,7 @@ export default function CoopBatchesScreen() {
 
       <SafeAreaView style={s.header}>
         <View style={s.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>Batch Management</Text>
             <Text style={s.headerSub}>{batches.length} batches · {fmtKg(totalKg)}</Text>
           </View>
@@ -349,16 +350,17 @@ export default function CoopBatchesScreen() {
             <Ionicons name="add" size={18} color={C.white} />
             <Text style={s.newBtnText}>Create</Text>
           </TouchableOpacity>
+          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
       {/* 4 stat cards — matching web */}
       {!loading && (
         <View style={s.statsRow}>
-          <StatCard value={batches.length} label="Total Batches" color={C.c700}    bg={C.c050} />
-          <StatCard value={fmtKg(totalKg)} label="Total Weight"  color="#15803d"  bg="#dcfce7" />
-          <StatCard value={fmtKg(eudrKg)}  label="EUDR Eligible" color="#1d4ed8"  bg="#dbeafe" />
-          <StatCard value={released}        label="In Review"     color="#0891b2"  bg="#e0f2fe" />
+          <StatCard value={batches.length} label="Total Batches" color={C.c700} bg={C.c050} />
+          <StatCard value={fmtKg(totalKg)} label="Total Weight"  color={C.c700} bg={C.c050} />
+          <StatCard value={fmtKg(eudrKg)}  label="EUDR Eligible" color={C.c700} bg={C.c050} />
+          <StatCard value={released}        label="In Review"     color={C.c700} bg={C.c050} />
         </View>
       )}
 

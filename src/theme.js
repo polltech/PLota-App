@@ -1,11 +1,11 @@
-// Refined Modern Coffee & Steel palette
+// Plotra Green & Steel palette
 export const C = {
-  // Primary Coffee
-  c900: '#1a0a00',
-  c800: '#3b1c08',
-  c700: '#5c2d0e',
-  c600: '#6f4e37',
-  c500: '#8B5E3C',
+  // Primary Green
+  c900: '#052e16',
+  c800: '#14532d',
+  c700: '#15803d',
+  c600: '#16a34a',
+  c500: '#22c55e',
 
   // Steel / Modern Accents
   steel100: '#F1F5F9', // slate 100
@@ -16,11 +16,11 @@ export const C = {
   steel900: '#0F172A', // slate 900
 
   // Brand Palette (Light)
-  c400: '#A67C52',
-  c300: '#C4A882',
-  c200: '#D4B896',
-  c100: '#EDE0D0',
-  c050: '#F8F9FA', // Modern off-white
+  c400: '#4ade80',
+  c300: '#86efac',
+  c200: '#bbf7d0',
+  c100: '#dcfce7',
+  c050: '#f0fdf4', // green tinted off-white
 
   // Semantics (sync status)
   pendingText: '#B45309',

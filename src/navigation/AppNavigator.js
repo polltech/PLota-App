@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
+import { ROLES } from '../utils/roles';
 
 // ── Auth screens ──────────────────────────────────────────────────────────────
 import LoginScreen from '../screens/LoginScreen';
@@ -18,13 +19,13 @@ import HomeScreen from '../screens/HomeScreen';
 import FarmsListScreen from '../screens/FarmsListScreen';
 import DeliveriesScreen from '../screens/DeliveriesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import DocumentsScreen from '../screens/DocumentsScreen';
 import WalletScreen from '../screens/WalletScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 
 // ── Shared detail screens ─────────────────────────────────────────────────────
 import FarmDetailScreen from '../screens/FarmDetailScreen';
 import ParcelDetailScreen from '../screens/ParcelDetailScreen';
-import ComplianceScreen from '../screens/ComplianceScreen';
 import CaptureModeScreen from '../screens/CaptureModeScreen';
 import CaptureImportScreen from '../screens/CaptureImportScreen';
 import AdvancedScreen from '../screens/AdvancedScreen';
@@ -51,8 +52,13 @@ import FarmerDetailScreen from '../screens/FarmerDetailScreen';
 import BatchesScreen from '../screens/BatchesScreen';
 import CreateDeliveryScreen from '../screens/CreateDeliveryScreen';
 import DeliveryDetailScreen from '../screens/DeliveryDetailScreen';
+import ProcessingStepsScreen from '../screens/ProcessingStepsScreen';
+import AddProcessingStepScreen from '../screens/AddProcessingStepScreen';
+import ProcessingDashboardScreen from '../screens/ProcessingDashboardScreen';
 import BatchDetailScreen from '../screens/BatchDetailScreen';
 import ConsignmentsScreen from '../screens/ConsignmentsScreen';
+import PostHarvestScreen from '../screens/PostHarvestScreen';
+import PaymentManagementScreen from '../screens/PaymentManagementScreen';
 
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
@@ -60,6 +66,7 @@ import FarmIDEntryScreen from '../screens/S01_FarmIDEntryScreen';
 import FarmConfirmationScreen from '../screens/S02_FarmConfirmationScreen';
 import WalkBoundaryScreen from '../screens/S03_WalkBoundaryScreen';
 import AddFarmScreen from '../screens/S04_AddFarmScreen';
+import EditFarmScreen from '../screens/EditFarmScreen';
 import ReviewPolygonScreen from '../screens/S05_ReviewPolygonScreen';
 import OfflineSavedScreen from '../screens/S06_OfflineSavedScreen';
 import SubmittedScreen from '../screens/S07_SubmittedScreen';
@@ -90,7 +97,7 @@ function CaptureStack() {
       <Stack.Screen
         name="CaptureLanding"
         component={LandingScreen}
-        options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }}
+        options={{ animation: 'fade', contentStyle: { backgroundColor: '#052e16' } }}
       />
       <Stack.Screen name="FarmIDEntry"       component={FarmIDEntryScreen} />
       <Stack.Screen name="FarmConfirmation"  component={FarmConfirmationScreen} />
@@ -123,7 +130,6 @@ function FarmerTabs() {
             Dashboard:  focused ? 'grid'               : 'grid-outline',
             Farms:      focused ? 'leaf'               : 'leaf-outline',
             Deliveries: focused ? 'cube'               : 'cube-outline',
-            Compliance: focused ? 'shield-checkmark'   : 'shield-checkmark-outline',
             Wallet:     focused ? 'wallet'             : 'wallet-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
@@ -138,7 +144,9 @@ function FarmerTabs() {
             <Stack.Screen name="Notifications"  component={NotificationsScreen} />
             <Stack.Screen name="Wallet"         component={WalletScreen} />
             <Stack.Screen name="Profile"        component={ProfileScreen} />
+            <Stack.Screen name="Documents"      component={DocumentsScreen} />
             <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
+            <Stack.Screen name="EditFarm"       component={EditFarmScreen} />
             <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
             <Stack.Screen name="QueueList"      component={QueueListScreen} />
           </Stack.Navigator>
@@ -151,10 +159,11 @@ function FarmerTabs() {
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="FarmsList"      component={FarmsListScreen} />
             <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
+            <Stack.Screen name="EditFarm"       component={EditFarmScreen} />
             <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
             {/* Capture flow accessible from FAB */}
             <Stack.Screen name="CaptureLanding" component={LandingScreen}
-              options={{ animation: 'fade', contentStyle: { backgroundColor: '#0d0803' } }} />
+              options={{ animation: 'fade', contentStyle: { backgroundColor: '#052e16' } }} />
             <Stack.Screen name="FarmIDEntry"      component={FarmIDEntryScreen} />
             <Stack.Screen name="FarmConfirmation" component={FarmConfirmationScreen} />
             <Stack.Screen name="AddFarm"          component={AddFarmScreen} />
@@ -177,17 +186,6 @@ function FarmerTabs() {
         component={DeliveriesScreen}
         options={{ tabBarLabel: 'Deliveries' }}
       />
-
-      {/* Compliance — KYC Documents + EUDR (matches web sidebar) */}
-      <Tab.Screen name="Compliance" options={{ tabBarLabel: 'Compliance' }}>
-        {() => (
-          <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="ComplianceMain" component={ComplianceScreen} />
-            <Stack.Screen name="FarmDetail"     component={FarmDetailScreen} />
-            <Stack.Screen name="ParcelDetail"   component={ParcelDetailScreen} />
-          </Stack.Navigator>
-        )}
-      </Tab.Screen>
 
       {/* Wallet */}
       <Tab.Screen
@@ -213,7 +211,7 @@ function SplashLoader() {
 
   return (
     <View style={s.splash}>
-      <Image source={require('../../assets/logo-plotra.png')} style={s.splashLogo} resizeMode="contain" />
+      <Image source={require('../../assets/plotra-logo.png')} style={s.splashLogo} resizeMode="contain" />
       <Animated.View style={{ transform: [{ rotate }], marginTop: 32 }}>
         <Ionicons name="reload-outline" size={30} color={C.c700} />
       </Animated.View>
@@ -237,7 +235,7 @@ function CoopTabs() {
             CoopHome:         focused ? 'grid'             : 'grid-outline',
             CoopDeliveries:   focused ? 'cube'             : 'cube-outline',
             CoopBatches:      focused ? 'layers'           : 'layers-outline',
-            CoopConsignments: focused ? 'airplane'         : 'airplane-outline',
+            CoopFarmsHub:     focused ? 'leaf'             : 'leaf-outline',
             CoopFarmers:      focused ? 'people'           : 'people-outline',
             CoopStaff:        focused ? 'person-circle'    : 'person-circle-outline',
           };
@@ -264,9 +262,12 @@ function CoopTabs() {
       <Tab.Screen name="CoopDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"      component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -274,18 +275,23 @@ function CoopTabs() {
       <Tab.Screen name="CoopBatches" options={{ tabBarLabel: 'Batches' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
-            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
-            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="BatchesList"         component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
 
-      <Tab.Screen name="CoopConsignments" options={{ tabBarLabel: 'Consignments' }}>
+      <Tab.Screen name="CoopFarmsHub" options={{ tabBarLabel: 'Farms' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="ConsignmentsList"  component={CoopConsignmentsScreen} />
-            <Stack.Screen name="ConsignmentDetail" component={ConsignmentsScreen} />
+            <Stack.Screen name="CoopFarmsList" component={CoopFarmsScreen} />
+            <Stack.Screen name="FarmDetail"    component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"  component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -296,6 +302,7 @@ function CoopTabs() {
             <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
             <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
             <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
+            <Stack.Screen name="CoopProfile"     component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -304,6 +311,7 @@ function CoopTabs() {
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
             <Stack.Screen name="CoopStaffList" component={CoopStaffScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -333,7 +341,11 @@ function DeliveryAgentTabs() {
       <Tab.Screen name="AgentHome" options={{ tabBarLabel: 'Dashboard' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="AgentDashMain" component={CoopDashboardScreen} />
+            <Stack.Screen name="AgentDashMain"       component={ProcessingDashboardScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -341,9 +353,12 @@ function DeliveryAgentTabs() {
       <Tab.Screen name="AgentDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
         {() => (
           <Stack.Navigator screenOptions={screenOpts}>
-            <Stack.Screen name="CoopDeliveriesList" component={CoopDeliveriesScreen} />
-            <Stack.Screen name="CreateDelivery"     component={CreateDeliveryScreen} />
-            <Stack.Screen name="DeliveryDetail"     component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="CreateDelivery"      component={CreateDeliveryScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
           </Stack.Navigator>
         )}
       </Tab.Screen>
@@ -424,6 +439,215 @@ function AdminTabs() {
   );
 }
 
+// ── Washing Station tabs ──────────────────────────────────────────────────────
+function WashingStationTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            WSDash:       focused ? 'grid' : 'grid-outline',
+            WSDeliveries: focused ? 'cube' : 'cube-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="WSDash" options={{ tabBarLabel: 'Dashboard' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="WSDashMain"          component={ProcessingDashboardScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="WSDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+// ── Post-Harvest Officer tabs ─────────────────────────────────────────────────
+function PostHarvestTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            PHDash:       focused ? 'grid'  : 'grid-outline',
+            PHDeliveries: focused ? 'cube'  : 'cube-outline',
+            PHLab:        focused ? 'flask' : 'flask-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="PHDash" options={{ tabBarLabel: 'Dashboard' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="PHDashMain"          component={ProcessingDashboardScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="PHDeliveries" options={{ tabBarLabel: 'Deliveries' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopDeliveriesList"  component={CoopDeliveriesScreen} />
+            <Stack.Screen name="DeliveryDetail"      component={DeliveryDetailScreen} />
+            <Stack.Screen name="ProcessingSteps"     component={ProcessingStepsScreen} />
+            <Stack.Screen name="AddProcessingStep"   component={AddProcessingStepScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="PHLab" options={{ tabBarLabel: 'Lab Results' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="PostHarvestMain"     component={PostHarvestScreen} />
+            <Stack.Screen name="BatchDetail"         component={BatchDetailScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+// ── Agronomist tabs ───────────────────────────────────────────────────────────
+function AgronomistTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            AgroFarmers:   focused ? 'people'           : 'people-outline',
+            AgroFarms:     focused ? 'leaf'             : 'leaf-outline',
+            AgroCompliance: focused ? 'shield-checkmark' : 'shield-checkmark-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="AgroFarmers" options={{ tabBarLabel: 'Farmers' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopFarmersList" component={CoopFarmersScreen} />
+            <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
+            <Stack.Screen name="CoopFarmsList"   component={CoopFarmsScreen} />
+            <Stack.Screen name="FarmDetail"      component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"    component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"     component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="AgroFarms" options={{ tabBarLabel: 'Farms' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="CoopFarmsList" component={CoopFarmsScreen} />
+            <Stack.Screen name="FarmDetail"    component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"  component={ParcelDetailScreen} />
+            <Stack.Screen name="CoopProfile"   component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="AgroCompliance" options={{ tabBarLabel: 'Compliance' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="AdminComplianceMain" component={AdminComplianceScreen} />
+            <Stack.Screen name="FarmDetail"          component={FarmDetailScreen} />
+            <Stack.Screen name="ParcelDetail"        component={ParcelDetailScreen} />
+            <Stack.Screen name="FarmerDetail"        component={FarmerDetailScreen} />
+            <Stack.Screen name="CoopProfile"         component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+// ── Finance & Admin tabs ──────────────────────────────────────────────────────
+function FinanceAdminTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: C.c700,
+        tabBarInactiveTintColor: C.subtle,
+        tabBarStyle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            FinBatches:      focused ? 'layers'   : 'layers-outline',
+            FinConsignments: focused ? 'airplane' : 'airplane-outline',
+            FinPayments:     focused ? 'cash'     : 'cash-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="FinBatches" options={{ tabBarLabel: 'Batches' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="BatchesList"    component={CoopBatchesScreen} />
+            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
+            <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+            <Stack.Screen name="CoopProfile"    component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="FinConsignments" options={{ tabBarLabel: 'Consignments' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="ConsignmentsList"  component={CoopConsignmentsScreen} />
+            <Stack.Screen name="ConsignmentDetail" component={ConsignmentsScreen} />
+            <Stack.Screen name="CoopProfile"       component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen name="FinPayments" options={{ tabBarLabel: 'Payments' }}>
+        {() => (
+          <Stack.Navigator screenOptions={screenOpts}>
+            <Stack.Screen name="PaymentsList"   component={PaymentManagementScreen} />
+            <Stack.Screen name="BatchDetail"    component={BatchDetailScreen} />
+            <Stack.Screen name="CoopProfile"    component={CoopProfileScreen} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 // ── Wrong-role screen ─────────────────────────────────────────────────────────
 function WrongRoleScreen() {
   const { user, logout } = useAuth();
@@ -458,10 +682,14 @@ export default function AppNavigator() {
   }
 
   const role = user?.role;
-  const isFarmer = !user || role === 'farmer';
-  const isCoopOfficer = role === 'cooperative_officer';
-  const isDeliveryAgent = role === 'delivery_agent';
-  const isAdmin = role === 'plotra_admin';
+  const isFarmer         = !user || role === ROLES.FARMER;
+  const isCoopOfficer    = role === ROLES.COOP_OFFICER;
+  const isDeliveryAgent  = role === ROLES.DELIVERY_AGENT;
+  const isAdmin          = role === ROLES.ADMIN;
+  const isWashingStation = role === ROLES.WASHING_STATION;
+  const isPostHarvest    = role === ROLES.POST_HARVEST;
+  const isAgronomist     = role === ROLES.AGRONOMIST;
+  const isFinanceAdmin   = role === ROLES.FINANCE_ADMIN;
 
   return (
     <NavigationContainer>
@@ -473,6 +701,14 @@ export default function AppNavigator() {
             <RootStack.Screen name="CoopMain" component={CoopTabs} />
           ) : isDeliveryAgent ? (
             <RootStack.Screen name="AgentMain" component={DeliveryAgentTabs} />
+          ) : isWashingStation ? (
+            <RootStack.Screen name="WashMain" component={WashingStationTabs} />
+          ) : isPostHarvest ? (
+            <RootStack.Screen name="PHMain" component={PostHarvestTabs} />
+          ) : isAgronomist ? (
+            <RootStack.Screen name="AgroMain" component={AgronomistTabs} />
+          ) : isFinanceAdmin ? (
+            <RootStack.Screen name="FinMain" component={FinanceAdminTabs} />
           ) : isAdmin ? (
             <RootStack.Screen name="AdminMain" component={AdminTabs} />
           ) : (

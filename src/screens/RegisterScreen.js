@@ -66,7 +66,21 @@ const COUNTRY_OPTIONS = [
   { flag: '🇹🇿', code: '+255', name: 'Tanzania' },
 ];
 
-const STEPS = ['Personal', 'Verify', 'Location', 'Profile', 'Password'];
+const STEPS = ['Personal', 'Verify', 'Location', 'Profile', 'Labor & Land', 'Password'];
+
+const LAND_DOC_OPTIONS = [
+  { value: 'title_deed',   label: 'Title Deed' },
+  { value: 'lease_agreement', label: 'Lease Agreement' },
+  { value: 'communal',     label: 'Communal / Group' },
+  { value: 'inherited',    label: 'Inherited (No Deed)' },
+  { value: 'no_document',  label: 'No Documentation' },
+];
+
+const LABOR_TYPE_OPTIONS = [
+  { value: 'family_only',  label: 'Family Only' },
+  { value: 'hired',        label: 'Hired Workers' },
+  { value: 'both',         label: 'Family + Hired' },
+];
 
 const GENDER_OPTIONS = [
   { value: 'M', label: 'Male' },
@@ -179,7 +193,13 @@ export default function RegisterScreen({ navigation }) {
   const [idNumber,      setIdNumber]      = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // ── Step 5: Password ──────────────────────────────────────────────────────
+  // ── Step 5: Labor & Land ─────────────────────────────────────────────────
+  const [landDocType,        setLandDocType]        = useState('');
+  const [laborType,          setLaborType]          = useState('');
+  const [childrenInvolved,   setChildrenInvolved]   = useState(null);
+  const [workersCanLeave,    setWorkersCanLeave]    = useState(null);
+
+  // ── Step 6: Password ──────────────────────────────────────────────────────
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPwd,         setShowPwd]         = useState(false);
@@ -361,8 +381,19 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // ── Step 4: Password → submit ──────────────────────────────────────────
+    // ── Step 4: Labor & Land ───────────────────────────────────────────────
     if (step === 4) {
+      if (!landDocType) return fail('Please select your land documentation type.');
+      if (!laborType) return fail('Please select your labor system.');
+      if (childrenInvolved === null) return fail('Please answer the child labor question.');
+      if (workersCanLeave === null) return fail('Please answer the worker freedom question.');
+      setStep(5);
+      setTouched(false);
+      return;
+    }
+
+    // ── Step 5: Password → submit ──────────────────────────────────────────
+    if (step === 5) {
       if (password.length < 8) return fail('Password must be at least 8 characters.');
       if (password !== confirmPassword) return fail('Passwords do not match.');
       await handleSubmit();
@@ -381,9 +412,13 @@ export default function RegisterScreen({ navigation }) {
       subcounty:        subcounty.trim(),
       cooperative_code: selectedCoop?.code || undefined,
       cooperative_id:   selectedCoop?.id   || undefined,
-      gender:           gender || undefined,
-      id_type:          idType || undefined,
-      id_number:        idNumber.trim() || undefined,
+      gender:              gender || undefined,
+      id_type:             idType || undefined,
+      id_number:           idNumber.trim() || undefined,
+      land_doc_type:       landDocType || undefined,
+      labor_type:          laborType || undefined,
+      children_involved:   childrenInvolved,
+      workers_can_leave:   workersCanLeave,
       password,
     });
     setLoading(false);
@@ -414,7 +449,7 @@ export default function RegisterScreen({ navigation }) {
               {/* Logo */}
               <View style={s.logoWrap}>
                 <View style={s.logoCircle}>
-                  <Image source={require('../../assets/logo-plotra.png')} style={s.logo} resizeMode="contain" />
+                  <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
                 </View>
                 <Text style={s.brand}>PLOTRA</Text>
                 <Text style={s.tagline}>Mapping Sustainability, Empowering Farmers</Text>
@@ -718,8 +753,62 @@ export default function RegisterScreen({ navigation }) {
                   </>
                 )}
 
-                {/* ── STEP 4: Password ─────────────────────────────────────── */}
+                {/* ── STEP 4: Labor & Land ────────────────────────────────── */}
                 {step === 4 && (
+                  <>
+                    <Text style={s.title}>Labor & Land Screening</Text>
+                    <Text style={s.subtitle}>Required for sustainability due diligence. All answers are confidential.</Text>
+
+                    <Text style={s.label}>Land Documentation *</Text>
+                    <Text style={s.fieldHint}>What type of land rights documentation do you have?</Text>
+                    <ChipGroup options={LAND_DOC_OPTIONS} value={landDocType} onChange={setLandDocType} />
+                    {touched && !landDocType && <Text style={s.errText}>Required</Text>}
+
+                    <Text style={[s.label, { marginTop: 20 }]}>Labor System *</Text>
+                    <Text style={s.fieldHint}>Who works on your farm?</Text>
+                    <ChipGroup options={LABOR_TYPE_OPTIONS} value={laborType} onChange={setLaborType} />
+                    {touched && !laborType && <Text style={s.errText}>Required</Text>}
+
+                    <Text style={[s.label, { marginTop: 20 }]}>Are children (under 15) involved in farm work? *</Text>
+                    <View style={s.yesNoRow}>
+                      {[['Yes', true], ['No', false]].map(([label, val]) => (
+                        <TouchableOpacity
+                          key={label}
+                          style={[s.yesNoBtn, childrenInvolved === val && s.yesNoBtnActive]}
+                          onPress={() => setChildrenInvolved(val)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[s.yesNoBtnText, childrenInvolved === val && s.yesNoBtnTextActive]}>{label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {touched && childrenInvolved === null && <Text style={s.errText}>Required</Text>}
+
+                    {childrenInvolved && (
+                      <View style={s.warningBox}>
+                        <Text style={s.warningText}>Note: Children may participate only in light, non-hazardous tasks outside school hours, as permitted by ILO Convention 138.</Text>
+                      </View>
+                    )}
+
+                    <Text style={[s.label, { marginTop: 20 }]}>Are all workers free to leave employment at any time? *</Text>
+                    <View style={s.yesNoRow}>
+                      {[['Yes', true], ['No', false]].map(([label, val]) => (
+                        <TouchableOpacity
+                          key={label}
+                          style={[s.yesNoBtn, workersCanLeave === val && s.yesNoBtnActive]}
+                          onPress={() => setWorkersCanLeave(val)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[s.yesNoBtnText, workersCanLeave === val && s.yesNoBtnTextActive]}>{label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {touched && workersCanLeave === null && <Text style={s.errText}>Required</Text>}
+                  </>
+                )}
+
+                {/* ── STEP 5: Password ─────────────────────────────────────── */}
+                {step === 5 && (
                   <>
                     <Text style={s.title}>Create Password</Text>
                     <Text style={s.subtitle}>Minimum 8 characters.</Text>
@@ -753,6 +842,7 @@ export default function RegisterScreen({ navigation }) {
                   </>
                 )}
 
+
                 {/* Error */}
                 {!!error && (
                   <View style={[s.errorBox, error.startsWith('Dev mode') && s.devBox]}>
@@ -777,7 +867,7 @@ export default function RegisterScreen({ navigation }) {
                       <ActivityIndicator color={C.white} />
                     ) : (
                       <Text style={s.btnText}>
-                        {step === 4 ? 'Create Account ✓'
+                        {step === 5 ? 'Create Account ✓'
                           : step === 1 && otpVerified ? 'Next: Location'
                           : 'Next'}
                       </Text>
@@ -944,6 +1034,14 @@ const s = StyleSheet.create({
   signInText: { color: C.c700, fontSize: 16, fontWeight: '800' },
 
   version: { textAlign: 'center', marginTop: 28, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+
+  yesNoRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  yesNoBtn: { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center', backgroundColor: C.steel100 },
+  yesNoBtnActive: { backgroundColor: C.c700, borderColor: C.c700 },
+  yesNoBtnText: { fontSize: 14, fontWeight: '700', color: C.c700 },
+  yesNoBtnTextActive: { color: C.white },
+  warningBox: { backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#fed7aa' },
+  warningText: { fontSize: 12, color: '#92400e', lineHeight: 17, fontWeight: '500' },
 
   // Dropdown
   dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 16 },

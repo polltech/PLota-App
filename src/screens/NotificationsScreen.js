@@ -42,9 +42,18 @@ const fmtAbsolute = (dateStr) => {
 };
 
 const isProfileUpdateRequest = (n) =>
-  (n.title || '').toLowerCase().includes('update') ||
-  (n.message || '').toLowerCase().includes('update your profile') ||
-  (n.reference_type || '') === 'farmer';
+  ((n.title || '').toLowerCase().includes('update') ||
+   (n.message || '').toLowerCase().includes('update your profile') ||
+   (n.reference_type || '') === 'farmer') &&
+  !isFarmUpdateRequest(n);
+
+const isFarmUpdateRequest = (n) =>
+  (n.reference_type || '') === 'farm' ||
+  (n.title || '').toLowerCase().includes('farm') ||
+  (n.message || '').toLowerCase().includes('farm update') ||
+  (n.message || '').toLowerCase().includes('farm details') ||
+  (n.message || '').toLowerCase().includes('boundary') ||
+  (n.message || '').toLowerCase().includes('parcel');
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
@@ -188,7 +197,21 @@ export default function NotificationsScreen() {
                 <ScrollView style={s.sheetBody} showsVerticalScrollIndicator={false}>
                   <Text style={s.sheetMsg}>{selected.message || ''}</Text>
 
-                  {isUpdate && (
+                  {isFarmUpdateRequest(selected) && (
+                    <TouchableOpacity
+                      style={[s.updateBtn, { backgroundColor: '#1d4ed8' }]}
+                      onPress={() => {
+                        setSelected(null);
+                        navigation.navigate('Farms');
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="leaf-outline" size={18} color={C.white} />
+                      <Text style={s.updateBtnText}>Go to My Farms to Update</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {isProfileUpdateRequest(selected) && (
                     <TouchableOpacity
                       style={s.updateBtn}
                       onPress={() => {

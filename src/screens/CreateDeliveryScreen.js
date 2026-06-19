@@ -47,6 +47,7 @@ export default function CreateDeliveryScreen() {
 
   // Form fields
   const [grossWeight, setGrossWeight] = useState('');
+  const [tareWeight,  setTareWeight]  = useState('');
   const [notes,       setNotes]       = useState('');
 
   // Crop mix
@@ -104,11 +105,13 @@ export default function CreateDeliveryScreen() {
     : [];
 
   const modal = useAppModal();
-  const netWeight = (parseFloat(grossWeight) || 0).toFixed(1);
+  const grossKg = parseFloat(grossWeight) || 0;
+  const tareKg  = parseFloat(tareWeight)  || 0;
+  const netWeight = Math.max(grossKg - tareKg, 0).toFixed(1);
 
   const resetForm = () => {
     setSelectedFarmer(null); setSelectedFarm(null);
-    setGrossWeight(''); setNotes('');
+    setGrossWeight(''); setTareWeight(''); setNotes('');
     setCoffeePrimary(true); setOtherCrops('');
   };
 
@@ -117,8 +120,9 @@ export default function CreateDeliveryScreen() {
     try {
       await coopAPI.createDelivery({
         farm_id:         selectedFarm.id,
-        gross_weight_kg: parseFloat(grossWeight),
-        tare_weight_kg:  0,
+        gross_weight_kg: grossKg,
+        tare_weight_kg:  tareKg,
+        net_weight_kg:   parseFloat(netWeight),
         notes:           notes.trim() || null,
         crop_mix:        buildCropMix(),
       });
@@ -152,7 +156,7 @@ export default function CreateDeliveryScreen() {
       modal.show({ type: 'danger', title: 'Farm Not Compliant', message: `This farm is ${ci.label} and cannot accept deliveries.` });
       return;
     }
-    if (!grossWeight || parseFloat(grossWeight) <= 0) {
+    if (parseFloat(netWeight) <= 0) {
       modal.show({ type: 'warning', title: 'Required', message: 'Net weight must be greater than 0.' });
       return;
     }
@@ -162,7 +166,7 @@ export default function CreateDeliveryScreen() {
       type:         'confirm',
       icon:         'archive',
       title:        'Confirm Delivery',
-      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nWeight: ${netWeight} kg`,
+      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nGross: ${grossKg} kg · Tare: ${tareKg} kg\nNet: ${netWeight} kg`,
       confirmLabel: 'Record',
       cancelLabel:  'Cancel',
       onConfirm:    doSubmit,
@@ -371,15 +375,37 @@ export default function CreateDeliveryScreen() {
                         <View style={s.stepBadge}><Text style={s.stepBadgeText}>3</Text></View>
                         <Text style={s.stepTitle}>Weight</Text>
                       </View>
-                      <Lbl text="Net Weight (kg)" required />
-                      <TextInput
-                        style={s.input}
-                        value={grossWeight}
-                        onChangeText={setGrossWeight}
-                        keyboardType="decimal-pad"
-                        placeholder="0.0"
-                        placeholderTextColor={C.subtle}
-                      />
+                      <View style={s.weightRow}>
+                        <View style={{ flex: 1 }}>
+                          <Lbl text="Gross Weight (kg)" required />
+                          <TextInput
+                            style={s.input}
+                            value={grossWeight}
+                            onChangeText={setGrossWeight}
+                            keyboardType="decimal-pad"
+                            placeholder="0.0"
+                            placeholderTextColor={C.subtle}
+                          />
+                        </View>
+                        <View style={{ width: 12 }} />
+                        <View style={{ flex: 1 }}>
+                          <Lbl text="Tare Weight (kg)" />
+                          <TextInput
+                            style={s.input}
+                            value={tareWeight}
+                            onChangeText={setTareWeight}
+                            keyboardType="decimal-pad"
+                            placeholder="0.0"
+                            placeholderTextColor={C.subtle}
+                          />
+                        </View>
+                      </View>
+                      {grossKg > 0 && (
+                        <View style={s.netRow}>
+                          <Ionicons name="scale-outline" size={16} color="#15803d" />
+                          <Text style={s.netText}>Net Weight: <Text style={{ fontWeight: '800' }}>{netWeight} kg</Text></Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* Crop Mix */}
@@ -448,9 +474,9 @@ export default function CreateDeliveryScreen() {
                     </View>
 
                     <TouchableOpacity
-                      style={[s.submitBtn, (submitting || !grossWeight) && s.btnDisabled]}
+                      style={[s.submitBtn, (submitting || parseFloat(netWeight) <= 0) && s.btnDisabled]}
                       onPress={handleSubmit}
-                      disabled={submitting || !parseFloat(grossWeight)}
+                      disabled={submitting || parseFloat(netWeight) <= 0}
                       activeOpacity={0.85}
                     >
                       {submitting

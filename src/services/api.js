@@ -55,6 +55,15 @@ api.interceptors.response.use(
       orig?.url?.includes('/auth/token') ||
       orig?.url?.includes('/auth/refresh');
 
+    // Normalize FastAPI validation errors: detail can be an array of objects.
+    // Convert it to a plain string so any Alert.alert(msg) call gets a string.
+    if (err.response?.data?.detail != null && typeof err.response.data.detail !== 'string') {
+      const d = err.response.data.detail;
+      err.response.data.detail = Array.isArray(d)
+        ? d.map(x => (typeof x === 'object' ? (x.msg || JSON.stringify(x)) : String(x))).join(', ')
+        : String(d);
+    }
+
     if (err.response?.status !== 401 || orig?._retry || isAuthEndpoint) {
       return Promise.reject(err);
     }
@@ -144,6 +153,8 @@ export const farmerAPI = {
   getFarms: () => api.get('/farmer/farm'),
   getFarm: (farmId) => api.get(`/farmer/farm/${farmId}`),
   createFarm: (data) => api.post('/farmer/farm', data),
+  updateFarm: (farmId, data) => api.patch(`/farmer/farm/${farmId}`, data),
+  acknowledgeUpdate: (farmId) => api.patch(`/farmer/farm/${farmId}/acknowledge-update`),
 
   getParcels: (farmId) => api.get(`/farmer/farm/${farmId}/parcels`),
   getParcel: (farmId, parcelId) => api.get(`/farmer/farm/${farmId}/parcels/${parcelId}`),
@@ -204,6 +215,7 @@ export const coopAPI = {
   getBatchTraceability: (batchId) => api.get(`/coop/batches/${batchId}/traceability`),
   releaseBatch: (id, notes) => api.post(`/coop/batches/${id}/release`, { notes }),
   updateBatchStatus: (id, status) => api.patch(`/coop/batches/${id}/status`, { status }),
+  addBatchLabResults: (id, data) => api.post(`/coop/batches/${id}/lab-results`, data),
 
   requestUpdate: (userId, issue) => api.patch(`/coop/farmers/${userId}/request-update`, { issue }),
 
@@ -214,9 +226,22 @@ export const coopAPI = {
   getPendingFarms: () => api.get('/coop/farms/pending'),
   getPendingFarmers: () => api.get('/coop/farmers/pending'),
 
-  // Farm approval (coop officer)
+  // Staff management
+  deleteStaff:     (id) => api.delete(`/coop/staff/${id}`),
+  deactivateStaff: (id) => api.patch(`/coop/staff/${id}/deactivate`),
+  activateStaff:   (id) => api.patch(`/coop/staff/${id}/activate`),
+
+  // Payment apportionment (finance admin)
+  getBatchApportionment:    (batchId, rate, anonymise = false) =>
+    api.get(`/coop/batches/${batchId}/apportionment`, { params: { rate, anonymise } }),
+  submitBatchApportionment: (batchId, rateKesPerKg) =>
+    api.post(`/coop/batches/${batchId}/apportionment`, { rate_kes_per_kg: rateKesPerKg }),
+
+  // Farm detail + approval (coop officer)
+  getFarm: (id) => api.get(`/coop/farms/${id}`),
   approveFarm: (id, reason) => api.patch(`/coop/farms/${id}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
   rejectFarm:  (id, reason) => api.patch(`/coop/farms/${id}/reject`  + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
+  requestFarmUpdate: (farmId, issue) => api.patch(`/coop/farms/${farmId}/request-update`, { issue }),
 
   // Farmer approval (coop officer)
   approveFarmer: (userId, reason) => api.patch(`/coop/farmers/${userId}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
