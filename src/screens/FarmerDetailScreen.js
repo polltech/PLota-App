@@ -230,7 +230,22 @@ export default function FarmerDetailScreen() {
 
         {/* Farms */}
         <View style={s.section}>
-          <Text style={s.subHeader}>Farms ({farms.length})</Text>
+          <View style={s.sectionHeaderRow}>
+            <Text style={[s.subHeader, { marginBottom: 0 }]}>Farms ({farms.length})</Text>
+            <TouchableOpacity
+              style={s.addFarmBtn}
+              onPress={() => navigation.navigate('AddFarm', {
+                targetFarmerId:   farmerId,
+                targetFarmerName: `${farmer?.first_name || ''} ${farmer?.last_name || ''}`.trim(),
+                targetMemberNo:   farmer?.coop_member_no || farmer?.membership_number,
+                targetFarmer:     farmer,
+              })}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={15} color={C.white} />
+              <Text style={s.addFarmBtnText}>Add Farm</Text>
+            </TouchableOpacity>
+          </View>
           {loading ? (
             <ActivityIndicator color={C.c700} style={{ marginVertical: 20 }} />
           ) : farms.length === 0 ? (
@@ -397,6 +412,13 @@ const s = StyleSheet.create({
 
   noteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: C.eudrMedBg, borderRadius: 10, padding: 12, marginTop: 8 },
   noteText: { flex: 1, fontSize: 12, color: C.eudrMedium, lineHeight: 18, fontWeight: '500' },
+
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  addFarmBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: C.c700, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  addFarmBtnText: { fontSize: 12, fontWeight: '700', color: C.white },
 
   farmRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel100 },
   farmName: { fontSize: 14, fontWeight: '700', color: C.ink },

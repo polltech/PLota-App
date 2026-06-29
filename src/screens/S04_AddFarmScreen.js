@@ -279,26 +279,38 @@ function StepWizard({ current, total }) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function AddFarmScreen() {
+export default function AddFarmScreen({ route }) {
   const navigation = useNavigation();
   const { user, updateUser } = useAuth();
+
+  // Capture-on-behalf params (set when navigated from SelectFarmerForCaptureScreen or FarmerDetailScreen)
+  const targetFarmerId   = route?.params?.targetFarmerId || null;
+  const targetFarmerName = route?.params?.targetFarmerName || null;
+  const targetMemberNo   = route?.params?.targetMemberNo || null;
+  const targetFarmer     = route?.params?.targetFarmer || null;
+  const isCapturingForFarmer = !!targetFarmerId;
   const [step, setStep] = useState(0);
 
-  // Step 1 — Farmer
-  const [firstName,   setFirstName]   = useState(user?.first_name  || '');
-  const [lastName,    setLastName]    = useState(user?.last_name   || '');
-  const [phone,       setPhone]       = useState(user?.phone       || '');
-  const [nationalId,  setNationalId]  = useState(user?.national_id || '');
-  const [gender,      setGender]      = useState(user?.gender      || '');
-  const [county,      setCounty]      = useState(user?.county      || '');
-  const [subCounty,   setSubCounty]   = useState(user?.sub_county  || '');
-  const [dataConsent, setDataConsent] = useState(false);
+  // Step 1 — Farmer (pre-fill from targetFarmer when capturing on behalf; own profile otherwise)
+  const [firstName,   setFirstName]   = useState(isCapturingForFarmer ? (targetFarmer?.first_name  || '') : (user?.first_name  || ''));
+  const [lastName,    setLastName]    = useState(isCapturingForFarmer ? (targetFarmer?.last_name   || '') : (user?.last_name   || ''));
+  const [phone,       setPhone]       = useState(isCapturingForFarmer ? (targetFarmer?.phone       || '') : (user?.phone       || ''));
+  const [nationalId,  setNationalId]  = useState(isCapturingForFarmer ? (targetFarmer?.national_id || '') : (user?.national_id || ''));
+  const [gender,      setGender]      = useState(isCapturingForFarmer ? (targetFarmer?.gender      || '') : (user?.gender      || ''));
+  const [county,      setCounty]      = useState(isCapturingForFarmer ? (targetFarmer?.county      || '') : (user?.county      || ''));
+  const [subCounty,   setSubCounty]   = useState(isCapturingForFarmer ? (targetFarmer?.sub_county || targetFarmer?.subcounty || '') : (user?.sub_county || ''));
+  const [dataConsent,    setDataConsent]    = useState(isCapturingForFarmer); // farmer already consented on registration
+  const [coopMemberNo,   setCoopMemberNo]   = useState(
+    targetMemberNo || targetFarmer?.coop_member_no || targetFarmer?.membership_number ||
+    user?.cooperative_member_no || user?.coop_member_no || ''
+  );
 
   const divisions    = divisionsForCountry(user?.country || 'Kenya');
   const allL1Options = Object.keys(divisions.data).sort();
   const subOptions   = county ? (divisions.data[county] || []) : [];
 
   useEffect(() => {
+    if (isCapturingForFarmer) return; // don't overwrite farmer fields with the officer's own profile
     authAPI.me().then(res => {
       const fresh = res.data;
       updateUser(fresh);
@@ -390,7 +402,7 @@ export default function AddFarmScreen() {
         setLoading(false);
         return;
       }
-      await mobileAPI.createFarm({
+      const farmPayload = {
         farmer_first_name:    firstName.trim() || null,
         farmer_last_name:     lastName.trim() || null,
         farmer_phone:         phone.trim() || null,
@@ -399,7 +411,7 @@ export default function AddFarmScreen() {
         county:               county.trim(),
         sub_county:           subCounty.trim() || null,
         cooperative_name:     user?.cooperative_name || null,
-        cooperative_member_no: user?.cooperative_member_no || user?.coop_member_no || null,
+        cooperative_member_no: coopMemberNo.trim() || null,
         data_consent:         dataConsent,
         farm_name:            farmName.trim(),
         farm_code:            farmCode.trim() || null,
@@ -427,8 +439,15 @@ export default function AddFarmScreen() {
         farm_established_year: farmEstYear ? parseInt(farmEstYear) : null,
         previous_land_use:     previousLandUse || null,
         ngo_support:           ngoSupport.trim() || null,
-      });
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      };
+
+      if (isCapturingForFarmer) {
+        const res = await farmerAPI.captureFarmForFarmer(targetFarmerId, farmPayload);
+        setCreated({ ...(res.data || {}), _forFarmer: true, _farmerName: targetFarmerName });
+      } else {
+        const res = await mobileAPI.createFarm(farmPayload);
+        setCreated(res.data);
+      }
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to add farm.';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -437,7 +456,74 @@ export default function AddFarmScreen() {
     }
   };
 
-  // ── Success view ─────────────────────────────────────────────────────────────
+  // ── Success view (coop staff capturing on behalf) ────────────────────────────
+  if (created && created._forFarmer) {
+    const farmId = created.farm_id || created.id;
+    return (
+      <View style={s.root}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f3f2f1" />
+        <SafeAreaView style={s.safe}>
+          <View style={s.topBar}>
+            <View style={{ width: 40 }} />
+            <Text style={s.topTitle}>Farm Captured</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={s.successIconWrap}>
+              <Ionicons name="checkmark-circle" size={64} color={C.c700} />
+            </View>
+            <Text style={s.successHeading}>{created.farm_name || farmName}</Text>
+            <Text style={s.successSub}>
+              Farm captured successfully for{'\n'}
+              <Text style={{ fontWeight: '700' }}>{created._farmerName || targetFarmerName}</Text>
+            </Text>
+
+            <View style={s.card}>
+              <Text style={s.cardSectionLabel}>Farm Details</Text>
+              <PreviewRow label="Farm Code"  value={created.farm_code} />
+              <PreviewRow label="County"     value={created.county || county} />
+              <PreviewRow label="Land Use"   value={created.land_use_type || landUse} />
+              <PreviewRow label="Total Area" value={(created.total_area_hectares || totalArea) ? `${created.total_area_hectares || totalArea} ha` : null} />
+              <PreviewRow label="Varieties"  value={(created.coffee_varieties || varieties)?.join?.(', ') || null} />
+            </View>
+
+            {!!created.farm_code && (
+              <View style={s.codeCard}>
+                <Text style={s.codeLabel}>Farm code</Text>
+                <Text style={s.codeValue}>{created.farm_code}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={s.primaryBtn}
+              onPress={() => navigation.navigate('CaptureMode', {
+                farmId,
+                farm: { id: farmId, farm_code: created.farm_code, farm_name: created.farm_name || farmName },
+                formData: {
+                  firstName, lastName, phone, nationalId, gender, county, subCounty,
+                  farmName: created.farm_name || farmName, farmCode: created.farm_code,
+                  targetFarmerId,
+                },
+              })}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="location-outline" size={18} color={C.white} />
+              <Text style={s.primaryBtnText}>Capture Boundary Now</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.outlineBtn}
+              onPress={() => navigation.navigate('CoopFarmsList')}
+              activeOpacity={0.7}
+            >
+              <Text style={s.outlineBtnText}>Done — Back to Farm List</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // ── Success view (farmer self-registration) ───────────────────────────────────
   if (created) {
     return (
       <View style={s.root}>
@@ -512,9 +598,20 @@ export default function AddFarmScreen() {
           >
             <Ionicons name="chevron-back" size={20} color={C.ink} />
           </TouchableOpacity>
-          <Text style={s.topTitle}>Add Farm</Text>
+          <Text style={s.topTitle}>{isCapturingForFarmer ? 'Capture Farm' : 'Add Farm'}</Text>
           <View style={{ width: 40 }} />
         </View>
+
+        {/* Capture-on-behalf banner */}
+        {isCapturingForFarmer && (
+          <View style={s.captureBanner}>
+            <Ionicons name="person" size={14} color="#166534" style={{ marginRight: 6 }} />
+            <Text style={s.captureBannerText}>
+              Capturing for: <Text style={{ fontWeight: '700' }}>{targetFarmerName}</Text>
+              {targetMemberNo ? `  ·  Member #${targetMemberNo}` : ''}
+            </Text>
+          </View>
+        )}
 
         {/* Step wizard */}
         <View style={s.wizardWrap}>
@@ -590,16 +687,52 @@ export default function AddFarmScreen() {
                   </View>
                 )}
 
-                <TouchableOpacity style={s.consentRow} onPress={() => setDataConsent(v => !v)} activeOpacity={0.8}>
-                  <View style={[s.checkbox, dataConsent && s.checkboxOn]}>
-                    {dataConsent && <Ionicons name="checkmark" size={14} color={C.white} />}
+                {/* Cooperative Member Number */}
+                <Field
+                  label="Cooperative Member Number"
+                  hint="Auto-generated (PCFNO format) if left blank"
+                >
+                  <View style={s.memberNoRow}>
+                    <FInput
+                      value={coopMemberNo}
+                      onChangeText={setCoopMemberNo}
+                      placeholder="e.g. PCFNO-1183 or your coop's format"
+                      autoCapitalize="characters"
+                      style={{ flex: 1 }}
+                    />
+                    {!coopMemberNo.trim() && (
+                      <TouchableOpacity
+                        style={s.memberNoGenBtn}
+                        onPress={() => setCoopMemberNo(`PCFNO-${String(Math.floor(1000 + Math.random() * 9000))}`)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="refresh-outline" size={14} color={C.c700} />
+                        <Text style={s.memberNoGenText}>Generate</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.consentTitle}>I consent to data collection & processing *</Text>
-                    <Text style={s.consentDesc}>Required to register and link this farm to the sustainability platform.</Text>
+                </Field>
+
+                {isCapturingForFarmer ? (
+                  <View style={[s.consentRow, { backgroundColor: '#f0fdf4', borderColor: '#86efac' }]}>
+                    <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={[s.consentTitle, { color: '#166534' }]}>Farmer consent confirmed</Text>
+                      <Text style={s.consentDesc}>The farmer consented to data collection when they registered. Capturing this farm on their behalf.</Text>
+                    </View>
                   </View>
-                </TouchableOpacity>
-                {touched && !dataConsent && <Text style={s.errGlobal}>Data consent is required to continue.</Text>}
+                ) : (
+                  <TouchableOpacity style={s.consentRow} onPress={() => setDataConsent(v => !v)} activeOpacity={0.8}>
+                    <View style={[s.checkbox, dataConsent && s.checkboxOn]}>
+                      {dataConsent && <Ionicons name="checkmark" size={14} color={C.white} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.consentTitle}>I consent to data collection & processing *</Text>
+                      <Text style={s.consentDesc}>Required to register and link this farm to the sustainability platform.</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                {touched && !dataConsent && !isCapturingForFarmer && <Text style={s.errGlobal}>Data consent is required to continue.</Text>}
               </>
             )}
 
@@ -710,12 +843,14 @@ export default function AddFarmScreen() {
                     style={s.captureNowBtn}
                     onPress={() => navigation.navigate('CaptureMode', {
                       farmId: farmCode.trim() || farmName.trim(),
-                      formData: { firstName, lastName, phone, nationalId, gender, county, subCounty, dataConsent,
+                      formData: {
+                        firstName, lastName, phone, nationalId, gender, county, subCounty, dataConsent,
                         farmName, farmCode, farmType, landRegNumber, totalArea, landUse,
                         varieties, yearPlanted, coffeeTrees, farmStatus, plantingMethod,
                         irrigationUsed, irrigationType, annualYield,
                         cooperativeName: user?.cooperative_name || null,
-                        cooperativeMemberNo: user?.cooperative_member_no || user?.coop_member_no || null,
+                        cooperativeMemberNo: coopMemberNo.trim() || null,
+                        targetFarmerId: targetFarmerId || null,
                       },
                     })}
                     activeOpacity={0.85}
@@ -836,7 +971,7 @@ export default function AddFarmScreen() {
                 ? <ActivityIndicator color={C.white} size="small" />
                 : <>
                     <Ionicons name="checkmark" size={16} color={C.white} />
-                    <Text style={s.primaryBtnText}>Add Farm</Text>
+                    <Text style={s.primaryBtnText}>{isCapturingForFarmer ? 'Submit Farm' : 'Add Farm'}</Text>
                   </>
               }
             </TouchableOpacity>
@@ -860,6 +995,12 @@ const s = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   topTitle: { fontSize: 16, fontWeight: '600', color: C.ink },
+  captureBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#dcfce7', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: '#bbf7d0',
+  },
+  captureBannerText: { fontSize: 13, color: '#166534', flex: 1 },
 
   wizardWrap: { backgroundColor: C.white, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
 
@@ -888,6 +1029,10 @@ const s = StyleSheet.create({
   },
   codeLabel: { fontSize: 11, color: C.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
   codeValue: { fontSize: 28, fontWeight: '900', color: C.c700, letterSpacing: 3 },
+
+  memberNoRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  memberNoGenBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
+  memberNoGenText: { fontSize: 11, fontWeight: '700', color: C.c700 },
 
   primaryBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,

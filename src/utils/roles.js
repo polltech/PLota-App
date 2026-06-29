@@ -1,14 +1,15 @@
 // Role identifiers as returned by the backend /auth/me
 export const ROLES = {
-  FARMER:           'farmer',
-  COOP_OFFICER:     'cooperative_officer',
-  ADMIN:            'plotra_admin',
-  REVIEWER:         'eudr_reviewer',
-  DELIVERY_AGENT:   'delivery_agent',
-  WASHING_STATION:  'washing_station',
-  POST_HARVEST:     'post_harvest_officer',
-  AGRONOMIST:       'agronomist',
-  FINANCE_ADMIN:    'finance_admin',
+  FARMER:                  'farmer',
+  COOP_OFFICER:            'cooperative_officer',
+  ADMIN:                   'plotra_admin',
+  REVIEWER:                'eudr_reviewer',
+  DELIVERY_AGENT:          'delivery_agent',
+  WASHING_STATION:         'washing_station',
+  POST_HARVEST:            'post_harvest_officer',
+  AGRONOMIST:              'agronomist',
+  FINANCE_ADMIN:           'finance_admin',
+  FARM_CAPTURING_OFFICER:  'farm_capturing_officer',
 };
 
 export const STAFF_ROLE_OPTIONS = [
@@ -42,6 +43,12 @@ export const STAFF_ROLE_OPTIONS = [
     description: 'Manages consignments, export documentation, and payments.',
     icon: 'briefcase-outline',
   },
+  {
+    value: ROLES.FARM_CAPTURING_OFFICER,
+    label: 'Farm Capturing Officer',
+    description: 'Captures and registers farms on behalf of cooperative farmers in the field.',
+    icon: 'map-outline',
+  },
 ];
 
 export const isCoopOfficer = (user) =>
@@ -59,7 +66,8 @@ export const isFarmer = (user) =>
 // True for anyone who can use /coop/* endpoints
 export const hasCoopAccess = (user) =>
   [ROLES.COOP_OFFICER, ROLES.ADMIN, ROLES.DELIVERY_AGENT, ROLES.WASHING_STATION,
-   ROLES.POST_HARVEST, ROLES.AGRONOMIST, ROLES.FINANCE_ADMIN].includes(user?.role);
+   ROLES.POST_HARVEST, ROLES.AGRONOMIST, ROLES.FINANCE_ADMIN,
+   ROLES.FARM_CAPTURING_OFFICER].includes(user?.role);
 
 // True for anyone who can use /admin/* endpoints
 export const hasAdminAccess = (user) =>
@@ -75,7 +83,8 @@ export const roleLabel = (user) => {
     case ROLES.WASHING_STATION: return 'Washing Station Officer';
     case ROLES.POST_HARVEST:    return 'Post-Harvest Officer';
     case ROLES.AGRONOMIST:      return 'Agronomist';
-    case ROLES.FINANCE_ADMIN:   return 'Finance & Admin';
+    case ROLES.FINANCE_ADMIN:           return 'Finance & Admin';
+    case ROLES.FARM_CAPTURING_OFFICER:  return 'Farm Capturing Officer';
     default: return user?.role || 'Unknown';
   }
 };

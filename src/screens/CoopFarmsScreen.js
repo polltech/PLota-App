@@ -614,6 +614,15 @@ export default function CoopFarmsScreen() {
         onApproved={onApproved}
         onRejected={onRejected}
       />
+
+      {/* Add Farm FAB — all coop staff can capture farms on behalf of farmers */}
+      <TouchableOpacity
+        style={s.fab}
+        onPress={() => navigation.navigate('SelectFarmerForCapture')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={28} color={C.white} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -703,6 +712,14 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: C.steel700, marginTop: 14 },
   emptyMsg: { fontSize: 13, color: C.muted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+
+  fab: {
+    position: 'absolute', right: 20, bottom: 28,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: C.c700,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 8, elevation: 6,
+  },
 });
 
 // ── Modal styles ─────────────────────────────────────────────────────────────

@@ -1,16 +1,17 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator, StatusBar, FlatList,
+  TextInput, ActivityIndicator, StatusBar, FlatList, Platform, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
 import AppModal, { useAppModal } from '../components/AppModal';
 
-const TODAY = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const complianceInfo = (farm) => {
   const s = (farm?.compliance_status || 'Under Review').trim();
@@ -46,21 +47,15 @@ export default function CreateDeliveryScreen() {
   const [selectedFarm, setSelectedFarm] = useState(null);
 
   // Form fields
-  const [grossWeight, setGrossWeight] = useState('');
-  const [tareWeight,  setTareWeight]  = useState('');
-  const [notes,       setNotes]       = useState('');
+  const [netWeightInput, setNetWeightInput] = useState('');
+  const [deliveryDate,   setDeliveryDate]   = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Crop mix
-  const [coffeePrimary, setCoffeePrimary] = useState(true);
-  const [otherCrops,    setOtherCrops]    = useState('');
+  // Coffee varieties
+  const [selectedVarieties, setSelectedVarieties] = useState([]);
 
-  const buildCropMix = () => {
-    const others = otherCrops.split(',').map(s => s.trim()).filter(Boolean);
-    if (coffeePrimary && others.length === 0) return null;
-    return coffeePrimary
-      ? { primary: 'Coffee', secondary: others }
-      : { primary: others[0] || 'Other', secondary: ['Coffee', ...others.slice(1)] };
-  };
+  const toggleVariety = (v) =>
+    setSelectedVarieties(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
   useEffect(() => {
     (async () => {
@@ -105,31 +100,28 @@ export default function CreateDeliveryScreen() {
     : [];
 
   const modal = useAppModal();
-  const grossKg = parseFloat(grossWeight) || 0;
-  const tareKg  = parseFloat(tareWeight)  || 0;
-  const netWeight = Math.max(grossKg - tareKg, 0).toFixed(1);
+  const netKg = parseFloat(netWeightInput) || 0;
 
   const resetForm = () => {
     setSelectedFarmer(null); setSelectedFarm(null);
-    setGrossWeight(''); setTareWeight(''); setNotes('');
-    setCoffeePrimary(true); setOtherCrops('');
+    setNetWeightInput('');
+    setSelectedVarieties([]);
+    setDeliveryDate(new Date());
   };
 
   const doSubmit = async () => {
     setSubmitting(true);
     try {
       await coopAPI.createDelivery({
-        farm_id:         selectedFarm.id,
-        gross_weight_kg: grossKg,
-        tare_weight_kg:  tareKg,
-        net_weight_kg:   parseFloat(netWeight),
-        notes:           notes.trim() || null,
-        crop_mix:        buildCropMix(),
+        farm_id:          selectedFarm.id,
+        net_weight_kg:    netKg,
+        reception_date:   deliveryDate.toISOString().slice(0, 10),
+        coffee_varieties: selectedVarieties.length > 0 ? selectedVarieties : null,
       });
       modal.show({
         type:         'success',
         title:        'Delivery Received',
-        message:      `${netWeight} kg from ${selectedFarm.farm_name || 'the farm'} has been received and recorded.\nNext step: processing.`,
+        message:      `${netKg} kg from ${selectedFarm.farm_name || 'the farm'} has been received and recorded.\nNext step: processing.`,
         confirmLabel: 'Done',
         cancelLabel:  'Record Another',
         onConfirm:    () => navigation.goBack(),
@@ -146,6 +138,8 @@ export default function CreateDeliveryScreen() {
     }
   };
 
+  const fmtDate = (d) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
   const handleSubmit = () => {
     if (!selectedFarm) {
       modal.show({ type: 'warning', title: 'Required', message: 'Please select a farm.' });
@@ -156,7 +150,7 @@ export default function CreateDeliveryScreen() {
       modal.show({ type: 'danger', title: 'Farm Not Compliant', message: `This farm is ${ci.label} and cannot accept deliveries.` });
       return;
     }
-    if (parseFloat(netWeight) <= 0) {
+    if (netKg <= 0) {
       modal.show({ type: 'warning', title: 'Required', message: 'Net weight must be greater than 0.' });
       return;
     }
@@ -166,7 +160,7 @@ export default function CreateDeliveryScreen() {
       type:         'confirm',
       icon:         'archive',
       title:        'Confirm Delivery',
-      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nGross: ${grossKg} kg · Tare: ${tareKg} kg\nNet: ${netWeight} kg`,
+      message:      `Farmer: ${farmerName}\nFarm: ${selectedFarm.farm_name || selectedFarm.name}\nNet Weight: ${netKg} kg\nDate: ${fmtDate(deliveryDate)}`,
       confirmLabel: 'Record',
       cancelLabel:  'Cancel',
       onConfirm:    doSubmit,
@@ -375,108 +369,97 @@ export default function CreateDeliveryScreen() {
                         <View style={s.stepBadge}><Text style={s.stepBadgeText}>3</Text></View>
                         <Text style={s.stepTitle}>Weight</Text>
                       </View>
-                      <View style={s.weightRow}>
-                        <View style={{ flex: 1 }}>
-                          <Lbl text="Gross Weight (kg)" required />
-                          <TextInput
-                            style={s.input}
-                            value={grossWeight}
-                            onChangeText={setGrossWeight}
-                            keyboardType="decimal-pad"
-                            placeholder="0.0"
-                            placeholderTextColor={C.subtle}
-                          />
-                        </View>
-                        <View style={{ width: 12 }} />
-                        <View style={{ flex: 1 }}>
-                          <Lbl text="Tare Weight (kg)" />
-                          <TextInput
-                            style={s.input}
-                            value={tareWeight}
-                            onChangeText={setTareWeight}
-                            keyboardType="decimal-pad"
-                            placeholder="0.0"
-                            placeholderTextColor={C.subtle}
-                          />
-                        </View>
-                      </View>
-                      {grossKg > 0 && (
-                        <View style={s.netRow}>
-                          <Ionicons name="scale-outline" size={16} color="#15803d" />
-                          <Text style={s.netText}>Net Weight: <Text style={{ fontWeight: '800' }}>{netWeight} kg</Text></Text>
-                        </View>
-                      )}
+                      <Lbl text="Net Weight (kg)" required />
+                      <TextInput
+                        style={s.input}
+                        value={netWeightInput}
+                        onChangeText={setNetWeightInput}
+                        keyboardType="decimal-pad"
+                        placeholder="0.0"
+                        placeholderTextColor={C.subtle}
+                      />
                     </View>
 
-                    {/* Crop Mix */}
+                    {/* Coffee Varieties */}
                     <View style={s.section}>
                       <View style={s.stepHeader}>
                         <View style={s.stepBadge}><Text style={s.stepBadgeText}>4</Text></View>
-                        <Text style={s.stepTitle}>Crop Mix</Text>
+                        <Text style={s.stepTitle}>Coffee Varieties</Text>
                         <View style={s.optionalTag}><Text style={s.optionalTagText}>Optional</Text></View>
                       </View>
-                      <Text style={s.stepHint}>Is coffee the primary or secondary crop on this farm?</Text>
-
-                      <View style={s.cropRoleRow}>
-                        <TouchableOpacity
-                          style={[s.cropRoleBtn, coffeePrimary && s.cropRoleBtnActive]}
-                          onPress={() => setCoffeePrimary(true)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="star" size={15} color={coffeePrimary ? C.white : C.steel600} />
-                          <Text style={[s.cropRoleText, coffeePrimary && s.cropRoleTextActive]}>Primary</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[s.cropRoleBtn, !coffeePrimary && s.cropRoleBtnActive]}
-                          onPress={() => setCoffeePrimary(false)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="git-branch-outline" size={15} color={!coffeePrimary ? C.white : C.steel600} />
-                          <Text style={[s.cropRoleText, !coffeePrimary && s.cropRoleTextActive]}>Secondary</Text>
-                        </TouchableOpacity>
+                      <Text style={s.stepHint}>Select all varieties in this delivery</Text>
+                      <View style={s.varietyGrid}>
+                        {['SL28','SL34','Ruiru 11','Batian','K7','Blue Mountain','Robusta','Other'].map(v => {
+                          const active = selectedVarieties.includes(v);
+                          return (
+                            <TouchableOpacity
+                              key={v}
+                              style={[s.varietyChip, active && s.varietyChipActive]}
+                              onPress={() => toggleVariety(v)}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[s.varietyChipText, active && s.varietyChipTextActive]}>{v}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
-
-                      <View style={{ height: 14 }} />
-                      <Lbl text="Other crops on this farm" />
-                      <TextInput
-                        style={s.input}
-                        value={otherCrops}
-                        onChangeText={setOtherCrops}
-                        placeholder={coffeePrimary ? 'e.g. Maize, Beans, Bananas' : 'Primary crop (e.g. Maize), others…'}
-                        placeholderTextColor={C.subtle}
-                        autoCapitalize="words"
-                      />
-                      <Text style={s.cropHint}>Separate multiple crops with commas</Text>
-
-                      <View style={{ height: 14 }} />
-                      <Lbl text="Intake Notes" />
-                      <TextInput
-                        style={[s.input, s.textarea]}
-                        value={notes} onChangeText={setNotes}
-                        placeholder="Visual observations, cherry condition, any remarks…"
-                        placeholderTextColor={C.subtle}
-                        multiline numberOfLines={3}
-                        textAlignVertical="top"
-                      />
                     </View>
 
-                    {/* Record Date — auto-set, read-only */}
+                    {/* Record Date — calendar picker */}
                     <View style={s.section}>
                       <View style={s.stepHeader}>
                         <View style={s.stepBadge}><Text style={s.stepBadgeText}>5</Text></View>
                         <Text style={s.stepTitle}>Record Date</Text>
                       </View>
-                      <View style={s.recordDateBox}>
-                        <Ionicons name="calendar" size={18} color={C.c700} />
-                        <Text style={s.recordDateText}>{TODAY}</Text>
-                        <Text style={s.recordDateHint}>Auto-set · cannot be changed</Text>
-                      </View>
+                      <TouchableOpacity
+                        style={s.datePickerBtn}
+                        onPress={() => setShowDatePicker(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="calendar-outline" size={18} color={C.c700} />
+                        <Text style={s.datePickerText}>{fmtDate(deliveryDate)}</Text>
+                        <Ionicons name="chevron-down" size={16} color={C.muted} style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
+
+                      {/* Android: renders inline as dialog when showDatePicker=true */}
+                      {Platform.OS === 'android' && showDatePicker && (
+                        <DateTimePicker
+                          value={deliveryDate}
+                          mode="date"
+                          display="calendar"
+                          maximumDate={new Date()}
+                          onChange={(_, d) => { setShowDatePicker(false); if (d) setDeliveryDate(d); }}
+                        />
+                      )}
+
+                      {/* iOS: wrap in Modal so it doesn't push content */}
+                      {Platform.OS === 'ios' && (
+                        <Modal visible={showDatePicker} transparent animationType="slide">
+                          <View style={s.iosPickerBackdrop}>
+                            <View style={s.iosPickerSheet}>
+                              <View style={s.iosPickerHeader}>
+                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                  <Text style={s.iosPickerDone}>Done</Text>
+                                </TouchableOpacity>
+                              </View>
+                              <DateTimePicker
+                                value={deliveryDate}
+                                mode="date"
+                                display="spinner"
+                                maximumDate={new Date()}
+                                onChange={(_, d) => { if (d) setDeliveryDate(d); }}
+                                style={{ width: '100%' }}
+                              />
+                            </View>
+                          </View>
+                        </Modal>
+                      )}
                     </View>
 
                     <TouchableOpacity
-                      style={[s.submitBtn, (submitting || parseFloat(netWeight) <= 0) && s.btnDisabled]}
+                      style={[s.submitBtn, (submitting || netKg <= 0) && s.btnDisabled]}
                       onPress={handleSubmit}
-                      disabled={submitting || parseFloat(netWeight) <= 0}
+                      disabled={submitting || netKg <= 0}
                       activeOpacity={0.85}
                     >
                       {submitting
@@ -556,12 +539,12 @@ const s = StyleSheet.create({
   optionalTag: { marginLeft: 6, backgroundColor: C.steel100, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: C.steel200 },
   optionalTagText: { fontSize: 10, fontWeight: '700', color: C.muted },
 
-  cropRoleRow: { flexDirection: 'row', gap: 10 },
-  cropRoleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel200, backgroundColor: C.steel100 },
-  cropRoleBtnActive: { backgroundColor: C.c700, borderColor: C.c700 },
-  cropRoleText: { fontSize: 14, fontWeight: '700', color: C.steel600 },
-  cropRoleTextActive: { color: C.white },
-  cropHint: { fontSize: 11, color: C.subtle, marginTop: 6 },
+  varietyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  varietyChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: C.steel200, backgroundColor: C.steel100 },
+  varietyChipActive: { backgroundColor: C.c700, borderColor: C.c700 },
+  varietyChipText: { fontSize: 13, fontWeight: '600', color: C.steel600 },
+  varietyChipTextActive: { color: C.white },
+
 
   complianceBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1.5 },
   complianceBannerTitle: { fontSize: 14, fontWeight: '800', marginBottom: 3 },
@@ -573,13 +556,13 @@ const s = StyleSheet.create({
 
 
 
-  recordDateBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.steel100, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1.5, borderColor: C.steel200 },
-  recordDateText: { fontSize: 15, fontWeight: '800', color: C.ink, flex: 1 },
-  recordDateHint: { fontSize: 11, color: C.muted, fontWeight: '600' },
+  datePickerBtn:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.steel100, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1.5, borderColor: C.steel200 },
+  datePickerText:    { fontSize: 15, fontWeight: '700', color: C.ink },
+  iosPickerBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' },
+  iosPickerSheet:    { backgroundColor: C.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 20 },
+  iosPickerHeader:   { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  iosPickerDone:     { fontSize: 16, fontWeight: '700', color: C.c700 },
 
-  weightRow: { flexDirection: 'row', gap: 12 },
-  netRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10 },
-  netText: { fontSize: 13, color: '#15803d' },
 
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.c700, borderRadius: 18, paddingVertical: 18, marginTop: 8, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },

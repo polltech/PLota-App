@@ -72,6 +72,17 @@ const ROLE_META = {
     ],
     accessDesc: 'Batches + Consignments + Payments tabs',
   },
+  [ROLES.FARM_CAPTURING_OFFICER]: {
+    color: '#166534', bg: '#dcfce7',
+    icon: 'map-outline',
+    privileges: [
+      'Select a farmer from the cooperative roster',
+      'Capture GPS farm boundary on behalf of the farmer',
+      'Submit farm data and polygon coordinates',
+      'View cooperative farmers list',
+    ],
+    accessDesc: 'Dashboard + Farmers tabs',
+  },
 };
 
 const getRoleMeta = (role) =>

@@ -155,6 +155,8 @@ export const farmerAPI = {
   getFarms: () => api.get('/farmer/farm'),
   getFarm: (farmId) => api.get(`/farmer/farm/${farmId}`),
   createFarm: (data) => api.post('/farmer/farm', data),
+  captureFarmForFarmer: (farmerId, data) => api.post(`/farmer/farm/capture/${farmerId}`, data),
+  listCooperativeFarmers: () => api.get('/farmer/cooperative/farmers'),
   updateFarm: (farmId, data) => api.patch(`/farmer/farm/${farmId}`, data),
   acknowledgeUpdate: (farmId) => api.patch(`/farmer/farm/${farmId}/acknowledge-update`),
 
@@ -248,6 +250,11 @@ export const coopAPI = {
   // Farmer approval (coop officer)
   approveFarmer: (userId, reason) => api.patch(`/coop/farmers/${userId}/approve` + (reason ? `?reason=${encodeURIComponent(reason)}` : '')),
   rejectFarmer:  (userId, reason) => api.post(`/coop/members/${userId}/reject`, { reason }),
+
+  // Per-cooperative farm auto-approval (same SystemConfig keys as admin global config)
+  // Fields: coop_status (bool), coop_eudr (bool)
+  getCoopAutoApproval: ()     => api.get('/coop/settings/farm-auto-approval'),
+  setCoopAutoApproval: (data) => api.patch('/coop/settings/farm-auto-approval', data),
 };
 
 // ── Admin API ─────────────────────────────────────────────────────────────────

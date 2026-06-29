@@ -111,11 +111,12 @@ export default function CoopDashboardScreen() {
 
   // Quick actions by role
   const officerActions = [
-    { icon: 'person-add-outline', label: 'Review Farmer Applications', color: '#f86441', nav: () => navigation.navigate('CoopFarmers') },
-    { icon: 'map-outline',         label: 'Review Farm Submissions',    color: '#1aa053', nav: () => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' }) },
-    { icon: 'add-circle-outline',  label: 'Record Delivery',            color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
-    { icon: 'layers-outline',      label: 'Manage Batches',             color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
-    { icon: 'airplane-outline',    label: 'Consignments',               color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
+    { icon: 'person-add-outline',  label: 'Review Farmer Applications', color: '#f86441', nav: () => navigation.navigate('CoopFarmers') },
+    { icon: 'leaf-outline',        label: 'Add Farm for Farmer',         color: '#15803d', nav: () => navigation.navigate('CoopFarmsHub', { screen: 'SelectFarmerForCapture' }) },
+    { icon: 'map-outline',         label: 'Review Farm Submissions',     color: '#1aa053', nav: () => navigation.navigate('CoopFarmers', { screen: 'CoopFarmsList' }) },
+    { icon: 'add-circle-outline',  label: 'Record Delivery',             color: '#0d6efd', nav: () => navigation.navigate('CoopDeliveries', { screen: 'CreateDelivery' }) },
+    { icon: 'layers-outline',      label: 'Manage Batches',              color: '#8b5cf6', nav: () => navigation.navigate('CoopBatches') },
+    { icon: 'airplane-outline',    label: 'Consignments',                color: '#0891b2', nav: () => navigation.navigate('CoopConsignments') },
     { icon: 'person-circle-outline', label: 'Manage Delivery Agents',   color: '#16a34a', nav: () => navigation.navigate('CoopStaff') },
   ];
   const agentActions = [
@@ -133,6 +134,10 @@ export default function CoopDashboardScreen() {
         <SafeAreaView>
           <View style={s.heroTop}>
             <View>
+              <View style={s.workspaceChip}>
+                <Ionicons name="business" size={10} color={C.c400} />
+                <Text style={s.workspaceText}>Cooperative Workspace</Text>
+              </View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.roleTag}>{roleTitle}</Text>
@@ -212,6 +217,29 @@ export default function CoopDashboardScreen() {
             </>
           )}
         </View>
+
+        {/* Farmer Overview (officer only) */}
+        {!isAgent && farmers.length > 0 && (
+          <View style={s.overviewCard}>
+            <View style={s.overviewHeader}>
+              <Ionicons name="people-outline" size={16} color={C.c700} />
+              <Text style={s.overviewTitle}>Farmer Overview</Text>
+            </View>
+            <View style={s.overviewRow}>
+              {[
+                { label: 'Total',    value: farmers.length,                                                  color: C.c700, bg: C.c050 },
+                { label: 'Pending',  value: pendingFarmers.length,                                           color: '#b45309', bg: '#fef3c7' },
+                { label: 'Approved', value: farmers.filter(f => f.verification_status === 'verified').length, color: '#15803d', bg: '#dcfce7' },
+                { label: 'Farms',    value: farms.length,                                                     color: '#1d4ed8', bg: '#dbeafe' },
+              ].map(item => (
+                <View key={item.label} style={[s.overviewStat, { backgroundColor: item.bg }]}>
+                  <Text style={[s.overviewVal, { color: item.color }]}>{item.value}</Text>
+                  <Text style={[s.overviewLabel, { color: item.color }]}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Recent Deliveries table */}
         <View style={s.tableCard}>
@@ -340,4 +368,15 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
   actionIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   actionLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: C.ink },
+
+  workspaceChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 6 },
+  workspaceText: { fontSize: 10, fontWeight: '800', color: C.c400, textTransform: 'uppercase', letterSpacing: 1 },
+
+  overviewCard: { backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  overviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  overviewTitle: { fontSize: 14, fontWeight: '800', color: C.ink },
+  overviewRow: { flexDirection: 'row', padding: 12, gap: 8 },
+  overviewStat: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center' },
+  overviewVal: { fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  overviewLabel: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 });

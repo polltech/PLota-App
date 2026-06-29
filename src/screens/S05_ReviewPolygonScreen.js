@@ -8,7 +8,7 @@ import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { dbService } from '../services/database';
-import { polygonAPI } from '../services/api';
+import { polygonAPI, mobileAPI } from '../services/api';
 import { C } from '../theme';
 
 const REVIEW_MAP_HTML = `<!DOCTYPE html>
@@ -95,6 +95,12 @@ const ReviewPolygonScreen = () => {
 
       if (response.status === 200 || response.status === 201) {
         await dbService.updateSyncStatus(localId, 'synced');
+        // Keep the farm's total_area_hectares in sync with the captured polygon.
+        if (farmInternalId && areaHectares > 0) {
+          try {
+            await mobileAPI.updateFarm(farmInternalId, { total_area_hectares: parseFloat(areaHectares.toFixed(4)) });
+          } catch (_) { /* non-critical — polygon is saved, area update is best-effort */ }
+        }
         navigation.replace('Submitted', { farmId, areaHectares, pointsCount });
       } else {
         throw new Error(`Server returned ${response.status}`);

@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Animated, FlatList, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
 import { divisionsForCountry } from '../data/adminDivisions';
@@ -188,6 +189,11 @@ export default function RegisterScreen({ navigation }) {
   const [coopSearching, setCoopSearching] = useState(false);
   const searchTimer = useRef(null);
 
+  // ── Direct cooperative code entry ─────────────────────────────────────────
+  const [directCode,        setDirectCode]        = useState('');
+  const [directCodeMode,    setDirectCodeMode]    = useState(false);
+  const [directCodeLoading, setDirectCodeLoading] = useState(false);
+
   // ── Step 4: Profile ───────────────────────────────────────────────────────
   const [gender,        setGender]        = useState('');
   const [idType,        setIdType]        = useState('');
@@ -345,6 +351,30 @@ export default function RegisterScreen({ navigation }) {
     setSelectedCoop(coop);
     setCoopQuery(coop.name);
     setCoopResults([]);
+  };
+
+  const lookupByCode = async () => {
+    const code = directCode.trim().toUpperCase();
+    if (!code) return fail('Enter a cooperative code.');
+    setDirectCodeLoading(true);
+    setError('');
+    try {
+      const { authAPI } = require('../services/api');
+      const res = await authAPI.searchCooperatives(code);
+      const results = res.data?.cooperatives || [];
+      const match = results.find(c => c.code?.toUpperCase() === code) || results[0];
+      if (match) {
+        selectCoop(match);
+        setDirectCodeMode(false);
+        setDirectCode('');
+      } else {
+        fail(`No cooperative found with code "${code}". Ask your officer for the correct code.`);
+      }
+    } catch (_) {
+      fail('Could not look up cooperative. Check your connection and try again.');
+    } finally {
+      setDirectCodeLoading(false);
+    }
   };
 
   // ── Step navigation ───────────────────────────────────────────────────────
@@ -745,6 +775,55 @@ export default function RegisterScreen({ navigation }) {
                       </View>
                     )}
 
+                    {/* Direct code entry toggle */}
+                    {!selectedCoop && (
+                      <>
+                        <View style={s.orDivider}>
+                          <View style={s.orLine} />
+                          <TouchableOpacity
+                            style={s.orBtn}
+                            onPress={() => { setDirectCodeMode(v => !v); setError(''); }}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons name={directCodeMode ? 'search-outline' : 'keypad-outline'} size={13} color={C.c700} />
+                            <Text style={s.orBtnText}>
+                              {directCodeMode ? 'Search by name instead' : 'Enter code directly'}
+                            </Text>
+                          </TouchableOpacity>
+                          <View style={s.orLine} />
+                        </View>
+
+                        {directCodeMode && (
+                          <View style={s.directCodeWrap}>
+                            <View style={s.directCodeRow}>
+                              <TextInput
+                                style={[s.input, s.directCodeInput]}
+                                value={directCode}
+                                onChangeText={v => setDirectCode(v.toUpperCase())}
+                                placeholder="e.g. KAPCOOP"
+                                placeholderTextColor={C.subtle}
+                                autoCapitalize="characters"
+                                returnKeyType="done"
+                                onSubmitEditing={lookupByCode}
+                              />
+                              <TouchableOpacity
+                                style={[s.directCodeBtn, (!directCode.trim() || directCodeLoading) && s.directCodeBtnDisabled]}
+                                onPress={lookupByCode}
+                                disabled={!directCode.trim() || directCodeLoading}
+                                activeOpacity={0.85}
+                              >
+                                {directCodeLoading
+                                  ? <ActivityIndicator size="small" color={C.white} />
+                                  : <Text style={s.directCodeBtnText}>Find</Text>
+                                }
+                              </TouchableOpacity>
+                            </View>
+                            <Text style={s.directCodeHint}>Enter the exact cooperative code your officer gave you</Text>
+                          </View>
+                        )}
+                      </>
+                    )}
+
                     {/* Selected cooperative card */}
                     {selectedCoop && (
                       <View style={s.coopSelectedCard}>
@@ -1062,6 +1141,19 @@ const s = StyleSheet.create({
   coopSelectedMeta: { fontSize: 12, color: '#166534', fontWeight: '500' },
   coopClearBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#bbf7d0', alignItems: 'center', justifyContent: 'center' },
   coopClearText: { fontSize: 12, color: '#15803d', fontWeight: '800' },
+
+  // Direct code entry
+  orDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, gap: 8 },
+  orLine:    { flex: 1, height: 1, backgroundColor: C.steel200 },
+  orBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
+  orBtnText: { fontSize: 11, fontWeight: '700', color: C.c700 },
+  directCodeWrap: { marginBottom: 8 },
+  directCodeRow:  { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  directCodeInput: { flex: 1, marginBottom: 0, letterSpacing: 2, fontWeight: '800' },
+  directCodeBtn:  { height: 54, paddingHorizontal: 20, borderRadius: 14, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  directCodeBtnDisabled: { backgroundColor: C.steel300 },
+  directCodeBtnText: { fontSize: 14, fontWeight: '800', color: C.white },
+  directCodeHint: { fontSize: 11, color: C.subtle, fontStyle: 'italic', marginTop: 6, marginLeft: 2 },
 
   // Chips
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },

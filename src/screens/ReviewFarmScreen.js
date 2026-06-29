@@ -8,7 +8,7 @@ import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { mobileAPI, polygonAPI } from '../services/api';
+import { mobileAPI, polygonAPI, farmerAPI } from '../services/api';
 import { dbService } from '../services/database';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
@@ -70,6 +70,8 @@ export default function ReviewFarmScreen() {
   const { formData = {}, polygonData = {} } = route.params || {};
 
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [createdFarm, setCreatedFarm] = useState(null);
   const webViewRef = useRef(null);
 
   const onMapLoad = () => {
@@ -83,7 +85,7 @@ export default function ReviewFarmScreen() {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      const res = await mobileAPI.createFarm({
+      const farmPayload = {
         // Farmer
         farmer_first_name:    formData.firstName?.trim() || null,
         farmer_last_name:     formData.lastName?.trim()  || null,
@@ -138,7 +140,11 @@ export default function ReviewFarmScreen() {
           points_count:     polygonData.pointsCount     || null,
           gps_accuracy_m:   polygonData.accuracyM       || null,
         } : {}),
-      });
+      };
+
+      const res = formData.targetFarmerId
+        ? await farmerAPI.captureFarmForFarmer(formData.targetFarmerId, farmPayload)
+        : await mobileAPI.createFarm(farmPayload);
 
       // If we also have polygon data, save it locally and submit to polygon API
       if (polygonData?.polygonCoords?.length) {
@@ -179,7 +185,8 @@ export default function ReviewFarmScreen() {
         } catch (_) {}
       }
 
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      setCreatedFarm(res.data || {});
+      setSubmitted(true);
 
     } catch (e) {
       const msg = e.response?.data?.detail || e.message || 'Failed to register farm.';
@@ -190,6 +197,42 @@ export default function ReviewFarmScreen() {
   };
 
   const hasPoly = polygonData?.polygonCoords?.length >= 3;
+  const isCoopCapture = !!formData.targetFarmerId;
+
+  // ── Success screen (shown after successful submit — prevents double-tap) ──────
+  if (submitted) {
+    return (
+      <View style={s.container}>
+        <StatusBar barStyle="dark-content" />
+        <SafeAreaView style={[s.safe, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
+          <Ionicons name="checkmark-circle" size={80} color={C.c700} />
+          <Text style={{ fontSize: 22, fontWeight: '900', color: C.ink, marginTop: 20, textAlign: 'center' }}>
+            Farm Registered!
+          </Text>
+          <Text style={{ fontSize: 14, color: C.muted, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+            {isCoopCapture
+              ? `Farm captured successfully for the farmer.`
+              : 'Your farm has been registered and is awaiting verification.'}
+          </Text>
+          {!!createdFarm?.farm_code && (
+            <View style={{ marginTop: 24, backgroundColor: C.c050, borderRadius: 14, padding: 18, alignItems: 'center', width: '100%' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 }}>Farm Code</Text>
+              <Text style={{ fontSize: 28, fontWeight: '900', color: C.c700, marginTop: 4 }}>{createdFarm.farm_code}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={{ marginTop: 32, width: '100%', height: 52, backgroundColor: C.c700, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
+            onPress={() => isCoopCapture ? navigation.navigate('CoopFarmsList') : navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: C.white, fontSize: 16, fontWeight: '800' }}>
+              {isCoopCapture ? 'Back to Farm List' : 'Done'}
+            </Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -301,14 +344,14 @@ export default function ReviewFarmScreen() {
               <Text style={s.navBackText}>Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[s.registerBtn, loading && s.registerBtnDisabled]}
+              style={[s.registerBtn, (loading || submitted) && s.registerBtnDisabled]}
               onPress={handleRegister}
-              disabled={loading}
+              disabled={loading || submitted}
               activeOpacity={0.85}
             >
               {loading
                 ? <ActivityIndicator color={C.white} />
-                : <Text style={s.registerBtnText}>Add Farm</Text>
+                : <Text style={s.registerBtnText}>{isCoopCapture ? 'Submit Farm' : 'Add Farm'}</Text>
               }
             </TouchableOpacity>
           </View>

@@ -94,17 +94,12 @@ export default function ProcessingStepsScreen() {
   if (!detail) return null;
 
   const logs = detail.processing_log || [];
-  const receivedWeight = detail.net_weight_kg || 0;
   const ss = statusStyle(detail.status);
   const isFinished = ['batched', 'rejected'].includes((detail.status || '').toLowerCase());
 
   // Map step_type → log entry
   const doneSteps = {};
   logs.forEach(lg => { doneSteps[lg.step_type] = lg; });
-
-  // Last log entry that has a weight for reference
-  const weightLogs = logs.filter(l => l.weight_out_kg != null);
-  const lastLog = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1] : null;
 
   return (
     <View style={s.container}>
@@ -127,30 +122,6 @@ export default function ProcessingStepsScreen() {
             </View>
           </View>
 
-          {/* Weight reference bar */}
-          <View style={s.weightBar}>
-            <View style={s.weightBarItem}>
-              <Text style={s.weightBarVal}>{fmtKg(receivedWeight)}</Text>
-              <Text style={s.weightBarLbl}>Received</Text>
-            </View>
-            {lastLog && (
-              <>
-                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.35)" />
-                <View style={s.weightBarItem}>
-                  <Text style={[s.weightBarVal, { color: '#4ade80' }]}>{fmtKg(lastLog.weight_out_kg)}</Text>
-                  <Text style={s.weightBarLbl}>After {cap(lastLog.step_type)}</Text>
-                </View>
-                <View style={s.weightBarItem}>
-                  <Text style={[s.weightBarVal, { color: '#4ade80' }]}>
-                    {receivedWeight > 0
-                      ? `${((lastLog.weight_out_kg / receivedWeight) * 100).toFixed(1)}%`
-                      : '—'}
-                  </Text>
-                  <Text style={s.weightBarLbl}>Outturn</Text>
-                </View>
-              </>
-            )}
-          </View>
         </SafeAreaView>
       </View>
 
@@ -222,19 +193,6 @@ export default function ProcessingStepsScreen() {
                     <Ionicons name="calendar-outline" size={13} color={C.muted} />
                     <Text style={s.logText}>{fmtDate(log.step_date)}</Text>
                   </View>
-                  {log.weight_out_kg != null && (
-                    <View style={s.logRow}>
-                      <Ionicons name="scale-outline" size={13} color={C.muted} />
-                      <Text style={s.logText}>
-                        {fmtKg(log.weight_out_kg)}
-                        {receivedWeight > 0 && (
-                          <Text style={{ color: C.muted, fontWeight: '500' }}>
-                            {'  ·  '}{((log.weight_out_kg / receivedWeight) * 100).toFixed(1)}% outturn
-                          </Text>
-                        )}
-                      </Text>
-                    </View>
-                  )}
                   {log.grade && (
                     <View style={s.logRow}>
                       <Ionicons name="ribbon-outline" size={13} color={C.muted} />
@@ -266,9 +224,6 @@ export default function ProcessingStepsScreen() {
                     deliveryId: id,
                     deliveryNumber: detail.delivery_number || `DEL-${id}`,
                     stepType: step,
-                    receivedWeight,
-                    lastWeight: lastLog?.weight_out_kg ?? receivedWeight,
-                    lastStepLabel: lastLog ? cap(lastLog.step_type) : 'Received',
                   })}
                 >
                   <Ionicons name="add-circle-outline" size={18} color={C.white} />
@@ -326,11 +281,6 @@ const s = StyleSheet.create({
   heroSub:    { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
   statusChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   statusChipText: { fontSize: 11, fontWeight: '800' },
-
-  weightBar:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 4 },
-  weightBarItem: { alignItems: 'center' },
-  weightBarVal:  { fontSize: 13, fontWeight: '800', color: C.white },
-  weightBarLbl:  { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
 
   content: { padding: 14, gap: 10 },
 

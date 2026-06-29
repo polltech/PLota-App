@@ -314,6 +314,10 @@ export default function HomeScreen() {
         <SafeAreaView>
           <View style={s.heroInner}>
             <View>
+              <View style={s.workspaceChip}>
+                <Ionicons name="leaf" size={10} color={C.c400} />
+                <Text style={s.workspaceText}>Farmer Workspace</Text>
+              </View>
               <Text style={s.greet}>{greeting},</Text>
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.heroTime}>{time}</Text>
@@ -383,6 +387,54 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Quick Actions ───────────────────────────────────────────── */}
+        <SectionHeader title="Quick Actions" />
+        <View style={s.quickActionsGrid}>
+          <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Farms')}>
+            <View style={[s.qaIcon, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="leaf" size={22} color={C.c700} />
+            </View>
+            <Text style={s.qaLabel}>My Farms</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Deliveries')}>
+            <View style={[s.qaIcon, { backgroundColor: '#dbeafe' }]}>
+              <Ionicons name="cube-outline" size={22} color="#1d4ed8" />
+            </View>
+            <Text style={s.qaLabel}>Deliveries</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Wallet')}>
+            <View style={[s.qaIcon, { backgroundColor: '#fef3c7' }]}>
+              <Ionicons name="wallet-outline" size={22} color="#b45309" />
+            </View>
+            <Text style={s.qaLabel}>Wallet</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.qaCard} activeOpacity={0.8}
+            onPress={() => navigation.navigate('Dashboard', { screen: 'Documents' })}>
+            <View style={[s.qaIcon, { backgroundColor: '#f3e8ff' }]}>
+              <Ionicons name="document-text-outline" size={22} color="#7c3aed" />
+            </View>
+            <Text style={s.qaLabel}>Documents</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Farm Capturing Officer quick action ─────────────────────── */}
+        {user?.role === 'farm_capturing_officer' && (
+          <TouchableOpacity
+            style={s.captureActionCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('SelectFarmerForCapture')}
+          >
+            <View style={s.captureActionIcon}>
+              <Ionicons name="map" size={22} color="#166534" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={s.captureActionTitle}>Capture Farm</Text>
+              <Text style={s.captureActionSub}>Register a farm on behalf of a cooperative farmer</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#166534" />
+          </TouchableOpacity>
+        )}
 
         {/* ── Stats Cards (4) ─────────────────────────────────────────── */}
         <SectionHeader title="Overview" />
@@ -625,6 +677,37 @@ export default function HomeScreen() {
           </>
         )}
 
+        {/* ── Account Summary ──────────────────────────────────────────── */}
+        <SectionHeader title="Account Summary" />
+        <View style={s.accountCard}>
+          {user?.cooperative_name && (
+            <View style={s.accountRow}>
+              <Ionicons name="business-outline" size={16} color={C.muted} />
+              <Text style={s.accountLabel}>Cooperative</Text>
+              <Text style={s.accountValue} numberOfLines={1}>{user.cooperative_name}</Text>
+            </View>
+          )}
+          {user?.county && (
+            <View style={[s.accountRow, { borderTopWidth: user?.cooperative_name ? 1 : 0, borderTopColor: C.steel100 }]}>
+              <Ionicons name="location-outline" size={16} color={C.muted} />
+              <Text style={s.accountLabel}>Location</Text>
+              <Text style={s.accountValue}>{[user.county, user.subcounty].filter(Boolean).join(', ')}</Text>
+            </View>
+          )}
+          <View style={[s.accountRow, { borderTopWidth: 1, borderTopColor: C.steel100 }]}>
+            <Ionicons name="stats-chart-outline" size={16} color={C.muted} />
+            <Text style={s.accountLabel}>Total Area Farmed</Text>
+            <Text style={s.accountValue}>
+              {farms.reduce((sum, f) => sum + (Number(f.total_area_ha) || Number(f.total_area_hectares) || 0), 0).toFixed(2)} ha
+            </Text>
+          </View>
+          <View style={[s.accountRow, { borderTopWidth: 1, borderTopColor: C.steel100 }]}>
+            <Ionicons name="phone-portrait-outline" size={16} color={C.muted} />
+            <Text style={s.accountLabel}>Phone</Text>
+            <Text style={s.accountValue}>{user?.phone_number || '—'}</Text>
+          </View>
+        </View>
+
         <View style={{ height: 32 }} />
       </ScrollView>
     </View>
@@ -654,6 +737,19 @@ const s = StyleSheet.create({
 
   scroll: { flex: 1 },
   content: { padding: 20, paddingTop: 20 },
+
+  // Farm capturing officer quick action
+  captureActionCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#f0fdf4', borderRadius: 14, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: '#bbf7d0',
+  },
+  captureActionIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center',
+  },
+  captureActionTitle: { fontSize: 15, fontWeight: '700', color: '#166534' },
+  captureActionSub: { fontSize: 12, color: '#4ade80', marginTop: 2 },
 
   // Verification status
   verifyCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 16, marginBottom: 20, borderWidth: 1.5 },
@@ -715,6 +811,22 @@ const s = StyleSheet.create({
   chartCard: { backgroundColor: C.white, borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   chartNote: { fontSize: 11, color: C.subtle, textAlign: 'center', marginTop: 10, fontStyle: 'italic' },
   chartDivider: { height: 1, backgroundColor: C.steel100, marginVertical: 8 },
+
+  // Workspace chip
+  workspaceChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 6 },
+  workspaceText: { fontSize: 10, fontWeight: '800', color: C.c400, textTransform: 'uppercase', letterSpacing: 1 },
+
+  // Quick actions grid
+  quickActionsGrid: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  qaCard: { flex: 1, backgroundColor: C.white, borderRadius: 16, padding: 14, alignItems: 'center', gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  qaIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  qaLabel: { fontSize: 11, fontWeight: '700', color: C.ink, textAlign: 'center' },
+
+  // Account summary
+  accountCard: { backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13 },
+  accountLabel: { fontSize: 12, fontWeight: '600', color: C.muted, width: 120 },
+  accountValue: { flex: 1, fontSize: 13, fontWeight: '700', color: C.ink, textAlign: 'right' },
 
   // Notifications
   notifCard: { backgroundColor: C.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
