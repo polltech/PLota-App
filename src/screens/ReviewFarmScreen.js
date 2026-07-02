@@ -238,10 +238,10 @@ export default function ReviewFarmScreen() {
     <View style={s.container}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={s.safe}>
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={22} color={C.ink} />
-          </TouchableOpacity>
+<View style={s.header}>
+           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+             <Ionicons name="arrow-back" size={22} color={C.ink} />
+           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Review Farm</Text>
             <Text style={s.subtitle}>Confirm all details before registering</Text>
@@ -366,7 +366,7 @@ export default function ReviewFarmScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   safe:      { flex: 1 },
-  header:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.white, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   backBtn:   { width: 36, height: 36, borderRadius: 10, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },
   title:     { fontSize: 18, fontWeight: '800', color: C.ink },
   subtitle:  { fontSize: 12, color: C.muted, marginTop: 1 },

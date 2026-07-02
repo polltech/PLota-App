@@ -182,10 +182,10 @@ const QueueListScreen = () => {
       >
         <View style={s.heroOverlay} />
         <SafeAreaView style={s.heroContent}>
-          <View style={s.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-              <Text style={s.backBtnText}>✕</Text>
-            </TouchableOpacity>
+<View style={s.header}>
+             <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+               <Text style={s.backBtnText}>✕</Text>
+             </TouchableOpacity>
             <View style={s.logoBadge}>
                <Image source={require('../../assets/plotra-logo.png')} style={s.logoBadgeImg} />
             </View>
@@ -271,7 +271,7 @@ const s = StyleSheet.create({
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.6)' },
   heroContent: { flex: 1, padding: 24 },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingLeft: 56 },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   backBtnText: { color: C.white, fontSize: 18, fontWeight: 'bold' },
   logoBadge: { width: 40, height: 40, borderRadius: 10, overflow: 'hidden', borderWidth: 2, borderColor: C.white },

@@ -97,12 +97,12 @@ export default function CaptureModeScreen() {
     <View style={s.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={s.headerWrap}>
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color={C.ink} />
-          </TouchableOpacity>
+{/* Header */}
+       <SafeAreaView edges={['top']} style={s.headerWrap}>
+         <View style={s.header}>
+           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+             <Ionicons name="arrow-back" size={20} color={C.ink} />
+           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Capture Boundary</Text>
             {(farm?.farm_name || farmId) ? (
@@ -160,7 +160,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
 
   headerWrap:    { backgroundColor: C.white, zIndex: 10 },
-  header:        { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header:        { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 56, paddingRight: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   backBtn:       { width: 32, height: 32, borderRadius: 8, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },
   title:         { fontSize: 16, fontWeight: '800', color: C.ink },
   subtitle:      { fontSize: 11, color: C.muted, marginTop: 1 },

@@ -385,7 +385,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 20 },
   heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 },
   heroTitle: { fontSize: 20, fontWeight: '800', color: C.white },
   heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },

@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function CaptureOfficerDashboardScreen({ navigation }) {
   const { user } = useAuth();
@@ -75,7 +74,6 @@ export default function CaptureOfficerDashboardScreen({ navigation }) {
               <Text style={s.roleTag}>Farm Capturing Officer</Text>
               {coopName ? <Text style={s.coopTag}>{coopName}</Text> : null}
             </View>
-            <ProfileAvatar />
           </View>
         </SafeAreaView>
       </View>
@@ -195,8 +193,8 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero:      { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 20 },
-  heroTop:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 14, gap: 12 },
+  hero:      { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20 },
+  heroTop:   { flexDirection: 'row', alignItems: 'flex-start', paddingTop: 14 },
   greet:     { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
   name:      { fontSize: 22, fontWeight: '800', color: '#fff' },
   roleTag:   { fontSize: 11, fontWeight: '700', color: C.c400, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },

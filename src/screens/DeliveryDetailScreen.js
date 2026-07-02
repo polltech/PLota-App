@@ -295,7 +295,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20 },
   heroNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   heroActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },

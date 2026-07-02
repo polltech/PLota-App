@@ -419,7 +419,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 20 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   heroTitle: { fontSize: 22, fontWeight: '800', color: C.white, marginBottom: 10 },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },

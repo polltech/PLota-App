@@ -304,7 +304,7 @@ const s = StyleSheet.create({
   content:     { padding: 20, paddingTop: 20 },
 
   // Header
-  header:      { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 20, paddingTop: 0 },
+  header:      { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 20, paddingTop: 0 },
   headerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: C.white },
   backBtn:     { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },

@@ -8,7 +8,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { farmerAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const statusStyle = (s) => {
@@ -159,7 +158,6 @@ export default function DeliveriesScreen() {
               <Text style={s.verifiedPillText}>{fmtKg(verifiedKg)} verified</Text>
             </View>
           )}
-          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -262,7 +260,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
   // Header
-  header:          { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header:          { backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   headerRow:       { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   headerTitle:     { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub:       { fontSize: 13, color: C.muted, marginTop: 2 },

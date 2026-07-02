@@ -211,7 +211,7 @@ export default function AdminCoopsScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 20 },
   heroRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: 8 },
   heroTitle: { fontSize: 26, fontWeight: '800', color: C.white },
   heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 2 },

@@ -247,7 +247,7 @@ const f = StyleSheet.create({
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: C.white, paddingHorizontal: 16, paddingBottom: 14,
+    backgroundColor: C.white, paddingLeft: 56, paddingRight: 16, paddingBottom: 14,
     borderBottomWidth: 1, borderBottomColor: C.steel200,
   },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.steel100, alignItems: 'center', justifyContent: 'center' },

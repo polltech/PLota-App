@@ -222,7 +222,7 @@ export default function CoopProfileScreen() {
 
 const s = StyleSheet.create({
   container:    { flex: 1, backgroundColor: C.steel100 },
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 56, paddingRight: 20, paddingVertical: 14, backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   headerTitle:  { fontSize: 18, fontWeight: '800', color: C.ink },
   editBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
   editBtnText:  { fontSize: 14, fontWeight: '700', color: C.c700 },

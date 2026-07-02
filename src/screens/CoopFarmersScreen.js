@@ -9,7 +9,6 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const farmerStatusStyle = (f) => {
@@ -429,7 +428,6 @@ export default function CoopFarmersScreen() {
             <Text style={s.headerTitle}>Farmers</Text>
             <Text style={s.headerSub}>{totalFarmers} members · {pendingCount} pending review</Text>
           </View>
-          <ProfileAvatar />
         </View>
 
         {/* Stat chips */}
@@ -556,7 +554,7 @@ const s = StyleSheet.create({
     backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 0,
     borderBottomWidth: 1, borderBottomColor: C.steel200,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12, paddingLeft: 36 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 12, color: C.muted, marginTop: 2 },
 

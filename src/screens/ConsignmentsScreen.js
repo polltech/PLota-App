@@ -395,7 +395,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },

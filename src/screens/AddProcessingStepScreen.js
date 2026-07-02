@@ -159,7 +159,7 @@ export default function AddProcessingStepScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
-  hero:     { paddingHorizontal: 20, paddingBottom: 18 },
+  hero:     { paddingLeft: 56, paddingRight: 20, paddingBottom: 18 },
   heroNav:  { flexDirection: 'row', alignItems: 'center', paddingTop: 14, marginBottom: 16 },
   backBtn:  { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   heroTitle:{ fontSize: 18, fontWeight: '800', color: C.white },

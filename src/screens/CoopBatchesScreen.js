@@ -8,7 +8,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 const cap = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
@@ -350,7 +349,6 @@ export default function CoopBatchesScreen() {
             <Ionicons name="add" size={18} color={C.white} />
             <Text style={s.newBtnText}>Create</Text>
           </TouchableOpacity>
-          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -601,7 +599,7 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8, paddingLeft: 36 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
   newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },

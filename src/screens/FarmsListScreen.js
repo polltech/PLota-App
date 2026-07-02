@@ -13,7 +13,6 @@ import * as Network from 'expo-network';
 import { farmerAPI, polygonAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const verifyBadge = (vs) => {
@@ -284,7 +283,6 @@ export default function FarmsListScreen() {
             <Ionicons name="cloud-upload-outline" size={16} color={C.c700} />
             <Text style={s.queueBtnText}>Offline Queue</Text>
           </TouchableOpacity>
-          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -426,7 +424,7 @@ export default function FarmsListScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },

@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 const fmtDate = (d) => {
   if (!d) return '—';
@@ -142,19 +141,16 @@ export default function CoopDashboardScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.roleTag}>{roleTitle}</Text>
             </View>
-            <View style={s.heroActions}>
-              {!isAgent && pendingFarmers.length > 0 && (
-                <TouchableOpacity
-                  style={s.heroBadgeBtn}
-                  onPress={() => navigation.navigate('CoopFarmers')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="person-outline" size={14} color="#fbbf24" />
-                  <Text style={s.heroBadgeBtnText}>{pendingFarmers.length} farmers</Text>
-                </TouchableOpacity>
-              )}
-              <ProfileAvatar />
-            </View>
+            {!isAgent && pendingFarmers.length > 0 && (
+              <TouchableOpacity
+                style={s.heroBadgeBtn}
+                onPress={() => navigation.navigate('CoopFarmers')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="person-outline" size={14} color="#fbbf24" />
+                <Text style={s.heroBadgeBtnText}>{pendingFarmers.length} pending</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </SafeAreaView>
       </View>
@@ -326,7 +322,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 14 },
   greet: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
   name: { fontSize: 22, fontWeight: '800', color: C.white },

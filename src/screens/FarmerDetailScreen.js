@@ -384,7 +384,7 @@ export default function FarmerDetailScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 28 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 28 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   heroBody: { alignItems: 'center' },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.c600, alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' },

@@ -184,7 +184,7 @@ export default function ReviewerDashboardScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 24 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 24 },
   heroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 8 },
   heroGreet: { fontSize: 20, fontWeight: '800', color: C.white },
   heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 3 },

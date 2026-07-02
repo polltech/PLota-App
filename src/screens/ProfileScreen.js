@@ -433,7 +433,7 @@ export default function ProfileScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.steel200, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.steel200, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
   editBtnText: { fontSize: 13, fontWeight: '700', color: C.c700 },

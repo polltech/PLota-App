@@ -212,7 +212,7 @@ const SectionHeader = ({ title, onSeeAll }) => (
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const navigation = useNavigation();
-  const [profileOpen, setProfileOpen] = useState(false);
+
 
   const [stats,       setStats]       = useState(null);
   const [farms,       setFarms]       = useState([]);
@@ -322,43 +322,11 @@ export default function HomeScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.heroTime}>{time}</Text>
             </View>
-            <View style={s.heroActions}>
-              {/* Notification bell */}
-              <TouchableOpacity
-                style={s.bellBtn}
-                onPress={() => navigation.navigate('Notifications')}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="notifications-outline" size={22} color={C.white} />
-                {notifications.filter(n => !n.is_read).length > 0 && (
-                  <View style={s.bellBadge}>
-                    <Text style={s.bellBadgeText}>
-                      {Math.min(notifications.filter(n => !n.is_read).length, 9)}
-                      {notifications.filter(n => !n.is_read).length > 9 ? '+' : ''}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              {/* Profile avatar */}
-              <TouchableOpacity style={s.avatarBtn} onPress={() => setProfileOpen(true)} activeOpacity={0.85}>
-                <Text style={s.avatarBtnText}>
-                  {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
-          {profileOpen && (
-            <ProfileMenu
-              user={user}
-              navigation={navigation}
-              onClose={() => setProfileOpen(false)}
-              onSignOut={logout}
-            />
-          )}
           {pendingSync > 0 && (
             <TouchableOpacity
               style={s.syncBanner}
-              onPress={() => navigation.navigate('Dashboard', { screen: 'QueueList' })}
+              onPress={() => navigation.navigate('QueueList')}
             >
               <Ionicons name="cloud-upload-outline" size={16} color="#fbbf24" />
               <Text style={s.syncBannerText}>{pendingSync} capture{pendingSync > 1 ? 's' : ''} pending sync — tap to view</Text>
@@ -721,7 +689,7 @@ const s = StyleSheet.create({
   loadingText: { marginTop: 14, fontSize: 13, color: C.muted, fontWeight: '600' },
 
   // Hero
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 28, paddingTop: 0 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 28, paddingTop: 0 },
   heroInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
   greet: { fontSize: 14, color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
   name: { fontSize: 24, fontWeight: '800', color: C.white },

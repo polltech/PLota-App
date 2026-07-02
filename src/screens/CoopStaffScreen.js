@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
 import { STAFF_ROLE_OPTIONS, ROLES, roleLabel } from '../utils/roles';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 const fmtDate = (d) => d
   ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -532,7 +531,6 @@ export default function CoopStaffScreen() {
             <Ionicons name="person-add-outline" size={16} color={C.white} />
             <Text style={s.addBtnText}>Add Member</Text>
           </TouchableOpacity>
-          <ProfileAvatar />
         </View>
 
         {/* Role stat chips */}
@@ -718,7 +716,7 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: { backgroundColor: C.white, paddingHorizontal: 16, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12, paddingLeft: 36 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 12, color: C.muted, marginTop: 2 },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.c700, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, marginRight: 10 },

@@ -242,7 +242,8 @@ const s = StyleSheet.create({
 
   header: {
     backgroundColor: C.white,
-    paddingHorizontal: 20,
+    paddingLeft: 56,
+    paddingRight: 20,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: C.steel200,

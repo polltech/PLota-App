@@ -320,7 +320,7 @@ export default function PaymentManagementScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
-  hero:       { backgroundColor: C.c700, paddingHorizontal: 20, paddingBottom: 20 },
+  hero:       { backgroundColor: C.c700, paddingLeft: 56, paddingRight: 20, paddingBottom: 20 },
   heroRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, marginBottom: 18 },
   heroTitle:  { fontSize: 20, fontWeight: '900', color: C.white },
   heroSub:    { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '600' },

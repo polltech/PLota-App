@@ -60,11 +60,11 @@ const FarmConfirmationScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#f3f2f1" />
       <SafeAreaView style={s.safe} edges={['top']}>
 
-        {/* Top bar */}
-        <View style={s.topBar}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={20} color={C.ink} />
-          </TouchableOpacity>
+{/* Top bar */}
+         <View style={s.topBar}>
+           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+             <Ionicons name="chevron-back" size={20} color={C.ink} />
+           </TouchableOpacity>
           <Text style={s.topTitle}>Confirm Farm</Text>
           <View style={{ width: 40 }} />
         </View>
@@ -162,7 +162,7 @@ const s = StyleSheet.create({
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 12, paddingVertical: 12,
+    paddingLeft: 56, paddingRight: 20, paddingVertical: 12,
     backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },

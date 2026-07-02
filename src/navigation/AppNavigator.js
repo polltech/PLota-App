@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
+import { DrawerCtx } from '../context/DrawerContext';
 import { C } from '../theme';
 import { ROLES } from '../utils/roles';
 
@@ -77,12 +78,6 @@ import OfflineSavedScreen from '../screens/S06_OfflineSavedScreen';
 import SubmittedScreen from '../screens/S07_SubmittedScreen';
 import QueueListScreen from '../screens/S08_QueueListScreen';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Drawer context — any screen can call openDrawer()
-// ─────────────────────────────────────────────────────────────────────────────
-export const DrawerCtx = React.createContext({ openDrawer: () => {} });
-export const useDrawer = () => React.useContext(DrawerCtx);
-
 // Root nav ref — sidebar navigates via this without needing useNavigation()
 export const rootNavRef = React.createRef();
 
@@ -144,6 +139,10 @@ function AnimatedSidebar({ open, onClose, links, user, onLogout }) {
             {!!fullName  && <Text style={sb.userName} numberOfLines={1}>{fullName}</Text>}
             {!!roleLabel && <Text style={sb.roleChip}>{roleLabel}</Text>}
           </View>
+          <TouchableOpacity onPress={onClose} style={sb.closeBtn} activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8 }}>
@@ -174,7 +173,7 @@ function AnimatedSidebar({ open, onClose, links, user, onLogout }) {
 }
 
 const sb = StyleSheet.create({
-  panel:     { position: 'absolute', left: 0, top: 0, bottom: 0, width: DRAWER_W, backgroundColor: C.c900, zIndex: 999 },
+  panel:     { position: 'absolute', left: -20, top: 0, bottom: 0, width: DRAWER_W + 20, backgroundColor: C.c900, zIndex: 999 },
   brand:     { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   logo:      { width: 42, height: 42, borderRadius: 12 },
   appName:   { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
@@ -184,10 +183,11 @@ const sb = StyleSheet.create({
   itemLabel: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
   logout:    { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
   logoutText:{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.65)' },
+  closeBtn:  { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hamburger — floats at top-left above all screen content
+// Hamburger — floats at top-left on every screen (left side, no overlap)
 // ─────────────────────────────────────────────────────────────────────────────
 function HamburgerBtn({ onPress }) {
   const insets = useSafeAreaInsets();
@@ -198,15 +198,16 @@ function HamburgerBtn({ onPress }) {
       activeOpacity={0.8}
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
     >
-      <Ionicons name="menu-outline" size={26} color="#fff" />
+      <Ionicons name="menu-outline" size={24} color="#fff" />
     </TouchableOpacity>
   );
 }
 const hb = StyleSheet.create({
   btn: {
-    position: 'absolute', left: 16, zIndex: 500,
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    position: 'absolute', left: 0, zIndex: 2000,
+    width: 40, height: 40, borderRadius: 20, marginLeft: 8,
+
+    backgroundColor: 'rgba(0,0,0,0.22)',
     alignItems: 'center', justifyContent: 'center',
   },
 });
@@ -223,8 +224,10 @@ function RoleShell({ links, children }) {
   return (
     <DrawerCtx.Provider value={{ openDrawer }}>
       <View style={{ flex: 1 }}>
-        {children}
-        <HamburgerBtn onPress={openDrawer} />
+        <View style={{ flex: 1, marginLeft: open ? 40 : 0 }}>
+          {children}
+        </View>
+        {!open && <HamburgerBtn onPress={openDrawer} />}
         <AnimatedSidebar
           open={open}
           onClose={closeDrawer}
@@ -297,6 +300,7 @@ const coopLinks = [
   { icon: 'people-outline',        label: 'Farmers',      nav: nav('CoopFarmers') },
   { icon: 'person-circle-outline', label: 'Staff',        nav: nav('CoopStaff') },
   { icon: 'airplane-outline',      label: 'Consignments', nav: nav('CoopConsignments') },
+  { icon: 'person-outline',        label: 'Profile',      nav: nav('CoopProfile') },
 ];
 function CoopApp() {
   return (
@@ -324,8 +328,9 @@ function CoopApp() {
 
 // ── Delivery Agent ────────────────────────────────────────────────────────────
 const agentLinks = [
-  { icon: 'grid-outline', label: 'Dashboard',  nav: nav('AgentDash') },
-  { icon: 'cube-outline', label: 'Deliveries', nav: nav('AgentDeliveries') },
+  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('AgentDash') },
+  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('AgentDeliveries') },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
 ];
 function DeliveryAgentApp() {
   return (
@@ -345,8 +350,9 @@ function DeliveryAgentApp() {
 
 // ── Washing Station ───────────────────────────────────────────────────────────
 const wsLinks = [
-  { icon: 'grid-outline', label: 'Dashboard',  nav: nav('WSDash') },
-  { icon: 'cube-outline', label: 'Deliveries', nav: nav('WSDeliveries') },
+  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('WSDash') },
+  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('WSDeliveries') },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
 ];
 function WashingStationApp() {
   return (
@@ -367,7 +373,8 @@ function WashingStationApp() {
 const phLinks = [
   { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('PHDash') },
   { icon: 'cube-outline',  label: 'Deliveries', nav: nav('PHDeliveries') },
-  { icon: 'flask-outline', label: 'Lab Results', nav: nav('PHLab') },
+  { icon: 'flask-outline', label: 'Lab Results',nav: nav('PHLab') },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
 ];
 function PostHarvestApp() {
   return (
@@ -391,6 +398,7 @@ const agroLinks = [
   { icon: 'people-outline',           label: 'Farmers',    nav: nav('AgroFarmers') },
   { icon: 'leaf-outline',             label: 'Farms',      nav: nav('AgroFarms') },
   { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AgroCompliance') },
+  { icon: 'person-outline',           label: 'Profile',    nav: nav('CoopProfile') },
 ];
 function AgronomistApp() {
   return (
@@ -412,6 +420,7 @@ const finLinks = [
   { icon: 'layers-outline',   label: 'Batches',      nav: nav('FinBatches') },
   { icon: 'airplane-outline', label: 'Consignments', nav: nav('FinConsignments') },
   { icon: 'cash-outline',     label: 'Payments',     nav: nav('FinPayments') },
+  { icon: 'person-outline',   label: 'Profile',      nav: nav('CoopProfile') },
 ];
 function FinanceAdminApp() {
   return (
@@ -431,9 +440,10 @@ function FinanceAdminApp() {
 
 // ── Farm Capturing Officer ────────────────────────────────────────────────────
 const captureOfficerLinks = [
-  { icon: 'grid-outline',   label: 'Dashboard', nav: nav('CaptureDash') },
-  { icon: 'people-outline', label: 'Farmers',   nav: nav('CaptureFarmers') },
-  { icon: 'map-outline',    label: 'Farms',     nav: nav('CaptureFarms') },
+  { icon: 'grid-outline',   label: 'Dashboard',    nav: nav('CaptureDash') },
+  { icon: 'people-outline', label: 'Farmers',      nav: nav('CaptureFarmers') },
+  { icon: 'map-outline',    label: 'Farms',        nav: nav('CaptureFarms') },
+  { icon: 'person-outline', label: 'Profile',      nav: nav('CoopProfile') },
 ];
 function FarmCapturingOfficerApp() {
   return (
@@ -459,6 +469,7 @@ const adminLinks = [
   { icon: 'people-outline',           label: 'Users',      nav: nav('AdminUsers') },
   { icon: 'person-add-outline',       label: 'Farmers',    nav: nav('AdminFarmers') },
   { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AdminCompliance') },
+  { icon: 'person-outline',           label: 'Profile',    nav: nav('AdminProfile') },
 ];
 function AdminApp() {
   return (
@@ -474,6 +485,7 @@ function AdminApp() {
         <Stack.Screen name="AdminFarmers"    component={AdminFarmersScreen} />
         <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
         <Stack.Screen name="AdminCompliance" component={AdminComplianceScreen} />
+        <Stack.Screen name="AdminProfile"    component={ProfileScreen} />
         {CaptureScreens}
       </Stack.Navigator>
     </RoleShell>

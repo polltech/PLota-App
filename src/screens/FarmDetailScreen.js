@@ -673,7 +673,7 @@ const s = StyleSheet.create({
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.white },
 
   // Hero
-  hero:           { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 24 },
+  hero:           { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 24 },
   heroNav:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
   heroBack:       { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   heroCapBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },

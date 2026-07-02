@@ -9,7 +9,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 const SCREEN_W = Dimensions.get('window').width;
 const CARD_W = (SCREEN_W - 32 - 10) / 2;
@@ -502,7 +501,6 @@ export default function CoopFarmsScreen() {
             <Text style={s.headerTitle}>Farms</Text>
             <Text style={s.headerSub}>{farms.length} total · {pendingCount} pending · {approvedCount} approved</Text>
           </View>
-          <ProfileAvatar />
         </View>
 
         {/* Tab switcher */}
@@ -636,7 +634,7 @@ const s = StyleSheet.create({
     backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 0,
     borderBottomWidth: 1, borderBottomColor: C.steel200,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12, paddingLeft: 36 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 12, color: C.muted, marginTop: 2 },
 

@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 import { ROLES } from '../utils/roles';
 
 const ROLE_STEPS = {
@@ -118,7 +117,6 @@ export default function ProcessingDashboardScreen() {
               <Text style={s.name}>{firstName}</Text>
               <Text style={s.roleTag}>{ROLE_LABEL[role] || cap(role)}</Text>
             </View>
-            <ProfileAvatar />
           </View>
         </SafeAreaView>
       </View>
@@ -254,7 +252,7 @@ const s = StyleSheet.create({
   scroll:    { flex: 1 },
   content:   { padding: 16, gap: 14 },
 
-  hero:    { backgroundColor: C.c800, paddingHorizontal: 20, paddingBottom: 20 },
+  hero:    { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20 },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: 14 },
   greet:   { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   name:    { fontSize: 24, fontWeight: '900', color: C.white, marginTop: 2 },

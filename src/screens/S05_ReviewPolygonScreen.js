@@ -119,10 +119,10 @@ const ReviewPolygonScreen = () => {
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={C.white} />
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={s.backBtnText}>✕</Text>
-        </TouchableOpacity>
+<View style={s.header}>
+         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+           <Text style={s.backBtnText}>✕</Text>
+         </TouchableOpacity>
         <View style={s.headerLogoWrap}>
           <Image source={require('../../assets/plotra-logo.png')} style={s.headerLogo} />
         </View>
@@ -197,7 +197,7 @@ const ReviewPolygonScreen = () => {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.white },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 56, paddingRight: 20, paddingVertical: 15 },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.c100, alignItems: 'center', justifyContent: 'center' },
   backBtnText: { fontSize: 18, fontWeight: '700', color: C.c700 },
   headerLogoWrap: { width: 32, height: 32, borderRadius: 8, overflow: 'hidden', marginHorizontal: 12, borderWidth: 1, borderColor: C.steel200 },

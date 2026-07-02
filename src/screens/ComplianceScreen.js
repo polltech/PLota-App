@@ -323,7 +323,7 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
 

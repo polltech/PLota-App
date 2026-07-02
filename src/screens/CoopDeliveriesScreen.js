@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { coopAPI } from '../services/api';
 import { C } from '../theme';
-import ProfileAvatar from '../components/ProfileAvatar';
 import { ROLES } from '../utils/roles';
 
 // Steps owned by each processing role (mirrors ProcessingStepsScreen)
@@ -174,7 +173,6 @@ export default function CoopDeliveriesScreen() {
               <Text style={s.newBtnText}>Record</Text>
             </TouchableOpacity>
           )}
-          <ProfileAvatar />
         </View>
       </SafeAreaView>
 
@@ -250,7 +248,7 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8, paddingLeft: 36 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
   headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
   newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },

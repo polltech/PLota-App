@@ -224,7 +224,7 @@ export default function AdminFarmersScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  hero: { backgroundColor: C.c800, paddingHorizontal: 24, paddingBottom: 20 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 24, paddingBottom: 20 },
   heroTitle: { fontSize: 26, fontWeight: '800', color: C.white, marginTop: 8 },
   heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
 

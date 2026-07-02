@@ -52,10 +52,10 @@ export default function SelectFarmerForCaptureScreen() {
     <SafeAreaView style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={C.text} />
-        </TouchableOpacity>
+<View style={s.header}>
+         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+           <Ionicons name="arrow-back" size={22} color={C.text} />
+         </TouchableOpacity>
         <Text style={s.title}>Select Farmer</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -119,7 +119,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
+    paddingLeft: 56, paddingRight: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: C.text },

@@ -335,10 +335,10 @@ const WalkBoundaryScreen = () => {
         style={s.map}
       />
 
-      <View style={[s.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.roundBtn}>
-          <Text style={s.roundBtnText}>✕</Text>
-        </TouchableOpacity>
+<View style={[s.header, { paddingTop: insets.top + 10 }]}>
+         <TouchableOpacity onPress={() => navigation.goBack()} style={s.roundBtn}>
+           <Text style={s.roundBtnText}>✕</Text>
+         </TouchableOpacity>
 
         <View style={s.logoMiniWrap}>
           <Image source={require('../../assets/plotra-logo.png')} style={s.logoMini} />
@@ -437,7 +437,7 @@ const WalkBoundaryScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   map: { flex: 1 },
-  header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20, backgroundColor: 'rgba(255,255,255,0.95)', borderBottomWidth: 1, borderBottomColor: C.steel200, zIndex: 100 },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingLeft: 56, paddingRight: 20, paddingBottom: 20, backgroundColor: 'rgba(255,255,255,0.95)', borderBottomWidth: 1, borderBottomColor: C.steel200, zIndex: 100 },
   roundBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   roundBtnText: { fontSize: 18, fontWeight: 'bold', color: C.steel700 },
 
