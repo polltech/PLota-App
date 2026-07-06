@@ -82,7 +82,6 @@ export default function ReviewerDDSScreen() {
       const d = res.data;
       setDds(Array.isArray(d) ? d : d?.items || []);
     } catch (e) {
-      console.warn('Reviewer DDS:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

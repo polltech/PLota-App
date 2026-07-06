@@ -18,9 +18,7 @@ class DatabaseService {
       if (this.db) return;
       this.db = await SQLite.openDatabaseAsync(DB_NAME);
       await this.createTables();
-      console.log('Database initialized and ready');
     } catch (e) {
-      console.error('DB init error:', e);
       this._initPromise = null; // Allow retry on failure
       throw e;
     }
@@ -32,6 +30,13 @@ class DatabaseService {
     // Use a single transaction for schema setup
     await this.db.execAsync(`
       PRAGMA journal_mode = WAL;
+
+      CREATE TABLE IF NOT EXISTS kv_cache (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        saved_at TEXT DEFAULT (datetime('now'))
+      );
+
       CREATE TABLE IF NOT EXISTS polygon_captures (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         farm_id TEXT NOT NULL,
@@ -67,7 +72,6 @@ class DatabaseService {
         await this.db.execAsync(`ALTER TABLE polygon_captures ADD COLUMN synced_at TEXT;`);
       }
     } catch (err) {
-      console.warn('Migration check failed:', err);
     }
   }
 
@@ -204,6 +208,26 @@ class DatabaseService {
     return this.db.getFirstAsync(
       "SELECT COUNT(*) as count FROM polygon_captures WHERE sync_status = 'pending'"
     );
+  }
+
+  async setCacheItem(key, data) {
+    if (!this.db) return;
+    await this.db.runAsync(
+      `INSERT INTO kv_cache (key, value, saved_at)
+       VALUES (?, ?, datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, saved_at = excluded.saved_at`,
+      [key, JSON.stringify(data)]
+    );
+  }
+
+  async getCacheItem(key) {
+    if (!this.db) return null;
+    const row = await this.db.getFirstAsync(
+      'SELECT value FROM kv_cache WHERE key = ?',
+      [key]
+    );
+    if (!row) return null;
+    try { return JSON.parse(row.value); } catch { return null; }
   }
 }
 

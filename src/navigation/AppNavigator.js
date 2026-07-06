@@ -3,13 +3,15 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Animated, Image, ScrollView,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import { DrawerCtx } from '../context/DrawerContext';
+import { NetworkProvider } from '../context/NetworkContext';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { C } from '../theme';
 import { ROLES } from '../utils/roles';
 
@@ -66,6 +68,9 @@ import ConsignmentsScreen from '../screens/ConsignmentsScreen';
 import PostHarvestScreen from '../screens/PostHarvestScreen';
 import PaymentManagementScreen from '../screens/PaymentManagementScreen';
 
+// ── Error screen ─────────────────────────────────────────────────────────────
+import ErrorScreen from '../screens/ErrorScreen';
+
 // ── Polygon capture flow (S00–S08) ────────────────────────────────────────────
 import LandingScreen from '../screens/S00_LandingScreen';
 import FarmIDEntryScreen from '../screens/S01_FarmIDEntryScreen';
@@ -77,6 +82,13 @@ import ReviewPolygonScreen from '../screens/S05_ReviewPolygonScreen';
 import OfflineSavedScreen from '../screens/S06_OfflineSavedScreen';
 import SubmittedScreen from '../screens/S07_SubmittedScreen';
 import QueueListScreen from '../screens/S08_QueueListScreen';
+
+/** null page_permissions = full access; otherwise the grantId must be in the list */
+function canSee(pagePermissions, grantId) {
+  if (pagePermissions == null) return true;
+  if (!grantId) return true;
+  return pagePermissions.includes(grantId);
+}
 
 // Root nav ref — sidebar navigates via this without needing useNavigation()
 export const rootNavRef = React.createRef();
@@ -212,6 +224,19 @@ const hb = StyleSheet.create({
   },
 });
 
+// Screens where the floating hamburger should be hidden (fullscreen map/capture)
+const FULLSCREEN_SCREENS = new Set([
+  'WalkBoundary', 'CaptureMode', 'CaptureLanding', 'ReviewPolygon', 'OfflineSaved', 'Submitted',
+]);
+
+function getDeepestRouteName(state) {
+  if (!state) return null;
+  const route = state.routes[state.index ?? state.routes.length - 1];
+  if (!route) return null;
+  if (route.state) return getDeepestRouteName(route.state);
+  return route.name;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // RoleShell — wraps a Stack navigator with sidebar + floating hamburger
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,13 +246,16 @@ function RoleShell({ links, children }) {
   const openDrawer       = useCallback(() => setOpen(true), []);
   const closeDrawer      = useCallback(() => setOpen(false), []);
 
+  const activeRoute = useNavigationState(getDeepestRouteName);
+  const showHamburger = !open && !FULLSCREEN_SCREENS.has(activeRoute);
+
   return (
     <DrawerCtx.Provider value={{ openDrawer }}>
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1, marginLeft: open ? 40 : 0 }}>
           {children}
         </View>
-        {!open && <HamburgerBtn onPress={openDrawer} />}
+        {showHamburger && <HamburgerBtn onPress={openDrawer} />}
         <AnimatedSidebar
           open={open}
           onClose={closeDrawer}
@@ -265,18 +293,20 @@ const CaptureScreens = [
 ];
 
 // ── Farmer ────────────────────────────────────────────────────────────────────
-const farmerLinks = [
-  { icon: 'grid-outline',          label: 'Dashboard',    nav: nav('HomeMain') },
-  { icon: 'leaf-outline',          label: 'My Farms',     nav: nav('FarmsList') },
-  { icon: 'cube-outline',          label: 'Deliveries',   nav: nav('Deliveries') },
-  { icon: 'wallet-outline',        label: 'Wallet',       nav: nav('Wallet') },
-  { icon: 'document-text-outline', label: 'Documents',    nav: nav('Documents') },
-  { icon: 'notifications-outline', label: 'Notifications',nav: nav('Notifications') },
-  { icon: 'person-outline',        label: 'Profile',      nav: nav('Profile') },
+const ALL_FARMER_LINKS = [
+  { icon: 'grid-outline',          label: 'Dashboard',     nav: nav('HomeMain'),      grantId: 'farm:home' },
+  { icon: 'leaf-outline',          label: 'My Farms',      nav: nav('FarmsList'),     grantId: 'farm:home' },
+  { icon: 'cube-outline',          label: 'Deliveries',    nav: nav('Deliveries'),    grantId: 'farm:deliveries' },
+  { icon: 'wallet-outline',        label: 'Wallet',        nav: nav('Wallet'),        grantId: 'farm:wallet' },
+  { icon: 'document-text-outline', label: 'Documents',     nav: nav('Documents'),     grantId: 'farm:documents' },
+  { icon: 'notifications-outline', label: 'Notifications', nav: nav('Notifications'), grantId: null },
+  { icon: 'person-outline',        label: 'Profile',       nav: nav('Profile'),       grantId: null },
 ];
 function FarmerApp() {
+  const { user } = useAuth();
+  const links = ALL_FARMER_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={farmerLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="HomeMain"      component={HomeScreen} />
         <Stack.Screen name="FarmsList"     component={FarmsListScreen} />
@@ -292,19 +322,21 @@ function FarmerApp() {
 }
 
 // ── Cooperative Officer ───────────────────────────────────────────────────────
-const coopLinks = [
-  { icon: 'grid-outline',          label: 'Dashboard',    nav: nav('CoopDash') },
-  { icon: 'cube-outline',          label: 'Deliveries',   nav: nav('CoopDeliveries') },
-  { icon: 'layers-outline',        label: 'Batches',      nav: nav('CoopBatches') },
-  { icon: 'leaf-outline',          label: 'Farms',        nav: nav('CoopFarms') },
-  { icon: 'people-outline',        label: 'Farmers',      nav: nav('CoopFarmers') },
-  { icon: 'person-circle-outline', label: 'Staff',        nav: nav('CoopStaff') },
-  { icon: 'airplane-outline',      label: 'Consignments', nav: nav('CoopConsignments') },
-  { icon: 'person-outline',        label: 'Profile',      nav: nav('CoopProfile') },
+const ALL_COOP_LINKS = [
+  { icon: 'grid-outline',          label: 'Dashboard',    nav: nav('CoopDash'),          grantId: 'coop:overview' },
+  { icon: 'cube-outline',          label: 'Deliveries',   nav: nav('CoopDeliveries'),    grantId: 'coop:deliveries' },
+  { icon: 'layers-outline',        label: 'Batches',      nav: nav('CoopBatches'),       grantId: 'coop:batches' },
+  { icon: 'leaf-outline',          label: 'Farms',        nav: nav('CoopFarms'),         grantId: 'coop:farms' },
+  { icon: 'people-outline',        label: 'Farmers',      nav: nav('CoopFarmers'),       grantId: 'coop:members' },
+  { icon: 'person-circle-outline', label: 'Staff',        nav: nav('CoopStaff'),         grantId: 'coop:staff_roles' },
+  { icon: 'airplane-outline',      label: 'Consignments', nav: nav('CoopConsignments'),  grantId: 'coop:consignments' },
+  { icon: 'person-outline',        label: 'Profile',      nav: nav('CoopProfile'),       grantId: null },
 ];
 function CoopApp() {
+  const { user } = useAuth();
+  const links = ALL_COOP_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={coopLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="CoopDash"          component={CoopDashboardScreen} />
         <Stack.Screen name="CoopDeliveries"    component={CoopDeliveriesScreen} />
@@ -327,14 +359,16 @@ function CoopApp() {
 }
 
 // ── Delivery Agent ────────────────────────────────────────────────────────────
-const agentLinks = [
-  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('AgentDash') },
-  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('AgentDeliveries') },
-  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
+const ALL_AGENT_LINKS = [
+  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('AgentDash'),        grantId: 'coop:deliveries' },
+  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('AgentDeliveries'),  grantId: 'coop:deliveries' },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile'),      grantId: null },
 ];
 function DeliveryAgentApp() {
+  const { user } = useAuth();
+  const links = ALL_AGENT_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={agentLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="AgentDash"         component={ProcessingDashboardScreen} />
         <Stack.Screen name="AgentDeliveries"   component={CoopDeliveriesScreen} />
@@ -349,14 +383,16 @@ function DeliveryAgentApp() {
 }
 
 // ── Washing Station ───────────────────────────────────────────────────────────
-const wsLinks = [
-  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('WSDash') },
-  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('WSDeliveries') },
-  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
+const ALL_WS_LINKS = [
+  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('WSDash'),       grantId: 'coop:washing' },
+  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('WSDeliveries'), grantId: 'coop:deliveries' },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile'),  grantId: null },
 ];
 function WashingStationApp() {
+  const { user } = useAuth();
+  const links = ALL_WS_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={wsLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="WSDash"            component={ProcessingDashboardScreen} />
         <Stack.Screen name="WSDeliveries"      component={CoopDeliveriesScreen} />
@@ -370,15 +406,17 @@ function WashingStationApp() {
 }
 
 // ── Post-Harvest ──────────────────────────────────────────────────────────────
-const phLinks = [
-  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('PHDash') },
-  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('PHDeliveries') },
-  { icon: 'flask-outline', label: 'Lab Results',nav: nav('PHLab') },
-  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile') },
+const ALL_PH_LINKS = [
+  { icon: 'grid-outline',  label: 'Dashboard',  nav: nav('PHDash'),       grantId: 'coop:lab' },
+  { icon: 'cube-outline',  label: 'Deliveries', nav: nav('PHDeliveries'), grantId: 'coop:deliveries' },
+  { icon: 'flask-outline', label: 'Lab Results',nav: nav('PHLab'),        grantId: 'coop:lab' },
+  { icon: 'person-outline',label: 'Profile',    nav: nav('CoopProfile'),  grantId: null },
 ];
 function PostHarvestApp() {
+  const { user } = useAuth();
+  const links = ALL_PH_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={phLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="PHDash"            component={ProcessingDashboardScreen} />
         <Stack.Screen name="PHDeliveries"      component={CoopDeliveriesScreen} />
@@ -394,15 +432,17 @@ function PostHarvestApp() {
 }
 
 // ── Agronomist ────────────────────────────────────────────────────────────────
-const agroLinks = [
-  { icon: 'people-outline',           label: 'Farmers',    nav: nav('AgroFarmers') },
-  { icon: 'leaf-outline',             label: 'Farms',      nav: nav('AgroFarms') },
-  { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AgroCompliance') },
-  { icon: 'person-outline',           label: 'Profile',    nav: nav('CoopProfile') },
+const ALL_AGRO_LINKS = [
+  { icon: 'people-outline',           label: 'Farmers',    nav: nav('AgroFarmers'),    grantId: 'coop:members' },
+  { icon: 'leaf-outline',             label: 'Farms',      nav: nav('AgroFarms'),      grantId: 'coop:farms' },
+  { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AgroCompliance'), grantId: 'admin:compliance' },
+  { icon: 'person-outline',           label: 'Profile',    nav: nav('CoopProfile'),    grantId: null },
 ];
 function AgronomistApp() {
+  const { user } = useAuth();
+  const links = ALL_AGRO_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={agroLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="AgroFarmers"    component={CoopFarmersScreen} />
         <Stack.Screen name="FarmerDetail"   component={FarmerDetailScreen} />
@@ -416,15 +456,17 @@ function AgronomistApp() {
 }
 
 // ── Finance Admin ─────────────────────────────────────────────────────────────
-const finLinks = [
-  { icon: 'layers-outline',   label: 'Batches',      nav: nav('FinBatches') },
-  { icon: 'airplane-outline', label: 'Consignments', nav: nav('FinConsignments') },
-  { icon: 'cash-outline',     label: 'Payments',     nav: nav('FinPayments') },
-  { icon: 'person-outline',   label: 'Profile',      nav: nav('CoopProfile') },
+const ALL_FIN_LINKS = [
+  { icon: 'layers-outline',   label: 'Batches',      nav: nav('FinBatches'),       grantId: 'coop:batches' },
+  { icon: 'airplane-outline', label: 'Consignments', nav: nav('FinConsignments'),  grantId: 'coop:consignments' },
+  { icon: 'cash-outline',     label: 'Payments',     nav: nav('FinPayments'),      grantId: 'coop:payments' },
+  { icon: 'person-outline',   label: 'Profile',      nav: nav('CoopProfile'),      grantId: null },
 ];
 function FinanceAdminApp() {
+  const { user } = useAuth();
+  const links = ALL_FIN_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={finLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="FinBatches"       component={CoopBatchesScreen} />
         <Stack.Screen name="BatchDetail"      component={BatchDetailScreen} />
@@ -439,15 +481,17 @@ function FinanceAdminApp() {
 }
 
 // ── Farm Capturing Officer ────────────────────────────────────────────────────
-const captureOfficerLinks = [
-  { icon: 'grid-outline',   label: 'Dashboard',    nav: nav('CaptureDash') },
-  { icon: 'people-outline', label: 'Farmers',      nav: nav('CaptureFarmers') },
-  { icon: 'map-outline',    label: 'Farms',        nav: nav('CaptureFarms') },
-  { icon: 'person-outline', label: 'Profile',      nav: nav('CoopProfile') },
+const ALL_CAPTURE_OFFICER_LINKS = [
+  { icon: 'grid-outline',   label: 'Dashboard', nav: nav('CaptureDash'),    grantId: 'farm:capture' },
+  { icon: 'people-outline', label: 'Farmers',   nav: nav('CaptureFarmers'), grantId: 'coop:members' },
+  { icon: 'map-outline',    label: 'Farms',     nav: nav('CaptureFarms'),   grantId: 'coop:farms' },
+  { icon: 'person-outline', label: 'Profile',   nav: nav('CoopProfile'),    grantId: null },
 ];
 function FarmCapturingOfficerApp() {
+  const { user } = useAuth();
+  const links = ALL_CAPTURE_OFFICER_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={captureOfficerLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="CaptureDash"    component={CaptureOfficerDashboardScreen} />
         <Stack.Screen name="CaptureFarmers" component={CoopFarmersScreen} />
@@ -463,17 +507,19 @@ function FarmCapturingOfficerApp() {
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
-const adminLinks = [
-  { icon: 'grid-outline',             label: 'Dashboard',  nav: nav('AdminDash') },
-  { icon: 'layers-outline',           label: 'Batches',    nav: nav('AdminBatches') },
-  { icon: 'people-outline',           label: 'Users',      nav: nav('AdminUsers') },
-  { icon: 'person-add-outline',       label: 'Farmers',    nav: nav('AdminFarmers') },
-  { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AdminCompliance') },
-  { icon: 'person-outline',           label: 'Profile',    nav: nav('AdminProfile') },
+const ALL_ADMIN_LINKS = [
+  { icon: 'grid-outline',             label: 'Dashboard',  nav: nav('AdminDash'),       grantId: 'admin:overview' },
+  { icon: 'layers-outline',           label: 'Batches',    nav: nav('AdminBatches'),    grantId: 'admin:batches' },
+  { icon: 'people-outline',           label: 'Users',      nav: nav('AdminUsers'),      grantId: 'admin:users' },
+  { icon: 'person-add-outline',       label: 'Farmers',    nav: nav('AdminFarmers'),    grantId: 'admin:farms' },
+  { icon: 'shield-checkmark-outline', label: 'Compliance', nav: nav('AdminCompliance'), grantId: 'admin:compliance' },
+  { icon: 'person-outline',           label: 'Profile',    nav: nav('AdminProfile'),    grantId: null },
 ];
 function AdminApp() {
+  const { user } = useAuth();
+  const links = ALL_ADMIN_LINKS.filter(l => canSee(user?.page_permissions, l.grantId));
   return (
-    <RoleShell links={adminLinks}>
+    <RoleShell links={links}>
       <Stack.Navigator screenOptions={screenOpts}>
         <Stack.Screen name="AdminDash"       component={AdminDashboardScreen} />
         <Stack.Screen name="AdminCoops"      component={AdminCoopsScreen} />
@@ -486,6 +532,7 @@ function AdminApp() {
         <Stack.Screen name="FarmerDetail"    component={FarmerDetailScreen} />
         <Stack.Screen name="AdminCompliance" component={AdminComplianceScreen} />
         <Stack.Screen name="AdminProfile"    component={ProfileScreen} />
+        <Stack.Screen name="Error"           component={ErrorScreen} />
         {CaptureScreens}
       </Stack.Navigator>
     </RoleShell>
@@ -559,25 +606,28 @@ export default function AppNavigator() {
     : null;
 
   return (
-    <NavigationContainer ref={rootNavRef}>
-      <RootStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-        {user && Main ? (
-          <RootStack.Screen name="Main" component={Main} />
-        ) : user ? (
-          <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
-        ) : (
-          <RootStack.Screen name="Auth">
-            {() => (
-              <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-                <Stack.Screen name="Login"          component={LoginScreen} />
-                <Stack.Screen name="Register"       component={RegisterScreen} />
-                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-              </Stack.Navigator>
-            )}
-          </RootStack.Screen>
-        )}
-      </RootStack.Navigator>
-    </NavigationContainer>
+    <NetworkProvider>
+      <NavigationContainer ref={rootNavRef}>
+        <OfflineBanner />
+        <RootStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+          {user && Main ? (
+            <RootStack.Screen name="Main" component={Main} />
+          ) : user ? (
+            <RootStack.Screen name="WrongRole" component={WrongRoleScreen} />
+          ) : (
+            <RootStack.Screen name="Auth">
+              {() => (
+                <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+                  <Stack.Screen name="Login"          component={LoginScreen} />
+                  <Stack.Screen name="Register"       component={RegisterScreen} />
+                  <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                </Stack.Navigator>
+              )}
+            </RootStack.Screen>
+          )}
+        </RootStack.Navigator>
+      </NavigationContainer>
+    </NetworkProvider>
   );
 }
 

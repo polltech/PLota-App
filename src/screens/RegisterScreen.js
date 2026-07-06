@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, ImageBackground, Image, StatusBar,
+  ActivityIndicator, Image, StatusBar,
   KeyboardAvoidingView, Platform, ScrollView, Animated, FlatList, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -67,20 +67,20 @@ const COUNTRY_OPTIONS = [
   { flag: '🇹🇿', code: '+255', name: 'Tanzania' },
 ];
 
-const STEPS = ['Personal', 'Verify', 'Location', 'Profile', 'Labor & Land', 'Password'];
+const STEPS = ['Personal', 'Verify', 'Location', 'Profile', 'Labour & Land', 'Password'];
 
 const LAND_DOC_OPTIONS = [
-  { value: 'title_deed',   label: 'Title Deed' },
+  { value: 'title_deed',      label: 'Title Deed' },
   { value: 'lease_agreement', label: 'Lease Agreement' },
-  { value: 'communal',     label: 'Communal / Group' },
-  { value: 'inherited',    label: 'Inherited (No Deed)' },
-  { value: 'no_document',  label: 'No Documentation' },
+  { value: 'communal',        label: 'Communal / Group' },
+  { value: 'inherited',       label: 'Inherited (No Deed)' },
+  { value: 'no_document',     label: 'No Documentation' },
 ];
 
-const LABOR_TYPE_OPTIONS = [
-  { value: 'family_only',  label: 'Family Only' },
-  { value: 'hired',        label: 'Hired Workers' },
-  { value: 'both',         label: 'Family + Hired' },
+const LABOUR_TYPE_OPTIONS = [
+  { value: 'family_only', label: 'Family Only' },
+  { value: 'hired',       label: 'Hired Workers' },
+  { value: 'both',        label: 'Family & Hired' },
 ];
 
 const GENDER_OPTIONS = [
@@ -188,6 +188,7 @@ export default function RegisterScreen({ navigation }) {
   const [selectedCoop, setSelectedCoop] = useState(null);  // {id, code, name, county}
   const [coopSearching, setCoopSearching] = useState(false);
   const searchTimer = useRef(null);
+  const [coopMemberNo, setCoopMemberNo] = useState('');
 
   // ── Direct cooperative code entry ─────────────────────────────────────────
   const [directCode,        setDirectCode]        = useState('');
@@ -200,7 +201,7 @@ export default function RegisterScreen({ navigation }) {
   const [idNumber,      setIdNumber]      = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // ── Step 5: Labor & Land ─────────────────────────────────────────────────
+  // ── Step 5: Labour & Land ────────────────────────────────────────────────
   const [landDocType,        setLandDocType]        = useState('');
   const [laborType,          setLaborType]          = useState('');
   const [childrenInvolved,   setChildrenInvolved]   = useState(null);
@@ -437,6 +438,10 @@ export default function RegisterScreen({ navigation }) {
     if (step === 2) {
       if (!county.trim() || !subcounty.trim()) return fail('County and sub-county are required.');
       if (!selectedCoop) return fail('Please select a cooperative from the search results.');
+      if (!coopMemberNo.trim() && selectedCoop) {
+        const rand = Math.floor(Math.random() * 999999) + 1;
+        setCoopMemberNo(`${selectedCoop.code}-${rand}`);
+      }
       setStep(3);
       setTouched(false);
       return;
@@ -452,7 +457,7 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // ── Step 4: Labor & Land (all optional — skip or fill freely) ────────────
+    // ── Step 4: Labour & Land (all optional — skip or fill freely) ───────────
     if (step === 4) {
       setStep(5);
       setTouched(false);
@@ -479,20 +484,22 @@ export default function RegisterScreen({ navigation }) {
       subcounty:        subcounty.trim(),
       cooperative_code: selectedCoop?.code || undefined,
       cooperative_id:   selectedCoop?.id   || undefined,
+      membership_number: coopMemberNo.trim() || undefined,
       gender:              gender || undefined,
       id_type:             idType || undefined,
       id_number:           idNumber.trim() || undefined,
       land_doc_type:       landDocType || undefined,
-      labor_type:          laborType || undefined,
-      children_involved:   childrenInvolved,
-      workers_can_leave:   workersCanLeave,
+      labour_type:         laborType || undefined,
+      children_involved:   childrenInvolved ?? undefined,
+      workers_can_leave:   workersCanLeave ?? undefined,
+      data_consent:        true,
       password,
     });
     setLoading(false);
     if (!result.success) {
       shake();
       setError(result.error || 'Registration failed. Please try again.');
-      setStep(4);
+      setStep(5);
     }
     // On success AuthContext sets user → AppNavigator routes automatically
   };
@@ -501,11 +508,7 @@ export default function RegisterScreen({ navigation }) {
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?q=80&w=1000&auto=format&fit=crop' }}
-        style={s.bg}
-      >
-        <View style={s.overlay} />
+      <View style={s.bg}>
         <SafeAreaView style={s.safe}>
           <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView
@@ -519,10 +522,10 @@ export default function RegisterScreen({ navigation }) {
                   <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
                 </View>
                 <Text style={s.brand}>PLOTRA</Text>
-                <Text style={s.tagline}>Mapping Sustainability, Empowering Farmers</Text>
+                <Text style={s.tagline}>Traceable Farms</Text>
               </View>
 
-              <Animated.View style={[s.card, { transform: [{ translateX: shakeAnim }] }]}>
+              <Animated.View style={[s.form, { transform: [{ translateX: shakeAnim }] }]}>
 
                 {/* Step progress */}
                 <View style={s.progressRow}>
@@ -552,7 +555,7 @@ export default function RegisterScreen({ navigation }) {
                         <TextInput
                           style={[s.input, touched && !firstName.trim() && s.inputError]}
                           value={firstName} onChangeText={setFirstName}
-                          placeholder="First" placeholderTextColor={C.subtle}
+                          placeholder="First" placeholderTextColor="rgba(255,255,255,0.38)"
                           autoCapitalize="words" returnKeyType="next"
                         />
                       </View>
@@ -562,7 +565,7 @@ export default function RegisterScreen({ navigation }) {
                         <TextInput
                           style={[s.input, touched && !lastName.trim() && s.inputError]}
                           value={lastName} onChangeText={setLastName}
-                          placeholder="Last" placeholderTextColor={C.subtle}
+                          placeholder="Last" placeholderTextColor="rgba(255,255,255,0.38)"
                           autoCapitalize="words" returnKeyType="next"
                         />
                       </View>
@@ -580,7 +583,7 @@ export default function RegisterScreen({ navigation }) {
                         value={phoneLocal}
                         onChangeText={(v) => { setPhoneLocal(v); setFieldErrors(prev => { const n = { ...prev }; delete n.phone; return n; }); }}
                         onBlur={() => { if (phoneLocal.trim().length >= 7) checkDuplicate('phone', `${country.code}${phoneLocal.replace(/^0/, '')}`); }}
-                        placeholder="712 345 678" placeholderTextColor={C.subtle}
+                        placeholder="712 345 678" placeholderTextColor="rgba(255,255,255,0.38)"
                         keyboardType="phone-pad" maxLength={10}
                       />
                     </View>
@@ -602,7 +605,7 @@ export default function RegisterScreen({ navigation }) {
                       value={email}
                       onChangeText={(v) => { setEmail(v); setFieldErrors(prev => { const n = { ...prev }; delete n.email; return n; }); }}
                       onBlur={() => { if (email.trim()) checkDuplicate('email', email.trim().toLowerCase()); }}
-                      placeholder="email@example.com" placeholderTextColor={C.subtle}
+                      placeholder="email@example.com" placeholderTextColor="rgba(255,255,255,0.38)"
                       autoCapitalize="none" keyboardType="email-address"
                     />
                     {!!fieldErrors.email && <Text style={[s.errText, { marginTop: -10, marginBottom: 12 }]}>{fieldErrors.email}</Text>}
@@ -734,7 +737,7 @@ export default function RegisterScreen({ navigation }) {
                         value={coopQuery}
                         onChangeText={handleCoopQueryChange}
                         placeholder="Search cooperative…"
-                        placeholderTextColor={C.subtle}
+                        placeholderTextColor="rgba(255,255,255,0.38)"
                         returnKeyType="search"
                         autoCapitalize="none"
                       />
@@ -785,7 +788,7 @@ export default function RegisterScreen({ navigation }) {
                             onPress={() => { setDirectCodeMode(v => !v); setError(''); }}
                             activeOpacity={0.75}
                           >
-                            <Ionicons name={directCodeMode ? 'search-outline' : 'keypad-outline'} size={13} color={C.c700} />
+                            <Ionicons name={directCodeMode ? 'search-outline' : 'keypad-outline'} size={13} color="rgba(255,255,255,0.75)" />
                             <Text style={s.orBtnText}>
                               {directCodeMode ? 'Search by name instead' : 'Enter code directly'}
                             </Text>
@@ -801,7 +804,7 @@ export default function RegisterScreen({ navigation }) {
                                 value={directCode}
                                 onChangeText={v => setDirectCode(v.toUpperCase())}
                                 placeholder="e.g. KAPCOOP"
-                                placeholderTextColor={C.subtle}
+                                placeholderTextColor="rgba(255,255,255,0.38)"
                                 autoCapitalize="characters"
                                 returnKeyType="done"
                                 onSubmitEditing={lookupByCode}
@@ -846,6 +849,21 @@ export default function RegisterScreen({ navigation }) {
                       </View>
                     )}
                     {touched && !selectedCoop && <Text style={s.errText}>Please select a cooperative</Text>}
+
+                    {/* Member number */}
+                    <Text style={[s.label, { marginTop: 20 }]}>
+                      Member Number <Text style={s.optional}>(optional)</Text>
+                    </Text>
+                    <Text style={s.fieldHint}>Your cooperative membership number — leave blank to auto-generate</Text>
+                    <TextInput
+                      style={s.input}
+                      value={coopMemberNo}
+                      onChangeText={v => setCoopMemberNo(v.toUpperCase())}
+                      placeholder={selectedCoop ? `e.g. ${selectedCoop.code}-0001` : 'e.g. KAPCOOP-0001'}
+                      placeholderTextColor="rgba(255,255,255,0.38)"
+                      autoCapitalize="characters"
+                      returnKeyType="done"
+                    />
                   </>
                 )}
 
@@ -870,7 +888,7 @@ export default function RegisterScreen({ navigation }) {
                           value={idNumber}
                           onChangeText={(v) => { setIdNumber(v); setFieldErrors(prev => { const n = { ...prev }; delete n.national_id; return n; }); }}
                           onBlur={() => { if (idNumber.trim()) checkDuplicate('national_id', idNumber.trim()); }}
-                          placeholder="Enter your ID number" placeholderTextColor={C.subtle}
+                          placeholder="Enter your ID number" placeholderTextColor="rgba(255,255,255,0.38)"
                         />
                         {!!fieldErrors.national_id && <Text style={[s.errText, { marginTop: -10, marginBottom: 12 }]}>{fieldErrors.national_id}</Text>}
                       </>
@@ -888,27 +906,28 @@ export default function RegisterScreen({ navigation }) {
                   </>
                 )}
 
-                {/* ── STEP 4: Labor & Land ────────────────────────────────── */}
+                {/* ── STEP 4: Labour & Land ────────────────────────────────── */}
                 {step === 4 && (
                   <>
-                    <Text style={s.title}>Labor & Land Screening</Text>
-                    <Text style={s.subtitle}>Optional — for sustainability due diligence. All answers are confidential.</Text>
+                    <Text style={s.title}>Labour & Land</Text>
+                    <Text style={s.subtitle}>All fields are optional — answer what applies to you, or skip the entire step.</Text>
 
-                    <Text style={s.label}>Land Documentation <Text style={s.optional}>(optional)</Text></Text>
+                    <Text style={s.label}>Land Documentation</Text>
                     <Text style={s.fieldHint}>What type of land rights documentation do you have?</Text>
                     <ChipGroup options={LAND_DOC_OPTIONS} value={landDocType} onChange={setLandDocType} />
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Labor System <Text style={s.optional}>(optional)</Text></Text>
-                    <Text style={s.fieldHint}>Who works on your farm?</Text>
-                    <ChipGroup options={LABOR_TYPE_OPTIONS} value={laborType} onChange={setLaborType} />
+                    <Text style={[s.label, { marginTop: 16 }]}>Labour System</Text>
+                    <Text style={s.fieldHint}>Who carries out work on your farm?</Text>
+                    <ChipGroup options={LABOUR_TYPE_OPTIONS} value={laborType} onChange={setLaborType} />
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Are children (under 15) involved in farm work? <Text style={s.optional}>(optional)</Text></Text>
+                    <Text style={[s.label, { marginTop: 16 }]}>Child Labour</Text>
+                    <Text style={s.fieldHint}>Are children under 15 years involved in farm work?</Text>
                     <View style={s.yesNoRow}>
                       {[['Yes', true], ['No', false]].map(([label, val]) => (
                         <TouchableOpacity
                           key={label}
                           style={[s.yesNoBtn, childrenInvolved === val && s.yesNoBtnActive]}
-                          onPress={() => setChildrenInvolved(val)}
+                          onPress={() => setChildrenInvolved(childrenInvolved === val ? null : val)}
                           activeOpacity={0.8}
                         >
                           <Text style={[s.yesNoBtnText, childrenInvolved === val && s.yesNoBtnTextActive]}>{label}</Text>
@@ -922,13 +941,14 @@ export default function RegisterScreen({ navigation }) {
                       </View>
                     )}
 
-                    <Text style={[s.label, { marginTop: 20 }]}>Are all workers free to leave employment at any time? <Text style={s.optional}>(optional)</Text></Text>
+                    <Text style={[s.label, { marginTop: 16 }]}>Freedom to Leave</Text>
+                    <Text style={s.fieldHint}>Are all workers free to leave employment at any time?</Text>
                     <View style={s.yesNoRow}>
                       {[['Yes', true], ['No', false]].map(([label, val]) => (
                         <TouchableOpacity
                           key={label}
                           style={[s.yesNoBtn, workersCanLeave === val && s.yesNoBtnActive]}
-                          onPress={() => setWorkersCanLeave(val)}
+                          onPress={() => setWorkersCanLeave(workersCanLeave === val ? null : val)}
                           activeOpacity={0.8}
                         >
                           <Text style={[s.yesNoBtnText, workersCanLeave === val && s.yesNoBtnTextActive]}>{label}</Text>
@@ -949,11 +969,11 @@ export default function RegisterScreen({ navigation }) {
                       <TextInput
                         style={[s.input, s.pwdInput, touched && password.length < 8 && s.inputError]}
                         value={password} onChangeText={setPassword}
-                        placeholder="Min. 8 characters" placeholderTextColor={C.subtle}
+                        placeholder="Min. 8 characters" placeholderTextColor="rgba(255,255,255,0.38)"
                         secureTextEntry={!showPwd} returnKeyType="next"
                       />
-                      <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)}>
-                        <Text style={s.eyeText}>{showPwd ? '🙈' : '👁️'}</Text>
+                      <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)} activeOpacity={0.7}>
+                        <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
                       </TouchableOpacity>
                     </View>
 
@@ -962,12 +982,12 @@ export default function RegisterScreen({ navigation }) {
                       <TextInput
                         style={[s.input, s.pwdInput, touched && password !== confirmPassword && s.inputError]}
                         value={confirmPassword} onChangeText={setConfirmPassword}
-                        placeholder="Re-enter password" placeholderTextColor={C.subtle}
+                        placeholder="Re-enter password" placeholderTextColor="rgba(255,255,255,0.38)"
                         secureTextEntry={!showConfirmPwd} returnKeyType="done"
                         onSubmitEditing={handleNext}
                       />
-                      <TouchableOpacity style={s.eyeBtn} onPress={() => setShowConfirmPwd(v => !v)}>
-                        <Text style={s.eyeText}>{showConfirmPwd ? '🙈' : '👁️'}</Text>
+                      <TouchableOpacity style={s.eyeBtn} onPress={() => setShowConfirmPwd(v => !v)} activeOpacity={0.7}>
+                        <Ionicons name={showConfirmPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
                       </TouchableOpacity>
                     </View>
                   </>
@@ -1006,7 +1026,7 @@ export default function RegisterScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Skip Step — Labor & Land only */}
+                {/* Skip Step — Labour & Land only */}
                 {step === 4 && (
                   <TouchableOpacity
                     style={s.skipBtn}
@@ -1044,186 +1064,184 @@ export default function RegisterScreen({ navigation }) {
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
-      </ImageBackground>
+      </View>
     </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  bg: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(26, 10, 0, 0.55)' },
+  container: { flex: 1, backgroundColor: C.c800 },
+  bg: { flex: 1, backgroundColor: C.c800 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 60, paddingBottom: 40 },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingTop: 44, paddingBottom: 36 },
 
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
-  logoCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: C.white, padding: 4, marginBottom: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 18, elevation: 12 },
-  logo: { width: '100%', height: '100%', borderRadius: 41 },
-  brand: { fontSize: 30, fontWeight: '900', color: C.white, letterSpacing: 6, marginBottom: 6 },
-  tagline: { fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
+  logoWrap: { alignItems: 'center', marginBottom: 24 },
+  logoCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: C.white, padding: 3, marginBottom: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
+  logo: { width: '100%', height: '100%', borderRadius: 32 },
+  brand: { fontSize: 22, fontWeight: '900', color: C.white, letterSpacing: 6, marginBottom: 4 },
+  tagline: { fontSize: 11, color: 'rgba(255,255,255,0.55)', textAlign: 'center', fontWeight: '500', letterSpacing: 2, textTransform: 'uppercase' },
 
-  card: { backgroundColor: 'rgba(255,255,255,0.98)', borderRadius: 28, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.2, shadowRadius: 30, elevation: 16 },
+  form: { paddingHorizontal: 2 },
 
   // Progress
-  progressRow: { flexDirection: 'row', marginBottom: 24, gap: 2 },
-  progressItem: { flex: 1, alignItems: 'center', gap: 4 },
-  dot: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.steel200, alignItems: 'center', justifyContent: 'center' },
+  progressRow: { flexDirection: 'row', marginBottom: 18, gap: 2 },
+  progressItem: { flex: 1, alignItems: 'center', gap: 3 },
+  dot: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   dotActive: { backgroundColor: C.c700 },
   dotDone: { backgroundColor: '#22c55e' },
-  dotText: { fontSize: 11, fontWeight: '800', color: C.muted },
+  dotText: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
   dotTextLight: { color: C.white },
-  dotLabel: { fontSize: 9, fontWeight: '700', color: C.subtle, textAlign: 'center' },
-  dotLabelActive: { color: C.c700 },
+  dotLabel: { fontSize: 8, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textAlign: 'center' },
+  dotLabelActive: { color: '#86efac' },
 
-  title: { fontSize: 24, fontWeight: '800', color: C.c900, marginBottom: 6 },
-  subtitle: { fontSize: 13, color: C.muted, lineHeight: 18, marginBottom: 20 },
-  phoneHighlight: { color: C.c700, fontWeight: '700' },
+  title: { fontSize: 19, fontWeight: '800', color: C.white, marginBottom: 4 },
+  subtitle: { fontSize: 12, color: 'rgba(255,255,255,0.58)', lineHeight: 17, marginBottom: 16 },
+  phoneHighlight: { color: '#86efac', fontWeight: '700' },
 
   row: { flexDirection: 'row', marginBottom: 0 },
   half: { flex: 1 },
 
-  label: { fontSize: 11, fontWeight: '800', color: C.c700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 2 },
-  optional: { fontWeight: '500', color: C.subtle, textTransform: 'none' },
-  fieldHint: { fontSize: 11, color: C.subtle, fontStyle: 'italic', marginTop: -4, marginBottom: 8, marginLeft: 2 },
-  input: { backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, fontSize: 15, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200, marginBottom: 16 },
-  inputError: { borderColor: '#dc2626', backgroundColor: '#fff5f5' },
-  errText: { fontSize: 12, color: '#dc2626', fontWeight: '700', marginTop: -10, marginBottom: 12, marginLeft: 2 },
+  label: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 6, marginLeft: 1 },
+  optional: { fontWeight: '500', color: 'rgba(255,255,255,0.38)', textTransform: 'none' },
+  fieldHint: { fontSize: 10, color: 'rgba(255,255,255,0.42)', fontStyle: 'italic', marginTop: -3, marginBottom: 6, marginLeft: 1 },
+  input: { backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 10, height: 44, paddingHorizontal: 13, fontSize: 14, color: C.white, fontWeight: '500', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', marginBottom: 12 },
+  inputError: { borderColor: '#f87171', backgroundColor: 'rgba(220,38,38,0.1)' },
+  errText: { fontSize: 11, color: '#fca5a5', fontWeight: '700', marginTop: -8, marginBottom: 10, marginLeft: 1 },
 
-  phoneRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  countryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 12, borderWidth: 1.5, borderColor: C.steel200 },
-  countryFlag: { fontSize: 18 },
-  countryCode: { fontSize: 14, fontWeight: '700', color: C.ink },
-  caret: { fontSize: 10, color: C.subtle },
+  phoneRow: { flexDirection: 'row', gap: 7, marginBottom: 12 },
+  countryBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 10, height: 44, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  countryFlag: { fontSize: 16 },
+  countryCode: { fontSize: 13, fontWeight: '700', color: C.white },
+  caret: { fontSize: 9, color: 'rgba(255,255,255,0.4)' },
   phoneInput: { flex: 1, marginBottom: 0 },
-  countryMenu: { backgroundColor: C.white, borderRadius: 14, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 16, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  countryOption: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  countryOptionText: { fontSize: 14, fontWeight: '600', color: C.ink },
+  countryMenu: { backgroundColor: C.white, borderRadius: 10, borderWidth: 1, borderColor: C.steel200, marginBottom: 12, overflow: 'hidden', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  countryOption: { paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
+  countryOptionText: { fontSize: 13, fontWeight: '600', color: C.ink },
 
   // OTP
-  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', marginVertical: 20 },
-  otpBox: { width: 46, height: 58, borderRadius: 14, borderWidth: 2, borderColor: C.steel200, backgroundColor: C.steel100, fontSize: 24, fontWeight: '900', color: C.ink },
-  otpBoxFilled: { borderColor: C.c700, backgroundColor: '#fdf8f5' },
-  otpBoxVerified: { borderColor: '#22c55e', backgroundColor: '#f0fdf4' },
-  verifiedBanner: { backgroundColor: '#f0fdf4', borderRadius: 12, padding: 12, alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#bbf7d0' },
-  verifiedText: { fontSize: 14, fontWeight: '800', color: '#15803d' },
-  verifyingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 },
-  verifyingText: { fontSize: 14, color: C.c700, fontWeight: '600' },
-  otpActionsRow: { flexDirection: 'row', gap: 12, justifyContent: 'center', marginBottom: 8 },
-  verifyBtn: { backgroundColor: C.c700, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  verifyBtnDisabled: { backgroundColor: C.steel300 },
-  verifyBtnText: { fontSize: 14, fontWeight: '800', color: C.white },
-  verifyBtnTextDisabled: { color: C.subtle },
-  resendBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: C.c700 },
-  resendBtnDisabled: { borderColor: C.steel300 },
-  resendText: { fontSize: 13, fontWeight: '700', color: C.c700 },
-  resendTextDisabled: { color: C.subtle },
+  otpRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginVertical: 16 },
+  otpBox: { width: 42, height: 50, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.09)', fontSize: 20, fontWeight: '900', color: C.white },
+  otpBoxFilled: { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.14)' },
+  otpBoxVerified: { borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.14)' },
+  verifiedBanner: { backgroundColor: 'rgba(74,222,128,0.13)', borderRadius: 9, padding: 10, alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#4ade80' },
+  verifiedText: { fontSize: 13, fontWeight: '800', color: '#86efac' },
+  verifyingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 10 },
+  verifyingText: { fontSize: 13, color: '#86efac', fontWeight: '600' },
+  otpActionsRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', marginBottom: 6 },
+  verifyBtn: { backgroundColor: C.c700, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
+  verifyBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.13)' },
+  verifyBtnText: { fontSize: 13, fontWeight: '800', color: C.white },
+  verifyBtnTextDisabled: { color: 'rgba(255,255,255,0.33)' },
+  resendBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)' },
+  resendBtnDisabled: { borderColor: 'rgba(255,255,255,0.1)' },
+  resendText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.78)' },
+  resendTextDisabled: { color: 'rgba(255,255,255,0.28)' },
 
   // Cooperative search
   coopSearchWrap: { position: 'relative' },
-  coopSearchInput: { paddingRight: 44 },
-  coopSpinner: { position: 'absolute', right: 16, top: 16 },
-  coopDropdown: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 12, overflow: 'hidden', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 10 },
-  coopOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: C.steel100, gap: 12 },
+  coopSearchInput: { paddingRight: 40 },
+  coopSpinner: { position: 'absolute', right: 13, top: 12 },
+  coopDropdown: { backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.steel200, marginBottom: 10, overflow: 'hidden', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  coopOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: C.steel100, gap: 10 },
   coopOptionLeft: { flex: 1 },
-  coopOptionName: { fontSize: 14, fontWeight: '800', color: C.c900, marginBottom: 2 },
-  coopOptionMeta: { fontSize: 12, color: C.muted, fontWeight: '500' },
-  coopCodeBadge: { backgroundColor: C.c100, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  coopCodeText: { fontSize: 11, fontWeight: '800', color: C.c700, letterSpacing: 1 },
-  coopNoResults: { backgroundColor: C.steel100, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.steel200 },
-  coopNoResultsText: { fontSize: 13, color: C.ink, fontWeight: '700', marginBottom: 4 },
-  coopNoResultsSub: { fontSize: 12, color: C.muted },
-  coopSelectedCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1.5, borderColor: '#bbf7d0', gap: 12 },
-  coopSelectedIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center' },
-  coopSelectedIconText: { fontSize: 20 },
-  coopSelectedName: { fontSize: 14, fontWeight: '800', color: '#15803d', marginBottom: 2 },
-  coopSelectedMeta: { fontSize: 12, color: '#166534', fontWeight: '500' },
-  coopClearBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#bbf7d0', alignItems: 'center', justifyContent: 'center' },
-  coopClearText: { fontSize: 12, color: '#15803d', fontWeight: '800' },
+  coopOptionName: { fontSize: 13, fontWeight: '800', color: C.c900, marginBottom: 1 },
+  coopOptionMeta: { fontSize: 11, color: C.muted, fontWeight: '500' },
+  coopCodeBadge: { backgroundColor: C.c100, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  coopCodeText: { fontSize: 10, fontWeight: '800', color: C.c700, letterSpacing: 0.8 },
+  coopNoResults: { backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: 11, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)' },
+  coopNoResultsText: { fontSize: 12, color: C.white, fontWeight: '700', marginBottom: 3 },
+  coopNoResultsSub: { fontSize: 11, color: 'rgba(255,255,255,0.52)' },
+  coopSelectedCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(74,222,128,0.1)', borderRadius: 10, padding: 11, marginBottom: 6, borderWidth: 1, borderColor: '#4ade80', gap: 10 },
+  coopSelectedIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(74,222,128,0.18)', alignItems: 'center', justifyContent: 'center' },
+  coopSelectedIconText: { fontSize: 17 },
+  coopSelectedName: { fontSize: 13, fontWeight: '800', color: '#86efac', marginBottom: 1 },
+  coopSelectedMeta: { fontSize: 11, color: 'rgba(134,239,172,0.75)', fontWeight: '500' },
+  coopClearBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.18)', alignItems: 'center', justifyContent: 'center' },
+  coopClearText: { fontSize: 11, color: '#86efac', fontWeight: '800' },
 
   // Direct code entry
-  orDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, gap: 8 },
-  orLine:    { flex: 1, height: 1, backgroundColor: C.steel200 },
-  orBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
-  orBtnText: { fontSize: 11, fontWeight: '700', color: C.c700 },
-  directCodeWrap: { marginBottom: 8 },
-  directCodeRow:  { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  directCodeInput: { flex: 1, marginBottom: 0, letterSpacing: 2, fontWeight: '800' },
-  directCodeBtn:  { height: 54, paddingHorizontal: 20, borderRadius: 14, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  directCodeBtnDisabled: { backgroundColor: C.steel300 },
-  directCodeBtnText: { fontSize: 14, fontWeight: '800', color: C.white },
-  directCodeHint: { fontSize: 11, color: C.subtle, fontStyle: 'italic', marginTop: 6, marginLeft: 2 },
+  orDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 8, gap: 7 },
+  orLine:    { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.13)' },
+  orBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  orBtnText: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.72)' },
+  directCodeWrap: { marginBottom: 6 },
+  directCodeRow:  { flexDirection: 'row', gap: 7, alignItems: 'center' },
+  directCodeInput: { flex: 1, marginBottom: 0, letterSpacing: 1.5, fontWeight: '700' },
+  directCodeBtn:  { height: 44, paddingHorizontal: 16, borderRadius: 10, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  directCodeBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.13)' },
+  directCodeBtnText: { fontSize: 13, fontWeight: '800', color: C.white },
+  directCodeHint: { fontSize: 10, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: 5, marginLeft: 1 },
 
   // Chips
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: C.steel200, backgroundColor: C.steel100 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 3 },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.07)' },
   chipActive: { backgroundColor: C.c700, borderColor: C.c700 },
-  chipText: { fontSize: 13, fontWeight: '700', color: C.c700 },
+  chipText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.72)' },
   chipTextActive: { color: C.white },
 
   // Terms
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 20, marginBottom: 4 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: C.steel300, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 16, marginBottom: 3 },
+  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkboxChecked: { backgroundColor: C.c700, borderColor: C.c700 },
-  checkmark: { color: C.white, fontSize: 13, fontWeight: '900' },
-  termsText: { flex: 1, fontSize: 13, color: C.muted, lineHeight: 18 },
-  termsLink: { color: C.c700, fontWeight: '700' },
+  checkmark: { color: C.white, fontSize: 12, fontWeight: '900' },
+  termsText: { flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 17 },
+  termsLink: { color: '#86efac', fontWeight: '700' },
 
   // Password
   pwdRow: { flexDirection: 'row', alignItems: 'center' },
   pwdInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRightWidth: 0, marginBottom: 0 },
-  eyeBtn: { height: 54, width: 54, backgroundColor: C.steel100, borderWidth: 1.5, borderLeftWidth: 0, borderColor: C.steel200, borderTopRightRadius: 14, borderBottomRightRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  eyeText: { fontSize: 18 },
+  eyeBtn: { height: 44, width: 44, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderLeftWidth: 0, borderColor: 'rgba(255,255,255,0.18)', borderTopRightRadius: 10, borderBottomRightRadius: 10, alignItems: 'center', justifyContent: 'center' },
 
   // Error
-  errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 12, marginTop: 14, borderWidth: 1, borderColor: '#fecaca' },
-  errorText: { fontSize: 13, color: '#dc2626', fontWeight: '700' },
+  errorBox: { backgroundColor: 'rgba(220,38,38,0.1)', borderRadius: 9, padding: 10, marginTop: 12, borderWidth: 1, borderColor: 'rgba(220,38,38,0.28)' },
+  errorText: { fontSize: 12, color: '#fca5a5', fontWeight: '700' },
   devBox: { backgroundColor: '#fff8e1', borderColor: '#fbbf24' },
-  devCodeBanner: { backgroundColor: '#fffbeb', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 2, borderColor: '#f59e0b', alignItems: 'center' },
-  devCodeLabel: { fontSize: 10, fontWeight: '800', color: '#92400e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  devCodeValue: { fontSize: 32, fontWeight: '900', color: '#92400e', letterSpacing: 8 },
+  devCodeBanner: { backgroundColor: '#fffbeb', borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 2, borderColor: '#f59e0b', alignItems: 'center' },
+  devCodeLabel: { fontSize: 10, fontWeight: '800', color: '#92400e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 },
+  devCodeValue: { fontSize: 28, fontWeight: '900', color: '#92400e', letterSpacing: 7 },
   devText: { color: '#92400e' },
 
   // Buttons
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  btn: { backgroundColor: C.c700, height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },
-  btnText: { color: C.white, fontSize: 15, fontWeight: '800' },
-  backBtn: { flex: 1, height: 58, borderRadius: 16, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
-  backBtnText: { fontSize: 15, fontWeight: '800', color: C.steel700 },
-  skipBtn: { marginTop: 12, height: 48, borderRadius: 14, borderWidth: 2, borderColor: C.c700, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  skipBtnText: { fontSize: 14, fontWeight: '800', color: C.c700, letterSpacing: 0.3 },
+  btnRow: { flexDirection: 'row', gap: 9, marginTop: 16 },
+  btn: { backgroundColor: C.c700, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.38, shadowRadius: 8, elevation: 5 },
+  btnDisabled: { backgroundColor: 'rgba(255,255,255,0.13)', shadowOpacity: 0 },
+  btnText: { color: C.white, fontSize: 14, fontWeight: '800' },
+  backBtn: { flex: 1, height: 46, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.72)' },
+  skipBtn: { marginTop: 10, height: 40, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  skipBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.65)', letterSpacing: 0.2 },
 
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 22 },
-  line: { flex: 1, height: 1, backgroundColor: C.steel200 },
-  divText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: C.subtle, textTransform: 'uppercase', letterSpacing: 1 },
-  signInBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.c700 },
-  signInText: { color: C.c700, fontSize: 16, fontWeight: '800' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 },
+  line: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.13)' },
+  divText: { marginHorizontal: 10, fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.9 },
+  signInBtn: { height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  signInText: { color: C.white, fontSize: 14, fontWeight: '700' },
 
-  version: { textAlign: 'center', marginTop: 28, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+  version: { textAlign: 'center', marginTop: 24, color: 'rgba(255,255,255,0.32)', fontSize: 11, fontWeight: '500' },
 
-  yesNoRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
-  yesNoBtn: { flex: 1, height: 46, borderRadius: 12, borderWidth: 1.5, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center', backgroundColor: C.steel100 },
+  yesNoRow: { flexDirection: 'row', gap: 8, marginBottom: 3 },
+  yesNoBtn: { flex: 1, height: 40, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)' },
   yesNoBtnActive: { backgroundColor: C.c700, borderColor: C.c700 },
-  yesNoBtnText: { fontSize: 14, fontWeight: '700', color: C.c700 },
+  yesNoBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.72)' },
   yesNoBtnTextActive: { color: C.white },
-  warningBox: { backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#fed7aa' },
-  warningText: { fontSize: 12, color: '#92400e', lineHeight: 17, fontWeight: '500' },
+  warningBox: { backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: 9, padding: 10, marginTop: 7, borderWidth: 1, borderColor: 'rgba(251,191,36,0.35)' },
+  warningText: { fontSize: 11, color: '#fde68a', lineHeight: 16, fontWeight: '500' },
 
   // Dropdown
-  dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, borderWidth: 1.5, borderColor: C.steel200, marginBottom: 16 },
-  dropdownBtnError: { borderColor: '#dc2626', backgroundColor: '#fff5f5' },
+  dropdownBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 10, height: 44, paddingHorizontal: 13, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', marginBottom: 12 },
+  dropdownBtnError: { borderColor: '#f87171', backgroundColor: 'rgba(220,38,38,0.1)' },
   dropdownBtnDisabled: { opacity: 0.5 },
-  dropdownBtnText: { fontSize: 15, color: C.ink, fontWeight: '600', flex: 1 },
-  dropdownArrow: { fontSize: 12, color: C.subtle, marginLeft: 8 },
-  ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  ddSheet: { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, maxHeight: '70%' },
-  ddHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginBottom: 12 },
-  ddTitle: { fontSize: 13, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
-  ddItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.steel100 },
-  ddItemActive: { backgroundColor: C.c050, marginHorizontal: -20, paddingHorizontal: 20 },
-  ddItemText: { fontSize: 15, color: C.ink, fontWeight: '500' },
+  dropdownBtnText: { fontSize: 14, color: C.white, fontWeight: '500', flex: 1 },
+  dropdownArrow: { fontSize: 11, color: 'rgba(255,255,255,0.42)', marginLeft: 6 },
+  ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  ddSheet: { backgroundColor: C.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 38, maxHeight: '70%' },
+  ddHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: C.steel300, alignSelf: 'center', marginBottom: 10 },
+  ddTitle: { fontSize: 12, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  ddItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel100 },
+  ddItemActive: { backgroundColor: C.c050, marginHorizontal: -18, paddingHorizontal: 18 },
+  ddItemText: { fontSize: 14, color: C.ink, fontWeight: '500' },
   ddItemTextActive: { color: C.c700, fontWeight: '800' },
-  ddCheck: { fontSize: 14, color: C.c700, fontWeight: '900' },
+  ddCheck: { fontSize: 13, color: C.c700, fontWeight: '900' },
 });

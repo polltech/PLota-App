@@ -258,7 +258,7 @@ export default function ComplianceScreen() {
               <Ionicons name="cloud-upload-outline" size={28} color={C.c700} />
               <View style={{ flex: 1, marginLeft: 14 }}>
                 <Text style={s.uploadTitle}>Upload Documents</Text>
-                <Text style={s.uploadSub}>Upload via the Plotra web dashboard at dev.plotra.eu for full document management.</Text>
+                <Text style={s.uploadSub}>Upload via the Plotra web dashboard at portal.plotra.eu.</Text>
               </View>
             </View>
 

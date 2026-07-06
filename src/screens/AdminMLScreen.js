@@ -57,7 +57,6 @@ export default function AdminMLScreen() {
       const logData = logRes.data;
       setLogs(Array.isArray(logData) ? logData : logData?.logs || []);
     } catch (e) {
-      console.warn('ML status:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

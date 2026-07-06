@@ -94,7 +94,6 @@ export default function AdminUsersScreen() {
       const d = res.data;
       setUsers(Array.isArray(d) ? d : d?.users || []);
     } catch (e) {
-      console.warn('Admin users:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

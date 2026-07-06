@@ -245,7 +245,6 @@ export default function CoopBatchesScreen() {
         setDeliveries(Array.isArray(d) ? d : (d?.deliveries || []));
       }
     } catch (e) {
-      console.warn('CoopBatches load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -333,34 +332,35 @@ export default function CoopBatchesScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>Batch Management</Text>
-            <Text style={s.headerSub}>{batches.length} batches · {fmtKg(totalKg)}</Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Batch Management</Text>
+              <Text style={s.heroSub}>{batches.length} batches · {fmtKg(totalKg)}</Text>
+            </View>
+            <TouchableOpacity style={s.heroBtn} onPress={() => setShowCreate(true)} activeOpacity={0.8}>
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={s.heroBtnText}>Create</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={s.newBtn}
-            onPress={() => setShowCreate(true)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={18} color={C.white} />
-            <Text style={s.newBtnText}>Create</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-
-      {/* 4 stat cards — matching web */}
-      {!loading && (
-        <View style={s.statsRow}>
-          <StatCard value={batches.length} label="Total Batches" color={C.c700} bg={C.c050} />
-          <StatCard value={fmtKg(totalKg)} label="Total Weight"  color={C.c700} bg={C.c050} />
-          <StatCard value={fmtKg(eudrKg)}  label="EUDR Eligible" color={C.c700} bg={C.c050} />
-          <StatCard value={released}        label="In Review"     color={C.c700} bg={C.c050} />
-        </View>
-      )}
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{batches.length}</Text><Text style={s.heroStatLabel}>Total Batches</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{fmtKg(totalKg)}</Text><Text style={s.heroStatLabel}>Total Weight</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{released}</Text><Text style={s.heroStatLabel}>In Review</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{draft}</Text><Text style={s.heroStatLabel}>Draft</Text></View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
 
       {loading ? (
         <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>
@@ -598,17 +598,19 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8, paddingLeft: 36 },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
-  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
-  newBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
-
-  statsRow: { flexDirection: 'row', backgroundColor: C.white, paddingHorizontal: 10, paddingVertical: 10, gap: 6, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  statCard: { flex: 1, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center', borderLeftWidth: 3 },
-  statVal: { fontSize: 14, fontWeight: '900', textAlign: 'center' },
-  statLabel: { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 2, lineHeight: 11 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
   list: { padding: 12, paddingBottom: 24 },
   row: { backgroundColor: C.white, borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },

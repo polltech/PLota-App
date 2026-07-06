@@ -35,12 +35,12 @@ const statusStyle = (s) => {
 };
 
 const FILTERS = [
-  { key: 'all',               label: 'All',        icon: 'layers-outline',            color: C.c700   },
-  { key: 'received',          label: 'Received',   icon: 'archive-outline',           color: '#0369a1' },
-  { key: 'in_processing',     label: 'Processing', icon: 'cog-outline',               color: '#7c3aed' },
-  { key: 'ready_for_batching',label: 'Ready',      icon: 'checkmark-circle-outline',  color: '#1d4ed8' },
-  { key: 'batched',           label: 'Batched',    icon: 'cube-outline',              color: '#6d28d9' },
-  { key: 'rejected',          label: 'Rejected',   icon: 'close-circle-outline',      color: '#dc2626' },
+  { key: 'all',               label: 'All',        icon: 'layers-outline'           },
+  { key: 'received',          label: 'Received',   icon: 'archive-outline'          },
+  { key: 'in_processing',     label: 'Processing', icon: 'cog-outline'              },
+  { key: 'ready_for_batching',label: 'Ready',      icon: 'checkmark-circle-outline' },
+  { key: 'batched',           label: 'Batched',    icon: 'cube-outline'             },
+  { key: 'rejected',          label: 'Rejected',   icon: 'close-circle-outline'     },
 ];
 
 const DeliveryRow = ({ item, onPress }) => {
@@ -120,7 +120,6 @@ export default function CoopDeliveriesScreen() {
       const d = res.data;
       setDeliveries(Array.isArray(d) ? d : (d?.deliveries || []));
     } catch (e) {
-      console.warn('CoopDeliveries load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -151,30 +150,41 @@ export default function CoopDeliveriesScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>Deliveries</Text>
-            <Text style={s.headerSub}>
-              {isProcessingRole
-                ? `${roleFiltered.length} need${roleFiltered.length === 1 ? 's' : ''} your attention · ${fmtKg(totalKg)}`
-                : `${deliveries.length} total · ${fmtKg(totalKg)}`}
-            </Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Deliveries</Text>
+              <Text style={s.heroSub}>
+                {isProcessingRole
+                  ? `${roleFiltered.length} need${roleFiltered.length === 1 ? 's' : ''} your attention · ${fmtKg(totalKg)}`
+                  : `${deliveries.length} total · ${fmtKg(totalKg)}`}
+              </Text>
+            </View>
+            {canRecord && (
+              <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('CreateDelivery')} activeOpacity={0.8}>
+                <Ionicons name="add" size={18} color="#fff" />
+                <Text style={s.heroBtnText}>Record</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          {canRecord && (
-            <TouchableOpacity
-              style={s.newBtn}
-              onPress={() => navigation.navigate('CreateDelivery')}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={18} color={C.white} />
-              <Text style={s.newBtnText}>Record</Text>
-            </TouchableOpacity>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{roleFiltered.length}</Text><Text style={s.heroStatLabel}>Total</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{roleFiltered.filter(d => (d.status||'').toLowerCase() === 'received').length}</Text><Text style={s.heroStatLabel}>Received</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{roleFiltered.filter(d => (d.status||'').toLowerCase() === 'in_processing').length}</Text><Text style={s.heroStatLabel}>Processing</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{roleFiltered.filter(d => (d.status||'').toLowerCase() === 'ready_for_batching').length}</Text><Text style={s.heroStatLabel}>Ready</Text></View>
+            </View>
           )}
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
 
       {/* Square filter cards — horizontal scroll, fixed height */}
       <ScrollView
@@ -194,16 +204,16 @@ export default function CoopDeliveriesScreen() {
               style={[
                 s.filterCard,
                 {
-                  borderColor: active ? f.color : 'transparent',
-                  backgroundColor: active ? f.color + '18' : C.steel100,
+                  borderColor: active ? C.c700 : 'transparent',
+                  backgroundColor: active ? '#f0fdf4' : C.steel100,
                 },
               ]}
               onPress={() => setFilter(f.key)}
               activeOpacity={0.75}
             >
-              <Ionicons name={f.icon} size={20} color={active ? f.color : C.steel500} />
-              <Text style={[s.filterCount, { color: active ? f.color : C.ink }]}>{cnt}</Text>
-              <Text style={[s.filterLabel, { color: active ? f.color : C.muted }]}>{f.label}</Text>
+              <Ionicons name={f.icon} size={20} color={active ? C.c700 : C.steel500} />
+              <Text style={[s.filterCount, { color: active ? C.c700 : C.ink }]}>{cnt}</Text>
+              <Text style={[s.filterLabel, { color: active ? C.c700 : C.muted }]}>{f.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -247,12 +257,19 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 8, paddingLeft: 36 },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
-  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c700, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
-  newBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
   // Square filter cards
   filterScroll: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200, maxHeight: 110 },

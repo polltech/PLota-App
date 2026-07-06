@@ -258,40 +258,41 @@ export default function ProfileScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <SafeAreaView style={s.header}>
-        <Text style={s.headerTitle}>Profile</Text>
-        {!editing ? (
-          <TouchableOpacity style={s.editBtn} onPress={startEdit} activeOpacity={0.8}>
-            <Ionicons name="create-outline" size={18} color={C.c700} />
-            <Text style={s.editBtnText}>Edit</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={s.cancelBtn} onPress={cancelEdit} activeOpacity={0.8}>
-            <Text style={s.cancelBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
-      </SafeAreaView>
+      {/* Hero with avatar */}
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={s.heroAvatar}>
+              <Text style={s.heroAvatarText}>{initials}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={s.heroTitle}>{fullName}</Text>
+              <Text style={s.heroSub}>{user?.email || user?.phone || 'Farmer'}</Text>
+              {!editing && (
+                <View style={s.heroRolePill}>
+                  <Text style={s.heroRoleText}>FARMER</Text>
+                </View>
+              )}
+            </View>
+            {!editing ? (
+              <TouchableOpacity style={s.heroBtn} onPress={startEdit} activeOpacity={0.8}>
+                <Ionicons name="create-outline" size={16} color="#fff" />
+                <Text style={s.heroBtnText}>Edit</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={s.heroBtn} onPress={cancelEdit} activeOpacity={0.8}>
+                <Text style={s.heroBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </SafeAreaView>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-        {/* Avatar */}
-        <View style={s.avatarSection}>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>{initials}</Text>
-          </View>
-          {!editing && (
-            <>
-              <Text style={s.name}>{fullName}</Text>
-              <Text style={s.email}>{user?.email || user?.phone || ''}</Text>
-              <View style={s.roleBadge}>
-                <Text style={s.roleText}>FARMER</Text>
-              </View>
-            </>
-          )}
-        </View>
 
         {/* ── UPDATE REQUEST BANNER ──────────────────────────────────────── */}
         {hasUpdateRequest && (
@@ -433,20 +434,18 @@ export default function ProfileScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
-  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.steel200, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
-  editBtnText: { fontSize: 13, fontWeight: '700', color: C.c700 },
-  cancelBtn: { marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: C.steel100, borderWidth: 1, borderColor: C.steel300 },
-  cancelBtnText: { fontSize: 13, fontWeight: '700', color: C.steel700 },
-
-  avatarSection: { alignItems: 'center', paddingVertical: 28, backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.c700, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: C.c700, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  avatarText: { fontSize: 28, fontWeight: '800', color: C.white },
-  name: { fontSize: 20, fontWeight: '800', color: C.ink, marginBottom: 4 },
-  email: { fontSize: 14, color: C.muted, fontWeight: '500' },
-  roleBadge: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 10, backgroundColor: C.c050, borderWidth: 1, borderColor: C.c200 },
-  roleText: { fontSize: 11, fontWeight: '800', color: C.c700, letterSpacing: 0.5 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 24, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 14 },
+  heroAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)' },
+  heroAvatarText: { fontSize: 22, fontWeight: '900', color: '#fff' },
+  heroTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroRolePill: { alignSelf: 'flex-start', marginTop: 6, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroRoleText: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.8 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', marginLeft: 10 },
+  heroBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
 
   section: { paddingHorizontal: 20, paddingTop: 24 },
   sectionTitle: { fontSize: 12, fontWeight: '800', color: C.steel700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },

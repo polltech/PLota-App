@@ -341,10 +341,32 @@ export class SyncService {
     this.isOnline = true;
     this.isSyncing = false;
     this.autoSyncStarted = false;
+    this._listeners = [];        // { event, fn }
+    this._lastOnline = true;
+  }
+
+  // Subscribe to events: 'online'|'offline'|'sync-start'|'sync-done'|'sync-error'
+  on(event, fn) {
+    this._listeners.push({ event, fn });
+    return () => { this._listeners = this._listeners.filter(l => l.fn !== fn); };
+  }
+
+  _emit(event, data) {
+    this._listeners.forEach(l => { if (l.event === event) l.fn(data); });
   }
 
   async checkConnectivity() {
+    const wasOnline = this._lastOnline;
     this.isOnline = await checkOnline();
+    this._lastOnline = this.isOnline;
+
+    if (!wasOnline && this.isOnline) {
+      // Just came back online — sync immediately
+      this._emit('online', null);
+      this.syncPending().catch(() => {});
+    } else if (wasOnline && !this.isOnline) {
+      this._emit('offline', null);
+    }
     return this.isOnline;
   }
 
@@ -352,28 +374,28 @@ export class SyncService {
     if (this.autoSyncStarted) return;
     this.autoSyncStarted = true;
 
-    setTimeout(() => {
-      this.syncPending().catch((e) => console.warn('Initial sync failed:', e));
-    }, 5000);
+    // Initial sync attempt after 5s
+    setTimeout(() => { this.syncPending().catch(() => {}); }, 5000);
 
+    // Poll connectivity every 10s — triggers immediate sync on reconnect
     setInterval(async () => {
-      try {
-        if (this.isSyncing) return;
-        if (await checkOnline()) await this.syncPending();
-      } catch (e) {
-        console.warn('Auto-sync error:', e);
-      }
-    }, 45000);
+      try { await this.checkConnectivity(); } catch (_) {}
+    }, 10000);
   }
 
   async syncPending() {
     if (this.isSyncing) return;
     if (!dbService.db) return;
+    if (!(await checkOnline())) return;
 
     this.isSyncing = true;
+    this._emit('sync-start', null);
     try {
       const pending = await dbService.getQueue(null, 'pending');
-      if (!pending || pending.length === 0) return;
+      if (!pending || pending.length === 0) {
+        this._emit('sync-done', { synced: 0 });
+        return;
+      }
 
       const captures = pending.map((r) => ({
         farm_id: r.farm_id,
@@ -389,14 +411,16 @@ export class SyncService {
         notes: r.notes ?? null,
       }));
 
-      try {
-        const res = await polygonAPI.syncBatch({ captures });
-        if (res.data?.synced > 0) {
-          for (const c of pending) await dbService.updateSyncStatus(c.id, 'synced');
-        }
-      } catch (e) {
-        for (const c of pending) await dbService.updateSyncStatus(c.id, 'failed', e.message);
+      const res = await polygonAPI.syncBatch({ captures });
+      const synced = res.data?.synced ?? 0;
+      if (synced > 0) {
+        for (const c of pending) await dbService.updateSyncStatus(c.id, 'synced');
       }
+      this._emit('sync-done', { synced });
+    } catch (e) {
+      const pending = await dbService.getQueue(null, 'pending').catch(() => []);
+      for (const c of pending) await dbService.updateSyncStatus(c.id, 'failed', e.message);
+      this._emit('sync-error', { error: e.message });
     } finally {
       this.isSyncing = false;
     }

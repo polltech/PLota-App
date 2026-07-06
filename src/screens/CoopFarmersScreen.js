@@ -368,7 +368,7 @@ export default function CoopFarmersScreen() {
         const d = pendRes.value.data;
         setPending(Array.isArray(d) ? d : []);
       }
-    } catch (e) { console.warn('CoopFarmers load:', e.message); }
+    } catch (e) {}
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -420,34 +420,33 @@ export default function CoopFarmersScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>Farmers</Text>
-            <Text style={s.headerSub}>{totalFarmers} members · {pendingCount} pending review</Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Farmers</Text>
+              <Text style={s.heroSub}>{totalFarmers} members · {pendingCount} pending review</Text>
+            </View>
           </View>
-        </View>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{totalFarmers}</Text><Text style={s.heroStatLabel}>Total</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{verified}</Text><Text style={s.heroStatLabel}>Verified</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{totalFarmers - verified}</Text><Text style={s.heroStatLabel}>Unverified</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{pendingCount}</Text><Text style={s.heroStatLabel}>Pending</Text></View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
 
-        {/* Stat chips */}
-        {!loading && (
-          <View style={s.statsRow}>
-            {[
-              { val: totalFarmers, label: 'Total' },
-              { val: verified,     label: 'Verified' },
-              { val: totalFarmers - verified, label: 'Unverified' },
-              { val: pendingCount, label: 'Pending' },
-            ].map(c => (
-              <View key={c.label} style={s.statChip}>
-                <Text style={s.statVal}>{c.val}</Text>
-                <Text style={s.statLabel}>{c.label}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Tabs */}
+      <View style={s.tabWrap}>
         <View style={s.tabRow}>
           <TouchableOpacity
             style={[s.tabBtn, tab === 'all' && s.tabBtnActive]}
@@ -471,7 +470,7 @@ export default function CoopFarmersScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* Search */}
       <View style={s.searchWrap}>
@@ -550,19 +549,19 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: {
-    backgroundColor: C.white, paddingHorizontal: 20, paddingBottom: 0,
-    borderBottomWidth: 1, borderBottomColor: C.steel200,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12, paddingLeft: 36 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: C.c900 },
-  headerSub: { fontSize: 12, color: C.muted, marginTop: 2 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 18, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  statChip: { flex: 1, backgroundColor: C.c050, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
-  statVal: { fontSize: 18, fontWeight: '900', color: C.c700 },
-  statLabel: { fontSize: 9, fontWeight: '700', color: C.c700, textAlign: 'center', lineHeight: 12, marginTop: 2 },
-
+  tabWrap: { backgroundColor: C.white, paddingHorizontal: 16, paddingTop: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   tabRow: { flexDirection: 'row', gap: 8, paddingBottom: 14 },
   tabBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,

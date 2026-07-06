@@ -149,7 +149,6 @@ export default function FarmDetailScreen() {
         setSatHistory(Array.isArray(d) ? d.slice(0, 12) : (d?.observations?.slice(0, 12) || []));
       }
     } catch (e) {
-      console.warn('FarmDetail load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -97,7 +97,6 @@ export default function LoginScreen({ navigation }) {
     try {
       const res = await authAPI.sendOtp(otpPhone.trim());
       // DEV: print full response so the OTP is visible during testing
-      console.log('[DEV] sendOtp response:', JSON.stringify(res.data, null, 2));
       Alert.alert(
         '[DEV] OTP Response',
         JSON.stringify(res.data, null, 2),
@@ -135,7 +134,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f3f2f1" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={s.safe}>
         <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
@@ -145,11 +144,14 @@ export default function LoginScreen({ navigation }) {
           >
             {/* Brand header */}
             <View style={s.brandWrap}>
-              <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
-              <Text style={s.brandTag}>Traceable Farms, Trusted Futures</Text>
+              <View style={s.logoCircle}>
+                <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
+              </View>
+              <Text style={s.brandName}>PLOTRA</Text>
+              <Text style={s.brandTag}>Traceable Farms</Text>
             </View>
 
-            <Animated.View style={[s.card, { transform: [{ translateX: shakeAnim }] }]}>
+            <Animated.View style={[s.form, { transform: [{ translateX: shakeAnim }] }]}>
 
               {/* Mode toggle */}
               <View style={s.modeRow}>
@@ -196,7 +198,7 @@ export default function LoginScreen({ navigation }) {
                         value={identifier}
                         onChangeText={setIdentifier}
                         placeholder="you@example.com or +254 7XX..."
-                        placeholderTextColor={C.subtle}
+                        placeholderTextColor="rgba(255,255,255,0.38)"
                         autoCapitalize="none"
                         keyboardType="email-address"
                         returnKeyType="next"
@@ -216,7 +218,7 @@ export default function LoginScreen({ navigation }) {
                         value={password}
                         onChangeText={setPassword}
                         placeholder="Password"
-                        placeholderTextColor={C.subtle}
+                        placeholderTextColor="rgba(255,255,255,0.38)"
                         secureTextEntry={!showPwd}
                         returnKeyType="done"
                         onSubmitEditing={handlePasswordLogin}
@@ -226,13 +228,13 @@ export default function LoginScreen({ navigation }) {
                         onBlur={() => setFocusPwd(false)}
                       />
                       <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)} activeOpacity={0.7}>
-                        <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.muted} />
+                        <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   <View style={s.coopHintRow}>
-                    <Ionicons name="information-circle-outline" size={13} color={C.muted} />
+                    <Ionicons name="information-circle-outline" size={13} color="rgba(255,255,255,0.55)" />
                     <Text style={s.coopHintText}>Cooperative officer or staff? Use the </Text>
                     <TouchableOpacity onPress={() => switchMode('staff')} activeOpacity={0.7}>
                       <Text style={s.coopHintLink}>Staff tab</Text>
@@ -311,13 +313,13 @@ export default function LoginScreen({ navigation }) {
                           <View style={s.fieldGroup}>
                             <Text style={s.label}>Phone number</Text>
                             <View style={[s.inputWrap, focusPhone && s.inputWrapFocused]}>
-                              <Ionicons name="call-outline" size={16} color={C.muted} style={{ marginRight: 8 }} />
+                              <Ionicons name="call-outline" size={16} color="rgba(255,255,255,0.55)" style={{ marginRight: 8 }} />
                               <TextInput
                                 style={[s.input, { flex: 1 }]}
                                 value={otpPhone}
                                 onChangeText={setOtpPhone}
                                 placeholder="+254 7XX XXX XXX"
-                                placeholderTextColor={C.subtle}
+                                placeholderTextColor="rgba(255,255,255,0.38)"
                                 keyboardType="phone-pad"
                                 returnKeyType="done"
                                 onSubmitEditing={handleSendOtp}
@@ -355,7 +357,7 @@ export default function LoginScreen({ navigation }) {
                                 value={otpCode}
                                 onChangeText={v => setOtpCode(v.replace(/\D/g, '').slice(0, 6))}
                                 placeholder="· · · · · ·"
-                                placeholderTextColor={C.steel300}
+                                placeholderTextColor="rgba(255,255,255,0.3)"
                                 keyboardType="number-pad"
                                 maxLength={6}
                                 returnKeyType="done"
@@ -403,7 +405,7 @@ export default function LoginScreen({ navigation }) {
                             value={identifier}
                             onChangeText={setIdentifier}
                             placeholder="you@example.com or +254 7XX..."
-                            placeholderTextColor={C.subtle}
+                            placeholderTextColor="rgba(255,255,255,0.38)"
                             autoCapitalize="none"
                             keyboardType="email-address"
                             returnKeyType="next"
@@ -422,7 +424,7 @@ export default function LoginScreen({ navigation }) {
                             value={password}
                             onChangeText={setPassword}
                             placeholder="Password"
-                            placeholderTextColor={C.subtle}
+                            placeholderTextColor="rgba(255,255,255,0.38)"
                             secureTextEntry={!showPwd}
                             returnKeyType="done"
                             onSubmitEditing={handlePasswordLogin}
@@ -432,7 +434,7 @@ export default function LoginScreen({ navigation }) {
                             onBlur={() => setFocusPwd(false)}
                           />
                           <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)} activeOpacity={0.7}>
-                            <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.muted} />
+                            <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -465,105 +467,103 @@ export default function LoginScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f3f2f1' },
+  root: { flex: 1, backgroundColor: C.c800 },
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingVertical: 48 },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingVertical: 44 },
 
-  brandWrap: { alignItems: 'center', marginBottom: 32 },
-  logo: { width: 160, height: 160, marginBottom: 4 },
-  brandName: { fontSize: 22, fontWeight: '800', color: C.ink, letterSpacing: 3, marginBottom: 4 },
-  brandTag: { fontSize: 12, color: C.muted, fontWeight: '400', letterSpacing: 0.3 },
+  brandWrap: { alignItems: 'center', marginBottom: 28 },
+  logoCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.white, padding: 3, marginBottom: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
+  logo: { width: '100%', height: '100%', borderRadius: 33 },
+  brandName: { fontSize: 22, fontWeight: '900', color: C.white, letterSpacing: 6, marginBottom: 5 },
+  brandTag: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500', letterSpacing: 2, textTransform: 'uppercase' },
 
-  card: {
-    backgroundColor: C.white, borderRadius: 8, padding: 28,
-    borderWidth: 1, borderColor: C.steel200,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
-  },
+  form: { paddingHorizontal: 2 },
 
   // Mode toggle
-  modeRow: { flexDirection: 'row', backgroundColor: C.steel100, borderRadius: 10, padding: 3, marginBottom: 24, gap: 3 },
-  modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 8 },
-  modeBtnActive: { backgroundColor: C.white, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
-  modeBtnText: { fontSize: 13, fontWeight: '700', color: C.muted },
-  modeBtnTextActive: { color: C.c700 },
+  modeRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 10, padding: 3, marginBottom: 20, gap: 3 },
+  modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 9, borderRadius: 8 },
+  modeBtnActive: { backgroundColor: 'rgba(255,255,255,0.16)' },
+  modeBtnText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.48)' },
+  modeBtnTextActive: { color: C.white },
 
-  heading: { fontSize: 24, fontWeight: '600', color: C.ink, marginBottom: 6, textAlign: 'center' },
-  subheading: { fontSize: 14, color: C.muted, lineHeight: 20, marginBottom: 20, textAlign: 'center' },
+  heading: { fontSize: 18, fontWeight: '800', color: C.white, marginBottom: 4, textAlign: 'center' },
+  subheading: { fontSize: 12, color: 'rgba(255,255,255,0.58)', lineHeight: 18, marginBottom: 16, textAlign: 'center' },
 
   offlineBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: C.c050, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8,
-    marginBottom: 16, borderWidth: 1, borderColor: C.c200,
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7,
+    marginBottom: 13, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)',
   },
-  offlineText: { fontSize: 13, fontWeight: '600', color: C.c800 },
+  offlineText: { fontSize: 12, fontWeight: '600', color: C.white },
 
   errorBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#fef2f2', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10,
-    marginBottom: 16, borderWidth: 1, borderColor: '#fecaca',
+    flexDirection: 'row', alignItems: 'flex-start', gap: 7,
+    backgroundColor: 'rgba(220,38,38,0.12)', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 9,
+    marginBottom: 13, borderWidth: 1, borderColor: 'rgba(220,38,38,0.28)',
   },
-  errorText: { flex: 1, fontSize: 13, color: '#dc2626', fontWeight: '500', lineHeight: 18 },
+  errorText: { flex: 1, fontSize: 12, color: '#fca5a5', fontWeight: '500', lineHeight: 17 },
 
-  fieldGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: C.steel700, marginBottom: 6 },
+  fieldGroup: { marginBottom: 13 },
+  label: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 6 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: C.steel300, borderRadius: 6,
-    backgroundColor: C.white, paddingHorizontal: 12, height: 44,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.09)', paddingHorizontal: 13, height: 44,
   },
-  inputWrapFocused: { borderColor: C.c700, borderWidth: 1.5 },
-  input: { flex: 1, fontSize: 14, color: C.ink, height: 44 },
+  inputWrapFocused: { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.13)' },
+  input: { flex: 1, fontSize: 14, color: C.white, height: 44, fontWeight: '400' },
   eyeBtn: { paddingLeft: 8, paddingVertical: 4 },
 
-  methodRow: { flexDirection: 'row', backgroundColor: C.steel100, borderRadius: 8, padding: 3, marginBottom: 18, gap: 3 },
-  methodBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 6 },
-  methodBtnActive: { backgroundColor: C.white, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
-  methodBtnText: { fontSize: 12, fontWeight: '700', color: C.muted },
-  methodBtnTextActive: { color: C.c700 },
+  methodRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 9, padding: 3, marginBottom: 15, gap: 3 },
+  methodBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 7, borderRadius: 7 },
+  methodBtnActive: { backgroundColor: 'rgba(255,255,255,0.14)' },
+  methodBtnText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.43)' },
+  methodBtnTextActive: { color: C.white },
 
-  coopHintRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 12, marginTop: -4 },
-  coopHintText: { fontSize: 12, color: C.muted },
-  coopHintLink: { fontSize: 12, color: C.c700, fontWeight: '700' },
+  coopHintRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 10, marginTop: -3 },
+  coopHintText: { fontSize: 11, color: 'rgba(255,255,255,0.52)' },
+  coopHintLink: { fontSize: 11, color: '#86efac', fontWeight: '700' },
 
-  forgotRow: { alignSelf: 'flex-end', marginBottom: 20, marginTop: 0 },
-  forgotText: { fontSize: 13, color: C.c700, fontWeight: '500' },
+  forgotRow: { alignSelf: 'flex-end', marginBottom: 16, marginTop: 1 },
+  forgotText: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
 
   primaryBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: C.c700, height: 44, borderRadius: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    backgroundColor: C.c700, height: 46, borderRadius: 10,
+    shadowColor: C.c700, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.38, shadowRadius: 8, elevation: 5,
   },
-  primaryBtnDisabled: { backgroundColor: C.steel300 },
-  primaryBtnText: { color: C.white, fontSize: 14, fontWeight: '600' },
+  primaryBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.13)', shadowOpacity: 0 },
+  primaryBtnText: { color: C.white, fontSize: 14, fontWeight: '700' },
 
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20, gap: 10 },
-  divLine: { flex: 1, height: 1, backgroundColor: C.steel200 },
-  divText: { fontSize: 12, color: C.subtle, fontWeight: '500' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 18, gap: 9 },
+  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.13)' },
+  divText: { fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
 
   outlineBtn: {
-    height: 44, borderRadius: 6, borderWidth: 1.5, borderColor: C.c700,
+    height: 46, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center', justifyContent: 'center',
   },
-  outlineBtnText: { fontSize: 14, fontWeight: '600', color: C.c700 },
+  outlineBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
 
   // OTP specific
-  otpPhoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.c050, borderRadius: 8, padding: 10, marginBottom: 16 },
-  otpPhoneLabel: { fontSize: 12, color: C.muted },
-  otpPhoneVal: { flex: 1, fontSize: 13, fontWeight: '700', color: C.ink },
-  otpChangeLink: { fontSize: 13, fontWeight: '700', color: C.c700 },
+  otpPhoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 9, padding: 9, marginBottom: 13 },
+  otpPhoneLabel: { fontSize: 11, color: 'rgba(255,255,255,0.52)' },
+  otpPhoneVal: { flex: 1, fontSize: 13, fontWeight: '700', color: C.white },
+  otpChangeLink: { fontSize: 12, fontWeight: '700', color: '#86efac' },
 
   otpInputWrap: {
-    borderWidth: 1, borderColor: C.steel300, borderRadius: 6,
-    backgroundColor: C.white, paddingHorizontal: 16, height: 52,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.09)', paddingHorizontal: 14, height: 50,
     justifyContent: 'center',
   },
   otpInput: {
-    fontSize: 26, fontWeight: '800', color: C.ink,
-    letterSpacing: 10, textAlign: 'center', height: 52,
+    fontSize: 24, fontWeight: '700', color: C.white,
+    letterSpacing: 10, textAlign: 'center', height: 50,
   },
 
-  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
-  resendText: { fontSize: 13, fontWeight: '600', color: C.c700 },
+  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 13 },
+  resendText: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.65)' },
 
-  version: { textAlign: 'center', marginTop: 24, color: C.subtle, fontSize: 12 },
+  version: { textAlign: 'center', marginTop: 24, color: 'rgba(255,255,255,0.28)', fontSize: 11 },
 });

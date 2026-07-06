@@ -68,7 +68,6 @@ export default function DocumentsScreen() {
       const list = Array.isArray(res.data) ? res.data : (res.data?.documents || []);
       setDocuments(list);
     } catch (e) {
-      console.warn('Documents load:', e.message);
     } finally {
       setLoading(false);
     }
@@ -93,7 +92,7 @@ export default function DocumentsScreen() {
     // This stub shows the user the action path; wire up the picker when the package is added.
     Alert.alert(
       `Upload: ${doc.label}`,
-      'To upload documents, please use the Plotra web portal or contact your cooperative officer.\n\nWeb portal: dev.plotra.eu',
+      'To upload documents, please use the Plotra web portal or contact your cooperative officer.\n\nWeb portal: portal.plotra.eu  |  API: api.plotra.eu',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -111,19 +110,31 @@ export default function DocumentsScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="arrow-back" size={22} color={C.ink} />
-          </TouchableOpacity>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.headerTitle}>My Documents</Text>
-            <Text style={s.headerSub}>KYC & EUDR compliance files</Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>My Documents</Text>
+              <Text style={s.heroSub}>KYC & EUDR compliance files</Text>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{completeness}%</Text><Text style={s.heroStatLabel}>Complete</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{uploadedRequiredCount}</Text><Text style={s.heroStatLabel}>Uploaded</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{requiredCount}</Text><Text style={s.heroStatLabel}>Required</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{documents.filter(d => d.status === 'approved').length}</Text><Text style={s.heroStatLabel}>Approved</Text></View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
 
       {loading ? (
         <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>
@@ -227,10 +238,17 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: C.ink },
-  headerSub: { fontSize: 11, color: C.muted, marginTop: 1 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
   scroll: { flex: 1 },
   content: { padding: 16 },

@@ -119,11 +119,10 @@ const GENDER_OPTIONS = [
 ];
 
 const STEPS = [
-  { key: 'farmer',   label: 'Farmer',    icon: 'person-outline' },
-  { key: 'land',     label: 'Land',      icon: 'leaf-outline' },
-  { key: 'coffee',   label: 'Coffee',    icon: 'cafe-outline' },
-  { key: 'capture',  label: 'Capture',   icon: 'location-outline' },
-  { key: 'advanced', label: 'Advanced',  icon: 'options-outline' },
+  { key: 'farmer',   label: 'Farmer',   icon: 'person-outline' },
+  { key: 'land',     label: 'Land',     icon: 'leaf-outline' },
+  { key: 'coffee',   label: 'Coffee',   icon: 'cafe-outline' },
+  { key: 'advanced', label: 'Advanced', icon: 'options-outline' },
 ];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -376,7 +375,6 @@ export default function AddFarmScreen({ route }) {
     !!farmName.trim() && !!totalArea,
     varieties.length > 0,
     true,
-    true,
   ];
 
   const handleNext = () => {
@@ -384,6 +382,23 @@ export default function AddFarmScreen({ route }) {
     if (!stepValid[step]) return;
     setTouched(false);
     setError(null);
+    if (step === 2) {
+      navigation.navigate('WalkBoundary', {
+        farmId: farmCode.trim() || farmName.trim(),
+        farm: farmName.trim() ? { farm_name: farmName.trim() } : null,
+        captureMode: 'walk',
+        formData: {
+          firstName, lastName, phone, nationalId, gender, county, subCounty, dataConsent,
+          farmName, farmCode, farmType, landRegNumber, totalArea, landUse,
+          varieties, yearPlanted, coffeeTrees, farmStatus, plantingMethod,
+          irrigationUsed, irrigationType, annualYield,
+          cooperativeName: user?.cooperative_name || null,
+          cooperativeMemberNo: coopMemberNo.trim() || null,
+          targetFarmerId: targetFarmerId || null,
+        },
+      });
+      return;
+    }
     setStep(s => s + 1);
   };
 
@@ -811,60 +826,8 @@ export default function AddFarmScreen({ route }) {
               </>
             )}
 
-            {/* ── STEP 4: CAPTURE ──────────────────────────────────────────── */}
+            {/* ── STEP 4: ADVANCED ─────────────────────────────────────────── */}
             {step === 3 && (
-              <>
-                <SectionBlock icon="location-outline" title="Capture Farm Boundary">
-                  <View style={s.captureNote}>
-                    <Ionicons name="information-circle-outline" size={16} color="#1d4ed8" />
-                    <Text style={s.captureNoteText}>
-                      Your data consent covers satellite monitoring and historical imagery analysis.
-                      You are ready to capture the farm boundary.
-                    </Text>
-                  </View>
-
-                  {[
-                    { icon: 'walk-outline', color: C.c700, bg: C.c050, border: C.c200, title: 'Walk the Farm Boundary', desc: 'Go to your farm and walk along its edges. The app records your GPS path to map the boundary.' },
-                    { icon: 'wifi-outline', color: '#059669', bg: '#f0fdf4', border: '#a7f3d0', title: 'Works Offline', desc: 'Boundary capture works without internet. Data syncs automatically when you reconnect.' },
-                    { icon: 'time-outline', color: C.c700, bg: C.c050, border: C.c200, title: 'Capture Later', desc: "You can skip now and capture the boundary later from My Farms using the Capture button." },
-                  ].map(item => (
-                    <View key={item.title} style={[s.captureInfoCard, { backgroundColor: item.bg, borderColor: item.border }]}>
-                      <View style={[s.captureIconBox, { backgroundColor: item.bg }]}>
-                        <Ionicons name={item.icon} size={20} color={item.color} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.captureInfoTitle}>{item.title}</Text>
-                        <Text style={s.captureInfoDesc}>{item.desc}</Text>
-                      </View>
-                    </View>
-                  ))}
-
-                  <TouchableOpacity
-                    style={s.captureNowBtn}
-                    onPress={() => navigation.navigate('CaptureMode', {
-                      farmId: farmCode.trim() || farmName.trim(),
-                      formData: {
-                        firstName, lastName, phone, nationalId, gender, county, subCounty, dataConsent,
-                        farmName, farmCode, farmType, landRegNumber, totalArea, landUse,
-                        varieties, yearPlanted, coffeeTrees, farmStatus, plantingMethod,
-                        irrigationUsed, irrigationType, annualYield,
-                        cooperativeName: user?.cooperative_name || null,
-                        cooperativeMemberNo: coopMemberNo.trim() || null,
-                        targetFarmerId: targetFarmerId || null,
-                      },
-                    })}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name="location-outline" size={16} color={C.c700} />
-                    <Text style={s.captureNowBtnText}>Start Capture Now</Text>
-                  </TouchableOpacity>
-                  <Text style={s.captureSkipHint}>Or press Next to fill optional details first.</Text>
-                </SectionBlock>
-              </>
-            )}
-
-            {/* ── STEP 5: ADVANCED ─────────────────────────────────────────── */}
-            {step === 4 && (
               <>
                 <View style={s.optionalNote}>
                   <Ionicons name="information-circle-outline" size={15} color="#1d4ed8" />
@@ -957,8 +920,17 @@ export default function AddFarmScreen({ route }) {
               onPress={handleNext}
               activeOpacity={0.85}
             >
-              <Text style={s.primaryBtnText}>Next: {STEPS[step + 1].label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={C.white} />
+              {step === 2 ? (
+                <>
+                  <Ionicons name="location-outline" size={15} color={C.white} />
+                  <Text style={s.primaryBtnText}>Capture Boundary</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.primaryBtnText}>Next: {STEPS[step + 1].label}</Text>
+                  <Ionicons name="chevron-forward" size={15} color={C.white} />
+                </>
+              )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -1036,15 +1008,15 @@ const s = StyleSheet.create({
 
   primaryBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: C.c700, height: 44, borderRadius: 6,
+    backgroundColor: C.c700, height: 38, borderRadius: 6,
   },
   primaryBtnDisabled: { backgroundColor: C.steel300 },
-  primaryBtnText: { color: C.white, fontSize: 14, fontWeight: '600' },
+  primaryBtnText: { color: C.white, fontSize: 13, fontWeight: '600' },
   outlineBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-    height: 44, borderRadius: 6, borderWidth: 1.5, borderColor: C.steel300, backgroundColor: C.white,
+    height: 38, borderRadius: 6, borderWidth: 1.5, borderColor: C.steel300, backgroundColor: C.white,
   },
-  outlineBtnText: { fontSize: 14, fontWeight: '600', color: C.steel700 },
+  outlineBtnText: { fontSize: 13, fontWeight: '600', color: C.steel700 },
 
   coopCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: C.c050, borderRadius: 8,
@@ -1076,28 +1048,6 @@ const s = StyleSheet.create({
   },
   errorText: { flex: 1, color: '#dc2626', fontSize: 13, fontWeight: '600', lineHeight: 18 },
 
-  captureNote: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#eff6ff', borderRadius: 6, padding: 12,
-    borderWidth: 1, borderColor: '#bfdbfe', marginBottom: 14,
-  },
-  captureNoteText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 18, fontWeight: '500' },
-
-  captureInfoCard: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    borderRadius: 8, padding: 14, marginBottom: 10, borderWidth: 1,
-  },
-  captureIconBox: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  captureInfoTitle: { fontSize: 13, fontWeight: '700', color: C.ink, marginBottom: 3 },
-  captureInfoDesc: { fontSize: 12, color: C.muted, lineHeight: 17 },
-  captureNowBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 6, paddingVertical: 12, marginTop: 4, borderWidth: 1.5, borderColor: C.c700,
-    backgroundColor: C.white,
-  },
-  captureNowBtnText: { fontSize: 14, fontWeight: '600', color: C.c700 },
-  captureSkipHint: { fontSize: 12, color: C.subtle, textAlign: 'center', marginTop: 10, lineHeight: 17 },
-
   optionalNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: '#eff6ff', borderRadius: 6, padding: 12,
@@ -1106,7 +1056,7 @@ const s = StyleSheet.create({
   optionalNoteText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 18, fontWeight: '500' },
 
   footer: {
-    flexDirection: 'row', gap: 10, padding: 12, paddingBottom: 16,
+    flexDirection: 'row', gap: 10, padding: 10, paddingBottom: 8,
     backgroundColor: C.white, borderTopWidth: 1, borderTopColor: C.steel200,
   },
 });

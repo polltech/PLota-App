@@ -65,7 +65,6 @@ export default function ProcessingDashboardScreen() {
       const d = res.data;
       setDeliveries(Array.isArray(d) ? d : (d?.deliveries || []));
     } catch (e) {
-      console.warn('ProcessingDashboard load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

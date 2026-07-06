@@ -83,7 +83,6 @@ export default function AdminComplianceScreen() {
       const d = ddsRes.data;
       setDdsList(Array.isArray(d) ? d : d?.items || []);
     } catch (e) {
-      console.warn('Admin compliance:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

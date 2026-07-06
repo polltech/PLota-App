@@ -38,7 +38,6 @@ export default function ReviewerDashboardScreen() {
       const res = await adminAPI.getComplianceOverview();
       setOverview(res.data);
     } catch (e) {
-      console.warn('Reviewer dashboard:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

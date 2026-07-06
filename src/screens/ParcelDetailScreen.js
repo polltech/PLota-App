@@ -87,7 +87,6 @@ export default function ParcelDetailScreen() {
         setEudrAnalysis(eudrRes.value.data);
       }
     } catch (e) {
-      console.warn('Parcel load error:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -122,24 +122,24 @@ const FarmCard = ({ farm, onPress, onCapture, onAnalyse, onEdit }) => {
         // Update-requested mode: prioritise Update + Recapture
         <View style={s.cardActions}>
           <TouchableOpacity style={s.actionBtn} onPress={onEdit} activeOpacity={0.8}>
-            <Ionicons name="create-outline" size={15} color="#d97706" />
+            <Ionicons name="create-outline" size={12} color="#d97706" />
             <Text style={[s.actionBtnText, { color: '#d97706' }]}>Update</Text>
           </TouchableOpacity>
           <View style={s.actionDivider} />
           <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
-            <Ionicons name="map-outline" size={15} color="#1d4ed8" />
+            <Ionicons name="map-outline" size={12} color="#1d4ed8" />
             <Text style={[s.actionBtnText, { color: '#1d4ed8' }]}>Recapture</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={s.cardActions}>
           <TouchableOpacity style={s.actionBtn} onPress={onPress} activeOpacity={0.8}>
-            <Ionicons name="eye-outline" size={15} color={C.c700} />
+            <Ionicons name="eye-outline" size={12} color={C.c700} />
             <Text style={s.actionBtnText}>View</Text>
           </TouchableOpacity>
           <View style={s.actionDivider} />
           <TouchableOpacity style={s.actionBtn} onPress={onCapture} activeOpacity={0.8}>
-            <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={15} color={hasPolygon ? '#b45309' : '#15803d'} />
+            <Ionicons name={hasPolygon ? 'refresh-outline' : 'location-outline'} size={12} color={hasPolygon ? '#b45309' : '#15803d'} />
             <Text style={[s.actionBtnText, { color: hasPolygon ? '#b45309' : '#15803d' }]}>
               {hasPolygon ? 'Redo' : 'Capture'}
             </Text>
@@ -150,7 +150,7 @@ const FarmCard = ({ farm, onPress, onCapture, onAnalyse, onEdit }) => {
             onPress={hasPolygon ? onAnalyse : null}
             activeOpacity={hasPolygon ? 0.8 : 1}
           >
-            <Ionicons name="analytics-outline" size={15} color={hasPolygon ? '#1d4ed8' : C.subtle} />
+            <Ionicons name="analytics-outline" size={12} color={hasPolygon ? '#1d4ed8' : C.subtle} />
             <Text style={[s.actionBtnText, { color: hasPolygon ? '#1d4ed8' : C.subtle }]}>Analyse</Text>
           </TouchableOpacity>
         </View>
@@ -266,25 +266,40 @@ export default function FarmsListScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>My Farms</Text>
-            <Text style={s.headerSub}>
-              {activeFilter === 'all'
-                ? `${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`
-                : `${filtered.length} of ${farms.length} · ${FILTERS.find(f => f.key === activeFilter)?.label}`}
-            </Text>
+      {/* Hero */}
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>My Farms</Text>
+              <Text style={s.heroSub}>
+                {activeFilter === 'all'
+                  ? `${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`
+                  : `${filtered.length} of ${farms.length} · ${FILTERS.find(f => f.key === activeFilter)?.label}`}
+              </Text>
+            </View>
+            <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('QueueList')} activeOpacity={0.8}>
+              <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
+              <Text style={s.heroBtnText}>Queue</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={s.queueBtn} onPress={() => navigation.navigate('QueueList')} activeOpacity={0.8}>
-            <Ionicons name="cloud-upload-outline" size={16} color={C.c700} />
-            <Text style={s.queueBtnText}>Offline Queue</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.all}</Text><Text style={s.heroStatLabel}>Total</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.approved}</Text><Text style={s.heroStatLabel}>Verified</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.pending}</Text><Text style={s.heroStatLabel}>Pending</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.compliant}</Text><Text style={s.heroStatLabel}>Compliant</Text></View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
 
       {/* Update requests alert */}
       {!loading && updateRequests.length > 0 && (
@@ -301,28 +316,31 @@ export default function FarmsListScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Stat cards — single row */}
+      {/* Filter cards — green-only */}
       {!loading && (
         <View style={s.summaryWrap}>
           {[
-            { key: 'all',              icon: 'leaf-outline',             label: 'Total',      color: C.c700,    bg: C.c050 },
-            { key: 'approved',         icon: 'checkmark-circle-outline', label: 'Verified',   color: '#15803d', bg: '#dcfce7' },
-            { key: 'pending',          icon: 'time-outline',             label: 'Pending',    color: '#b45309', bg: '#fef3c7' },
-            { key: 'compliant',        icon: 'shield-checkmark-outline', label: 'Compliant',  color: '#1d4ed8', bg: '#dbeafe' },
-            { key: 'non_compliant',    icon: 'warning-outline',          label: 'Non-EUDR',   color: '#dc2626', bg: '#fee2e2' },
-            ...(updateRequests.length > 0 ? [{ key: 'update_requested', icon: 'alert-circle-outline', label: 'Update', color: '#d97706', bg: '#fef3c7' }] : []),
-          ].map((f) => (
-            <TouchableOpacity
-              key={f.key}
-              style={[s.miniCard, { backgroundColor: f.bg, borderColor: activeFilter === f.key ? f.color : 'transparent' }]}
-              onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={f.icon} size={16} color={f.color} />
-              <Text style={[s.miniCount, { color: f.color }]}>{counts[f.key] ?? 0}</Text>
-              <Text style={[s.miniLabel, { color: f.color }]}>{f.label}</Text>
-            </TouchableOpacity>
-          ))}
+            { key: 'all',              icon: 'leaf-outline',             label: 'Total'     },
+            { key: 'approved',         icon: 'checkmark-circle-outline', label: 'Verified'  },
+            { key: 'pending',          icon: 'time-outline',             label: 'Pending'   },
+            { key: 'compliant',        icon: 'shield-checkmark-outline', label: 'Compliant' },
+            { key: 'non_compliant',    icon: 'warning-outline',          label: 'Non-EUDR'  },
+            ...(updateRequests.length > 0 ? [{ key: 'update_requested', icon: 'alert-circle-outline', label: 'Update' }] : []),
+          ].map((f) => {
+            const active = activeFilter === f.key;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[s.miniCard, { backgroundColor: active ? '#dcfce7' : C.steel100, borderColor: active ? C.c700 : 'transparent' }]}
+                onPress={() => setActiveFilter(activeFilter === f.key ? 'all' : f.key)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={f.icon} size={16} color={active ? C.c700 : C.steel500} />
+                <Text style={[s.miniCount, { color: active ? C.c700 : C.ink }]}>{counts[f.key] ?? 0}</Text>
+                <Text style={[s.miniLabel, { color: active ? C.c700 : C.muted }]}>{f.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
 
@@ -424,12 +442,19 @@ export default function FarmsListScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
-  header: { backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900 },
-  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  queueBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.c100, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 2 },
-  queueBtnText: { fontSize: 12, fontWeight: '700', color: C.c700 },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
   // Farm code lookup
   lookupWrap: { backgroundColor: C.white, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
@@ -490,7 +515,7 @@ const s = StyleSheet.create({
   compChipText: { fontSize: 9, fontWeight: '800' },
 
   cardActions:   { flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.steel100 },
-  actionBtn:     { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 8 },
+  actionBtn:     { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, paddingVertical: 5 },
   actionDivider: { width: 1, backgroundColor: C.steel100 },
   actionBtnDisabled: { opacity: 0.35 },
   actionBtnText: { fontSize: 9, fontWeight: '700', color: C.c700 },

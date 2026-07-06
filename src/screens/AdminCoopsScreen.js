@@ -66,7 +66,6 @@ export default function AdminCoopsScreen() {
       const d = res.data;
       setCoops(Array.isArray(d) ? d : d?.cooperatives || []);
     } catch (e) {
-      console.warn('Admin coops:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

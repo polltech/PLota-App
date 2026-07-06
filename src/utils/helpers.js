@@ -4,7 +4,6 @@
 export function catchAsync(fn) {
   return function (...args) {
     return fn.apply(this, args).catch((error) => {
-      console.error('Async error in', fn.name, ':', error);
       throw error;
     });
   };

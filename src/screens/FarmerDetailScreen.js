@@ -57,7 +57,6 @@ export default function FarmerDetailScreen() {
       const allFarms = farmsRes.data?.farms || farmsRes.data || [];
       setFarms(allFarms.filter((f) => String(f.owner_id) === String(farmerId) || String(f.farmer_id) === String(farmerId)));
     } catch (e) {
-      console.warn('FarmerDetail load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

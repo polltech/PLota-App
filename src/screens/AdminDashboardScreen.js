@@ -45,7 +45,6 @@ export default function AdminDashboardScreen() {
       const res = await adminAPI.getStats();
       setStats(res.data);
     } catch (e) {
-      console.warn('Admin stats:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

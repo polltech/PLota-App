@@ -453,7 +453,7 @@ export default function CoopStaffScreen() {
       const res = await coopAPI.getStaff();
       const d = res.data;
       setStaff(Array.isArray(d) ? d : []);
-    } catch (e) { console.warn('CoopStaff load:', e.message); }
+    } catch (e) {}
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -519,43 +519,37 @@ export default function CoopStaffScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>Team</Text>
-            <Text style={s.headerSub}>{staff.length} staff across {STAFF_ROLE_OPTIONS.filter(r => countByRole(r.value) > 0).length} roles</Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Team</Text>
+              <Text style={s.heroSub}>{staff.length} staff across {STAFF_ROLE_OPTIONS.filter(r => countByRole(r.value) > 0).length} roles</Text>
+            </View>
+            <TouchableOpacity style={s.heroBtn} onPress={() => setShowCreate(true)} activeOpacity={0.8}>
+              <Ionicons name="person-add-outline" size={15} color="#fff" />
+              <Text style={s.heroBtnText}>Add Member</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={s.addBtn} onPress={() => setShowCreate(true)} activeOpacity={0.8}>
-            <Ionicons name="person-add-outline" size={16} color={C.white} />
-            <Text style={s.addBtnText}>Add Member</Text>
-          </TouchableOpacity>
-        </View>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{staff.length}</Text><Text style={s.heroStatLabel}>Total</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{staff.filter(m => m.is_active !== false).length}</Text><Text style={s.heroStatLabel}>Active</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{staff.filter(m => m.is_active === false).length}</Text><Text style={s.heroStatLabel}>Inactive</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{STAFF_ROLE_OPTIONS.filter(r => countByRole(r.value) > 0).length}</Text><Text style={s.heroStatLabel}>Roles</Text></View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
 
-        {/* Role stat chips */}
-        {!loading && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statRow}>
-            {STAFF_ROLE_OPTIONS.map(opt => {
-              const n = countByRole(opt.value);
-              const meta = getRoleMeta(opt.value);
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[s.statChip, { backgroundColor: n > 0 ? meta.bg : C.steel100, borderColor: n > 0 ? meta.color : C.steel200 }]}
-                  onPress={() => { setActiveTab('byRole'); setQuery(''); }}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name={opt.icon} size={13} color={n > 0 ? meta.color : C.muted} />
-                  <Text style={[s.statChipCount, { color: n > 0 ? meta.color : C.muted }]}>{n}</Text>
-                  <Text style={[s.statChipLabel, { color: n > 0 ? meta.color : C.muted }]} numberOfLines={1}>{opt.label.split(' ')[0]}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
-
-        {/* Tabs */}
+      <View style={s.tabWrap}>
         <View style={s.tabRow}>
           <TouchableOpacity
             style={[s.tabBtn, activeTab === 'all' && s.tabBtnActive]}
@@ -572,7 +566,7 @@ export default function CoopStaffScreen() {
             <Text style={[s.tabText, activeTab === 'byRole' && s.tabTextActive]}>By Role</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* Search */}
       <View style={s.searchWrap}>
@@ -715,18 +709,21 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: C.white, paddingHorizontal: 16, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 12, paddingLeft: 36 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: C.c900 },
-  headerSub: { fontSize: 12, color: C.muted, marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.c700, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, marginRight: 10 },
-  addBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 18, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
-  statRow: { flexDirection: 'row', gap: 8, paddingBottom: 12 },
-  statChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1.5 },
-  statChipCount: { fontSize: 15, fontWeight: '900' },
-  statChipLabel: { fontSize: 10, fontWeight: '700', maxWidth: 60 },
-
+  tabWrap: { backgroundColor: C.white, paddingHorizontal: 16, paddingTop: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
   tabRow: { flexDirection: 'row', gap: 8, paddingBottom: 12 },
   tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: C.steel200, backgroundColor: C.steel100 },
   tabBtnActive: { borderColor: C.c700, backgroundColor: C.c050 },

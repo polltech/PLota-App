@@ -19,16 +19,18 @@ export const AuthProvider = ({ children }) => {
     try {
       await dbService.init();
       setDbReady(true);
-      syncService.startAutoSync().catch((e) => console.warn('Auto-sync start failed:', e));
+      syncService.startAutoSync().catch(() => {});
 
       const storedToken = await SecureStore.getItemAsync('access_token');
       const storedUser = await SecureStore.getItemAsync('user_data');
 
       if (storedToken && storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        // Keep SQLite in sync so screens can read cached profile offline
+        dbService.setCacheItem('user_profile', parsed).catch(() => {});
       }
     } catch (e) {
-      console.error('Auth bootstrap error:', e);
     } finally {
       setAuthReady(true);
     }
@@ -70,6 +72,9 @@ export const AuthProvider = ({ children }) => {
         // Cache credentials for offline use (SecureStore is hardware-encrypted)
         await SecureStore.setItemAsync('offline_id', identifier.trim().toLowerCase());
         await SecureStore.setItemAsync('offline_pwd', password);
+
+        // Mirror to SQLite so offline screens can show the user profile
+        dbService.setCacheItem('user_profile', userData).catch(() => {});
 
         setUser(userData);
         return { success: true };
@@ -118,6 +123,8 @@ export const AuthProvider = ({ children }) => {
       const userData = meRes.data;
       await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
       await SecureStore.setItemAsync('offline_id', phone.trim().toLowerCase());
+
+      dbService.setCacheItem('user_profile', userData).catch(() => {});
 
       setUser(userData);
       return { success: true };

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, StatusBar, Image,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as turf from '@turf/turf';
+import { Ionicons } from '@expo/vector-icons';
 import { C } from '../theme';
 
 const MAP_HTML = `<!DOCTYPE html>
@@ -197,7 +198,6 @@ const WalkBoundaryScreen = () => {
           send({ type: 'loc', lat: initial.coords.latitude, lng: initial.coords.longitude, acc: initial.coords.accuracy });
         }
       } catch (posErr) {
-        console.warn('Initial position failed:', posErr.message);
       }
 
       setGpsStatus('Waiting for high accuracy lock...');
@@ -205,7 +205,6 @@ const WalkBoundaryScreen = () => {
       // Auto-dismiss loading after 12 seconds if we have at least SOME location
       const timeoutTimer = setTimeout(() => {
         if (currentLocationRef.current) {
-          console.log('GPS calibration timeout - proceeding with current accuracy');
           setGpsLoading(false);
         }
       }, 12000);
@@ -234,7 +233,6 @@ const WalkBoundaryScreen = () => {
         );
       } catch (watchErr) {
         clearTimeout(timeoutTimer);
-        console.warn('Watcher failed, falling back to lower accuracy:', watchErr.message);
         // Final fallback: use Balanced accuracy watcher if BestForNavigation fails
         locationSub.current = await Location.watchPositionAsync(
           { accuracy: Location.Accuracy.Balanced, timeInterval: 3000, distanceInterval: 2 },
@@ -249,7 +247,6 @@ const WalkBoundaryScreen = () => {
       }
     } catch (err) {
       setGpsStatus('GPS Error');
-      console.error('GPS Start Error:', err);
       Alert.alert('Location Error', 'Could not initialize GPS. Please check your settings and try again.');
     }
   };
@@ -335,33 +332,23 @@ const WalkBoundaryScreen = () => {
         style={s.map}
       />
 
-<View style={[s.header, { paddingTop: insets.top + 10 }]}>
-         <TouchableOpacity onPress={() => navigation.goBack()} style={s.roundBtn}>
-           <Text style={s.roundBtnText}>✕</Text>
-         </TouchableOpacity>
-
-        <View style={s.logoMiniWrap}>
-          <Image source={require('../../assets/plotra-logo.png')} style={s.logoMini} />
-        </View>
-
-        <View style={s.headerInfo}>
-          <Text style={s.headerTitle} numberOfLines={1}>{farm?.farm_name || 'Boundary Capture'}</Text>
-          <Text style={s.headerSubtitle}>#{farmId}</Text>
-        </View>
-
-        <TouchableOpacity onPress={() => send({ type: 'center' })} style={s.roundBtn}>
-          <Text style={s.roundBtnText}>📍</Text>
+<View style={[s.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBack} activeOpacity={0.8}>
+          <Ionicons name="arrow-back" size={18} color={C.steel700} />
         </TouchableOpacity>
+        <Text style={s.headerTitle} numberOfLines={1}>
+          {farm?.farm_name || 'Boundary Capture'}
+        </Text>
       </View>
 
       {topologyError && (
-        <View style={[s.errorBanner, { top: insets.top + 80 }]}>
+        <View style={[s.errorBanner, { top: insets.top + 60 }]}>
           <Text style={s.errorTitle}>⚠ Boundary Error</Text>
           <Text style={s.errorMsg}>{topologyError}</Text>
         </View>
       )}
 
-      <View style={[s.accuracyBox, { top: insets.top + (topologyError ? 150 : 85) }]}>
+      <View style={[s.accuracyBox, { top: insets.top + (topologyError ? 120 : 64) }]}>
         <View style={[s.accDot, { backgroundColor: accuracy < 8 ? '#22c55e' : '#f59e0b' }]} />
         <Text style={s.accText}>GPS Accuracy: ±{accuracy?.toFixed(1) || '—'}m</Text>
         {accuracy > 10 && <Text style={s.accWarn}> (Move to clear sky)</Text>}
@@ -392,16 +379,19 @@ const WalkBoundaryScreen = () => {
           onPress={handleMarkPoint}
           activeOpacity={0.8}
         >
+          <Ionicons name="add-circle-outline" size={16} color={C.white} />
           <Text style={s.markBtnText}>
-            {isMapTapMode ? 'Tap Map to Add Point' : 'Capture Current Point'}
+            {isMapTapMode ? 'Tap Map to Add' : 'Capture Point'}
           </Text>
         </TouchableOpacity>
 
         <View style={s.actionRow}>
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={13} color={C.steel600} />
             <Text style={s.backBtnText}>Back</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.undoBtn} onPress={() => { setMarkers(m => m.slice(0, -1)); send({ type: 'undo' }); }}>
+            <Ionicons name="arrow-undo" size={13} color={C.steel600} />
             <Text style={s.undoBtnText}>Undo</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -409,7 +399,8 @@ const WalkBoundaryScreen = () => {
             onPress={handleSave}
             activeOpacity={0.8}
           >
-            <Text style={s.saveBtnText}>Next</Text>
+            <Text style={s.saveBtnText}>Save</Text>
+            <Ionicons name="chevron-forward" size={13} color={C.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -437,56 +428,73 @@ const WalkBoundaryScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   map: { flex: 1 },
-  header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingLeft: 56, paddingRight: 20, paddingBottom: 20, backgroundColor: 'rgba(255,255,255,0.95)', borderBottomWidth: 1, borderBottomColor: C.steel200, zIndex: 100 },
-  roundBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
-  roundBtnText: { fontSize: 18, fontWeight: 'bold', color: C.steel700 },
 
-  logoMiniWrap: { width: 34, height: 34, borderRadius: 10, overflow: 'hidden', marginHorizontal: 12, borderWidth: 1.5, borderColor: C.steel200 },
-  logoMini: { width: '100%', height: '100%' },
+  header: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingLeft: 12, paddingRight: 12, paddingBottom: 10,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderBottomWidth: 1, borderBottomColor: C.steel200,
+    zIndex: 100,
+  },
+  headerBack: {
+    width: 34, height: 34, borderRadius: 8,
+    backgroundColor: C.steel100,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: { flex: 1, fontSize: 14, fontWeight: '800', color: C.ink, letterSpacing: 0.3 },
 
-  headerInfo: { flex: 1, alignItems: 'flex-start' },
-  headerTitle: { fontSize: 14, fontWeight: '800', color: C.ink, textTransform: 'uppercase', letterSpacing: 0.5 },
-  headerSubtitle: { fontSize: 12, color: C.muted, fontWeight: '700' },
+  errorBanner: { position: 'absolute', left: 16, right: 16, backgroundColor: C.failedBg, borderRadius: 12, padding: 12, borderWidth: 1.5, borderColor: C.failedText, zIndex: 100 },
+  errorTitle: { fontSize: 12, fontWeight: '900', color: C.failedText, textTransform: 'uppercase', marginBottom: 2 },
+  errorMsg: { fontSize: 11, color: C.ink, fontWeight: '600', lineHeight: 15 },
 
-  errorBanner: { position: 'absolute', left: 20, right: 20, backgroundColor: C.failedBg, borderRadius: 16, padding: 15, borderWidth: 1.5, borderColor: C.failedText, zIndex: 100 },
-  errorTitle: { fontSize: 13, fontWeight: '900', color: C.failedText, textTransform: 'uppercase', marginBottom: 2 },
-  errorMsg: { fontSize: 12, color: C.ink, fontWeight: '600', lineHeight: 16 },
+  accuracyBox: { position: 'absolute', left: 12, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, elevation: 4, zIndex: 100 },
+  accDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 7 },
+  accText: { fontSize: 11, fontWeight: '800', color: C.steel700 },
+  accWarn: { fontSize: 10, fontWeight: '700', color: '#dc2626' },
 
-  accuracyBox: { position: 'absolute', left: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, shadowOpacity: 0.1, elevation: 5, zIndex: 100 },
-  accDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
-  accText: { fontSize: 12, fontWeight: '800', color: C.steel700 },
-  accWarn: { fontSize: 11, fontWeight: '700', color: '#dc2626' },
-
-  controls: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: C.white, borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 28, paddingBottom: 45, shadowColor: '#000', shadowOffset: { width: 0, height: -12 }, shadowOpacity: 0.1, shadowRadius: 24, elevation: 25 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  statLabel: { fontSize: 11, fontWeight: '800', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
+  controls: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: C.white,
+    borderTopLeftRadius: 22, borderTopRightRadius: 22,
+    padding: 14, paddingBottom: 28,
+    shadowColor: '#000', shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.07, shadowRadius: 16, elevation: 18,
+  },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  statLabel: { fontSize: 10, fontWeight: '800', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 2 },
   statValueRow: { flexDirection: 'row', alignItems: 'baseline' },
-  statValue: { fontSize: 32, fontWeight: '900', color: C.ink },
-  statUnit: { fontSize: 14, color: C.muted, fontWeight: '600', marginLeft: 6 },
+  statValue: { fontSize: 22, fontWeight: '900', color: C.ink },
+  statUnit: { fontSize: 11, color: C.muted, fontWeight: '600', marginLeft: 4 },
 
-  modeLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.steel100, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: C.steel200 },
-  modeLabelIcon: { fontSize: 16 },
-  modeLabelText: { fontSize: 13, fontWeight: '800', color: C.steel700 },
+  modeLabel: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.steel100, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: C.steel200 },
+  modeLabelIcon: { fontSize: 13 },
+  modeLabelText: { fontSize: 11, fontWeight: '800', color: C.steel700 },
 
-  markBtn: { backgroundColor: C.c800, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8 },
-  markBtnText: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  markBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: C.c800, height: 48, borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 5,
+  },
+  markBtnText: { color: C.white, fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
   btnDisabled: { opacity: 0.3, elevation: 0 },
 
-  actionRow:    { flexDirection: 'row', gap: 10 },
-  backBtn:      { flex: 1, height: 58, borderRadius: 20, borderWidth: 2, borderColor: C.steel300, alignItems: 'center', justifyContent: 'center' },
-  backBtnText:  { fontSize: 14, fontWeight: '800', color: C.steel600 },
-  undoBtn:      { flex: 1, height: 58, borderRadius: 20, borderWidth: 2, borderColor: C.steel200, alignItems: 'center', justifyContent: 'center' },
-  undoBtnText:  { fontSize: 14, fontWeight: '800', color: C.steel600 },
-  saveBtn:      { flex: 2, backgroundColor: C.c700, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: C.c700, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  saveBtnText:  { color: C.white, fontSize: 16, fontWeight: '800' },
+  actionRow:   { flexDirection: 'row', gap: 8 },
+  backBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 42, borderRadius: 10, borderWidth: 1.5, borderColor: C.steel300 },
+  backBtnText: { fontSize: 12, fontWeight: '700', color: C.steel600 },
+  undoBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 42, borderRadius: 10, borderWidth: 1.5, borderColor: C.steel200 },
+  undoBtnText: { fontSize: 12, fontWeight: '700', color: C.steel600 },
+  saveBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: C.c700, height: 42, borderRadius: 10, shadowColor: C.c700, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 },
+  saveBtnText: { color: C.white, fontSize: 13, fontWeight: '800' },
 
   gpsOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  gpsLoadingCard: { width: '85%', backgroundColor: C.white, borderRadius: 28, padding: 30, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 15 },
-  gpsLoadingTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginTop: 20, marginBottom: 8 },
-  gpsLoadingMsg: { fontSize: 14, color: C.muted, textAlign: 'center', lineHeight: 20, marginBottom: 25 },
-  gpsSkipBtn: { backgroundColor: C.steel100, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginBottom: 15 },
-  gpsSkipText: { fontSize: 14, fontWeight: '700', color: C.steel600 },
-  gpsHint: { fontSize: 12, color: C.subtle, textAlign: 'center', fontStyle: 'italic' },
+  gpsLoadingCard: { width: '82%', backgroundColor: C.white, borderRadius: 22, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 12 },
+  gpsLoadingTitle: { fontSize: 17, fontWeight: '800', color: C.ink, marginTop: 16, marginBottom: 6 },
+  gpsLoadingMsg: { fontSize: 13, color: C.muted, textAlign: 'center', lineHeight: 18, marginBottom: 20 },
+  gpsSkipBtn: { backgroundColor: C.steel100, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, marginBottom: 12 },
+  gpsSkipText: { fontSize: 13, fontWeight: '700', color: C.steel600 },
+  gpsHint: { fontSize: 11, color: C.subtle, textAlign: 'center', fontStyle: 'italic' },
 });
 
 export default WalkBoundaryScreen;

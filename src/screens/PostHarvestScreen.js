@@ -61,7 +61,6 @@ export default function PostHarvestScreen() {
       // Show only batches that are verified or released (eligible for lab)
       setBatches(list.filter(b => ['released', 'under_satellite_review', 'verified'].includes(b.status)));
     } catch (e) {
-      console.warn('PostHarvest load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -84,7 +84,6 @@ export default function AdminFarmersScreen() {
       setPending(Array.isArray(pend) ? pend : pend?.farmers || []);
       setAll(Array.isArray(allD) ? allD : allD?.farmers || []);
     } catch (e) {
-      console.warn('Admin farmers:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

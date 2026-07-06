@@ -106,7 +106,6 @@ const ReviewPolygonScreen = () => {
         throw new Error(`Server returned ${response.status}`);
       }
     } catch (error) {
-      console.log('Submission failed:', error.message);
       navigation.replace('OfflineSaved', {
         farmId,
         areaHectares,

@@ -103,7 +103,6 @@ export default function BatchesScreen() {
       const d = res.data;
       setBatches(Array.isArray(d) ? d : d?.batches || []);
     } catch (e) {
-      console.warn('Batches load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -248,8 +248,27 @@ export default function HomeScreen() {
   }, []);
   const { greeting, time } = timeData;
 
+  const _loadFromCache = useCallback(async () => {
+    try {
+      const [cs, cf, cd, cn] = await Promise.all([
+        dbService.getCacheItem('home_stats'),
+        dbService.getCacheItem('home_farms'),
+        dbService.getCacheItem('home_deliveries'),
+        dbService.getCacheItem('home_notifications'),
+      ]);
+      if (cs) setStats(cs);
+      if (cf) setFarms(cf);
+      if (cd) setDeliveries(cd);
+      if (cn) setNotifications(cn);
+    } catch (_) {}
+  }, []);
+
   const load = useCallback(async (isRefresh = false) => {
-    if (!isRefresh) setLoading(true);
+    // Show cached data immediately so offline users see something
+    if (!isRefresh) {
+      await _loadFromCache();
+      setLoading(false);
+    }
     // Safety net: always clear loading after 12s even if a promise stalls
     const safetyTimer = setTimeout(() => {
       setLoading(false);
@@ -262,10 +281,26 @@ export default function HomeScreen() {
         farmerAPI.getDeliveries(),
         farmerAPI.getNotifications(),
       ]);
-      if (statsRes.status      === 'fulfilled') setStats(statsRes.value.data);
-      if (farmsRes.status      === 'fulfilled') setFarms(farmsRes.value.data?.farms || farmsRes.value.data || []);
-      if (deliveriesRes.status === 'fulfilled') setDeliveries(deliveriesRes.value.data?.deliveries || deliveriesRes.value.data || []);
-      if (notifRes.status      === 'fulfilled') setNotifications(notifRes.value.data?.notifications || []);
+      if (statsRes.status === 'fulfilled') {
+        const d = statsRes.value.data;
+        setStats(d);
+        dbService.setCacheItem('home_stats', d).catch(() => {});
+      }
+      if (farmsRes.status === 'fulfilled') {
+        const d = farmsRes.value.data?.farms || farmsRes.value.data || [];
+        setFarms(d);
+        dbService.setCacheItem('home_farms', d).catch(() => {});
+      }
+      if (deliveriesRes.status === 'fulfilled') {
+        const d = deliveriesRes.value.data?.deliveries || deliveriesRes.value.data || [];
+        setDeliveries(d);
+        dbService.setCacheItem('home_deliveries', d).catch(() => {});
+      }
+      if (notifRes.status === 'fulfilled') {
+        const d = notifRes.value.data?.notifications || [];
+        setNotifications(d);
+        dbService.setCacheItem('home_notifications', d).catch(() => {});
+      }
       try {
         const pendingCount = await Promise.race([
           dbService.getPendingCount(),
@@ -278,7 +313,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [_loadFromCache]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(true); };
@@ -366,21 +401,20 @@ export default function HomeScreen() {
             <Text style={s.qaLabel}>My Farms</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Deliveries')}>
-            <View style={[s.qaIcon, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="cube-outline" size={22} color="#1d4ed8" />
+            <View style={[s.qaIcon, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="cube-outline" size={22} color={C.c700} />
             </View>
             <Text style={s.qaLabel}>Deliveries</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Wallet')}>
-            <View style={[s.qaIcon, { backgroundColor: '#fef3c7' }]}>
-              <Ionicons name="wallet-outline" size={22} color="#b45309" />
+            <View style={[s.qaIcon, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="wallet-outline" size={22} color={C.c700} />
             </View>
             <Text style={s.qaLabel}>Wallet</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.qaCard} activeOpacity={0.8}
-            onPress={() => navigation.navigate('Dashboard', { screen: 'Documents' })}>
-            <View style={[s.qaIcon, { backgroundColor: '#f3e8ff' }]}>
-              <Ionicons name="document-text-outline" size={22} color="#7c3aed" />
+          <TouchableOpacity style={s.qaCard} activeOpacity={0.8} onPress={() => navigation.navigate('Documents')}>
+            <View style={[s.qaIcon, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="document-text-outline" size={22} color={C.c700} />
             </View>
             <Text style={s.qaLabel}>Documents</Text>
           </TouchableOpacity>
@@ -484,7 +518,7 @@ export default function HomeScreen() {
             </View>
             {!!stats?.staked_trend && (
               <View style={[s.trendBadge, { backgroundColor: '#dcfce7' }]}>
-                <Text style={[s.trendBadgeText, { color: '#15803d' }]}>{stats.staked_trend}</Text>
+                <Text style={[s.trendBadgeText, { color: C.c700 }]}>{stats.staked_trend}</Text>
               </View>
             )}
           </View>
@@ -495,8 +529,8 @@ export default function HomeScreen() {
               <Text style={s.walletRowValue}>KES {stats?.annual_interest != null ? Number(stats.annual_interest).toLocaleString() : '0'}</Text>
             </View>
             {!!stats?.interest_trend && (
-              <View style={[s.trendBadge, { backgroundColor: '#dbeafe' }]}>
-                <Text style={[s.trendBadgeText, { color: '#1d4ed8' }]}>{stats.interest_trend}</Text>
+              <View style={[s.trendBadge, { backgroundColor: '#dcfce7' }]}>
+                <Text style={[s.trendBadgeText, { color: C.c700 }]}>{stats.interest_trend}</Text>
               </View>
             )}
           </View>

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  ScrollView, StatusBar,
+  ScrollView, StatusBar, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,7 +96,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={s.safe}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
@@ -104,21 +104,28 @@ export default function ForgotPasswordScreen({ navigation }) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Logo */}
+            <View style={s.logoWrap}>
+              <View style={s.logoCircle}>
+                <Image source={require('../../assets/plotra-logo.png')} style={s.logo} resizeMode="contain" />
+              </View>
+              <Text style={s.brand}>PLOTRA</Text>
+              <Text style={s.tagline}>Traceable Farms</Text>
+            </View>
+
             {/* Back button */}
-            {(
-              <TouchableOpacity style={s.back} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-                <Ionicons name="arrow-back" size={20} color={C.c700} />
-                <Text style={s.backText}>Back to Sign In</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={s.back} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+              <Ionicons name="arrow-back" size={18} color="rgba(255,255,255,0.8)" />
+              <Text style={s.backText}>Back to Sign In</Text>
+            </TouchableOpacity>
 
             {/* Icon */}
             <View style={s.iconWrap}>
               <View style={s.iconCircle}>
                 <Ionicons
                   name={step === STEPS.OTP ? 'keypad' : step === STEPS.PASSWORD ? 'lock-closed' : 'phone-portrait'}
-                  size={36}
-                  color={C.c700}
+                  size={34}
+                  color="rgba(255,255,255,0.9)"
                 />
               </View>
             </View>
@@ -135,7 +142,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="+254 7XX XXX XXX or 07XX XXX XXX"
-                  placeholderTextColor={C.subtle}
+                  placeholderTextColor="rgba(255,255,255,0.38)"
                   keyboardType="phone-pad"
                   returnKeyType="done"
                   onSubmitEditing={handleSendOTP}
@@ -164,7 +171,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                   value={otp}
                   onChangeText={setOtp}
                   placeholder="Enter 6-digit code"
-                  placeholderTextColor={C.subtle}
+                  placeholderTextColor="rgba(255,255,255,0.38)"
                   keyboardType="number-pad"
                   maxLength={6}
                   returnKeyType="done"
@@ -202,12 +209,12 @@ export default function ForgotPasswordScreen({ navigation }) {
                     value={newPwd}
                     onChangeText={setNewPwd}
                     placeholder="Min. 8 characters"
-                    placeholderTextColor={C.subtle}
+                    placeholderTextColor="rgba(255,255,255,0.38)"
                     secureTextEntry={!showPwd}
                     autoCapitalize="none"
                   />
                   <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)}>
-                    <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.muted} />
+                    <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.6)" />
                   </TouchableOpacity>
                 </View>
 
@@ -217,7 +224,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                   value={confirmPwd}
                   onChangeText={setConfirmPwd}
                   placeholder="Repeat new password"
-                  placeholderTextColor={C.subtle}
+                  placeholderTextColor="rgba(255,255,255,0.38)"
                   secureTextEntry={!showPwd}
                   autoCapitalize="none"
                   returnKeyType="done"
@@ -246,30 +253,36 @@ export default function ForgotPasswordScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.white },
+  container: { flex: 1, backgroundColor: C.c800 },
   safe: { flex: 1 },
   scroll: { flexGrow: 1, padding: 28, paddingTop: 20 },
 
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 32 },
-  backText: { fontSize: 14, fontWeight: '700', color: C.c700 },
+  logoWrap: { alignItems: 'center', marginBottom: 28, marginTop: 8 },
+  logoCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.white, padding: 4, marginBottom: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
+  logo: { width: '100%', height: '100%', borderRadius: 36 },
+  brand: { fontSize: 24, fontWeight: '900', color: C.white, letterSpacing: 6, marginBottom: 4 },
+  tagline: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500', letterSpacing: 2, textTransform: 'uppercase' },
 
-  iconWrap: { alignItems: 'center', marginBottom: 24 },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.c050, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.c200 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 28 },
+  backText: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.75)' },
 
-  title: { fontSize: 28, fontWeight: '900', color: C.c900, marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: C.muted, lineHeight: 22, textAlign: 'center', marginBottom: 32 },
+  iconWrap: { alignItems: 'center', marginBottom: 20 },
+  iconCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)' },
 
-  label: { fontSize: 11, fontWeight: '800', color: C.c700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  input: { backgroundColor: C.steel100, borderRadius: 14, height: 54, paddingHorizontal: 16, fontSize: 16, color: C.ink, fontWeight: '600', borderWidth: 1.5, borderColor: C.steel200, marginBottom: 0 },
+  title: { fontSize: 26, fontWeight: '900', color: C.white, marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.62)', lineHeight: 22, textAlign: 'center', marginBottom: 28 },
+
+  label: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  input: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 14, height: 52, paddingHorizontal: 16, fontSize: 16, color: C.white, fontWeight: '600', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)', marginBottom: 0 },
   otpInput: { textAlign: 'center', fontSize: 28, fontWeight: '900', letterSpacing: 12 },
 
   pwdRow: { flexDirection: 'row', alignItems: 'center' },
-  eyeBtn: { height: 54, width: 54, backgroundColor: C.steel100, borderWidth: 1.5, borderLeftWidth: 0, borderColor: C.steel200, borderTopRightRadius: 14, borderBottomRightRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  eyeBtn: { height: 52, width: 52, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1.5, borderLeftWidth: 0, borderColor: 'rgba(255,255,255,0.2)', borderTopRightRadius: 14, borderBottomRightRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
-  btn: { backgroundColor: C.c700, height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 20, shadowColor: C.c700, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  btnDisabled: { backgroundColor: C.steel300, shadowOpacity: 0 },
-  btnText: { color: C.white, fontSize: 17, fontWeight: '800' },
+  btn: { backgroundColor: C.c700, height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20, shadowColor: C.c700, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 },
+  btnDisabled: { backgroundColor: 'rgba(255,255,255,0.15)', shadowOpacity: 0 },
+  btnText: { color: C.white, fontSize: 16, fontWeight: '800' },
 
   resendBtn: { alignItems: 'center', marginTop: 16 },
-  resendText: { fontSize: 14, color: C.c700, fontWeight: '700' },
+  resendText: { fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '700' },
 });

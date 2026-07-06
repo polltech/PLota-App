@@ -135,7 +135,6 @@ export default function ConsignmentsScreen() {
         setBatches(Array.isArray(d) ? d : (d?.batches || []));
       }
     } catch (e) {
-      console.warn('Consignments load:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);

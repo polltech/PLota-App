@@ -74,7 +74,7 @@ export default function NotificationsScreen() {
     try {
       const res = await farmerAPI.getNotifications();
       setNotifications(res.data?.notifications || (Array.isArray(res.data) ? res.data : []));
-    } catch (e) { console.warn('Notifications load:', e.message); }
+    } catch (e) {}
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -125,23 +125,27 @@ export default function NotificationsScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView style={s.header}>
-        <View>
-          <Text style={s.headerTitle}>Notifications</Text>
-          {unreadCount > 0 ? (
-            <Text style={s.headerSub}>{unreadCount} unread</Text>
-          ) : (
-            <Text style={s.headerSub}>All caught up</Text>
-          )}
-        </View>
-        {unreadCount > 0 && (
-          <View style={s.unreadBadge}>
-            <Text style={s.unreadBadgeText}>{unreadCount}</Text>
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Notifications</Text>
+              <Text style={s.heroSub}>
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+              </Text>
+            </View>
+            {unreadCount > 0 && (
+              <View style={s.heroBadge}>
+                <Text style={s.heroBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
           </View>
-        )}
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
 
       {loading ? (
         <View style={s.center}><ActivityIndicator color={C.c700} size="large" /></View>
@@ -240,27 +244,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: {
-    backgroundColor: C.white,
-    paddingLeft: 56,
-    paddingRight: 20,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: C.steel200,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: C.c900, marginTop: 8 },
-  headerSub: { fontSize: 13, color: C.muted, marginTop: 2 },
-  unreadBadge: {
-    backgroundColor: '#dc2626',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginTop: 8,
-  },
-  unreadBadgeText: { color: C.white, fontSize: 13, fontWeight: '800' },
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 16 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 },
+  heroBadgeText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 
   list: { padding: 16 },
   listEmpty: { flex: 1, justifyContent: 'center' },

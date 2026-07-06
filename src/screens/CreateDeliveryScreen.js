@@ -73,7 +73,6 @@ export default function CreateDeliveryScreen() {
           setAllFarms(Array.isArray(d) ? d : (d?.farms || []));
         }
       } catch (e) {
-        console.warn('CreateDelivery load:', e.message);
       } finally {
         setLoading(false);
       }

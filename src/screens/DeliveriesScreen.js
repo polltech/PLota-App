@@ -42,11 +42,11 @@ const fmtKg = (n) => {
 
 // ── stat card config (matches FarmsListScreen) ────────────────────────────────
 const STAT_KEYS = [
-  { key: 'all',      icon: 'cube-outline',             label: 'Total',    color: C.c700,    bg: C.c050 },
-  { key: 'PENDING',  icon: 'time-outline',             label: 'Pending',  color: '#b45309', bg: '#fef3c7' },
-  { key: 'RECEIVED', icon: 'archive-outline',          label: 'Received', color: '#1d4ed8', bg: '#dbeafe' },
-  { key: 'VERIFIED', icon: 'checkmark-circle-outline', label: 'Verified', color: '#15803d', bg: '#dcfce7' },
-  { key: 'REJECTED', icon: 'close-circle-outline',     label: 'Rejected', color: '#dc2626', bg: '#fee2e2' },
+  { key: 'all',      icon: 'cube-outline',             label: 'Total'    },
+  { key: 'PENDING',  icon: 'time-outline',             label: 'Pending'  },
+  { key: 'RECEIVED', icon: 'archive-outline',          label: 'Received' },
+  { key: 'VERIFIED', icon: 'checkmark-circle-outline', label: 'Verified' },
+  { key: 'REJECTED', icon: 'close-circle-outline',     label: 'Rejected' },
 ];
 
 // ── delivery table row ────────────────────────────────────────────────────────
@@ -139,46 +139,61 @@ export default function DeliveriesScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      {/* ── Header ─────────────────────────────────── */}
-      <SafeAreaView style={s.header}>
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.headerTitle}>Deliveries</Text>
-            <Text style={s.headerSub}>
-              {activeFilter === 'all'
-                ? `${deliveries.length} deliver${deliveries.length !== 1 ? 'ies' : 'y'} · ${fmtKg(totalKg)} total`
-                : `${filtered.length} of ${deliveries.length} · ${STAT_KEYS.find(k => k.key === activeFilter)?.label}`}
-            </Text>
+      {/* ── Hero ───────────────────────────────────── */}
+      <View style={s.hero}>
+        <View style={s.decor1} />
+        <View style={s.decor2} />
+        <SafeAreaView>
+          <View style={s.heroRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.heroTitle}>Deliveries</Text>
+              <Text style={s.heroSub}>
+                {activeFilter === 'all'
+                  ? `${deliveries.length} deliver${deliveries.length !== 1 ? 'ies' : 'y'} · ${fmtKg(totalKg)} total`
+                  : `${filtered.length} of ${deliveries.length} · ${STAT_KEYS.find(k => k.key === activeFilter)?.label}`}
+              </Text>
+            </View>
+            {verifiedKg > 0 && (
+              <View style={s.heroVerifiedPill}>
+                <Ionicons name="checkmark-circle" size={13} color="rgba(255,255,255,0.9)" />
+                <Text style={s.heroVerifiedText}>{fmtKg(verifiedKg)} verified</Text>
+              </View>
+            )}
           </View>
-          {verifiedKg > 0 && (
-            <View style={s.verifiedPill}>
-              <Ionicons name="checkmark-circle" size={13} color="#15803d" />
-              <Text style={s.verifiedPillText}>{fmtKg(verifiedKg)} verified</Text>
+          {!loading && (
+            <View style={s.heroStats}>
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.all}</Text><Text style={s.heroStatLabel}>Total</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.PENDING}</Text><Text style={s.heroStatLabel}>Pending</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.RECEIVED}</Text><Text style={s.heroStatLabel}>Received</Text></View>
+              <View style={s.heroStatDivider} />
+              <View style={s.heroStat}><Text style={s.heroStatVal}>{counts.VERIFIED}</Text><Text style={s.heroStatLabel}>Verified</Text></View>
             </View>
           )}
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
 
-      {/* ── 5 stat mini-cards ──────────────────────── */}
+      {/* ── Filter tabs ─────────────────────────────── */}
       {!loading && (
         <View style={s.summaryWrap}>
-          {STAT_KEYS.map(k => (
-            <TouchableOpacity
-              key={k.key}
-              style={[
-                s.miniCard,
-                { backgroundColor: k.bg, borderColor: activeFilter === k.key ? k.color : 'transparent' },
-              ]}
-              onPress={() => setActiveFilter(activeFilter === k.key ? 'all' : k.key)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={k.icon} size={22} color={k.color} />
-              <Text style={[s.miniCount, { color: k.color }]}>{counts[k.key] ?? 0}</Text>
-              <Text style={[s.miniLabel, { color: k.color }]}>{k.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {STAT_KEYS.map(k => {
+            const active = activeFilter === k.key;
+            return (
+              <TouchableOpacity
+                key={k.key}
+                style={[s.miniCard, { backgroundColor: active ? '#dcfce7' : C.white, borderColor: active ? C.c700 : C.steel200 }]}
+                onPress={() => setActiveFilter(activeFilter === k.key ? 'all' : k.key)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={k.icon} size={22} color={active ? C.c700 : C.steel400} />
+                <Text style={[s.miniCount, { color: active ? C.c700 : C.ink }]}>{counts[k.key] ?? 0}</Text>
+                <Text style={[s.miniLabel, { color: active ? C.c700 : C.muted }]}>{k.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
 
@@ -259,15 +274,22 @@ export default function DeliveriesScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.steel100 },
 
-  // Header
-  header:          { backgroundColor: C.white, paddingLeft: 56, paddingRight: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.steel200 },
-  headerRow:       { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 },
-  headerTitle:     { fontSize: 26, fontWeight: '800', color: C.c900 },
-  headerSub:       { fontSize: 13, color: C.muted, marginTop: 2 },
-  verifiedPill:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 2 },
-  verifiedPillText:{ fontSize: 12, fontWeight: '700', color: '#15803d' },
+  // Hero
+  hero: { backgroundColor: C.c800, paddingLeft: 56, paddingRight: 20, paddingBottom: 20, overflow: 'hidden' },
+  decor1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)', top: -60, right: -40 },
+  decor2: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, right: 80 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 14, paddingBottom: 12 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroVerifiedPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 2 },
+  heroVerifiedText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
+  heroStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, paddingVertical: 12, marginBottom: 4 },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroStatLabel: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
 
-  // 5 stat mini-cards — single row, aspectRatio:1 makes each card square
+  // Filter tabs
   summaryWrap: {
     flexDirection: 'row',
     backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.steel200,
