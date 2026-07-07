@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { WebView } from 'react-native-webview';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../context/AuthContext';
 import { farmerAPI, authAPI } from '../services/api';
 import { C } from '../theme';
@@ -46,35 +46,6 @@ const EditField = ({ label, value, onChangeText, keyboardType, placeholder }) =>
 );
 
 // ── Farmer QR Card ────────────────────────────────────────────────────────────
-const buildQRHtml = (payload) => `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#f0fdf4; display:flex; align-items:center; justify-content:center; height:100vh; }
-  #qr canvas, #qr img { display:block; }
-  #err { font-family:sans-serif; font-size:12px; color:#64748b; text-align:center; padding:16px; }
-</style>
-</head>
-<body>
-<div id="qr"><p id="err">Loading QR…</p></div>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
-<script>
-(function(){
-  var data=${JSON.stringify(payload)};
-  if(typeof QRCode==='undefined'){document.getElementById('err').textContent='Offline — QR unavailable';return;}
-  QRCode.toCanvas(data,{width:200,margin:1,color:{dark:'#052e16',light:'#f0fdf4'}},function(err,canvas){
-    var el=document.getElementById('qr');
-    el.innerHTML='';
-    if(err){el.innerHTML='<p id="err">'+err.message+'</p>';return;}
-    el.appendChild(canvas);
-  });
-})();
-</script>
-</body>
-</html>`;
 
 const FarmerIDCard = ({ user, memberNo }) => {
   const qrPayload = [
@@ -87,7 +58,7 @@ const FarmerIDCard = ({ user, memberNo }) => {
 
   const shareID = async () => {
     try {
-      await Share.share({ message: `Plotra Farmer ID\nName: ${[user?.first_name, user?.last_name].filter(Boolean).join(' ')}\nMember No: ${memberNo || user?.coop_member_no || '—'}\nNational ID: ${user?.national_id || '—'}` });
+      await Share.share({ message: `Plotra Farmer ID\nName: ${[user?.first_name, user?.last_name].filter(Boolean).join(' ')}\nPlotra ID (PCFNO): ${user?.pcfno || '—'}\nCoop Member No: ${memberNo || user?.coop_member_no || '—'}\nNational ID: ${user?.national_id || '—'}` });
     } catch (_) {}
   };
 
@@ -102,21 +73,26 @@ const FarmerIDCard = ({ user, memberNo }) => {
       </View>
       <View style={qr.body}>
         <View style={qr.qrBox}>
-          <WebView
-            source={{ html: buildQRHtml(qrPayload) }}
-            style={{ width: 200, height: 200, backgroundColor: '#f0fdf4' }}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-            overScrollMode="never"
+          <QRCode
+            value={qrPayload}
+            size={180}
+            color="#052e16"
+            backgroundColor="#f0fdf4"
           />
         </View>
         <View style={qr.idInfo}>
           <Text style={qr.idName} numberOfLines={1}>
             {[user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Farmer'}
           </Text>
+          {user?.pcfno ? (
+            <View style={qr.idRow}>
+              <Text style={qr.idLabel}>Plotra ID (PCFNO)</Text>
+              <Text style={qr.idValue}>{user.pcfno}</Text>
+            </View>
+          ) : null}
           {(memberNo || user?.coop_member_no) ? (
             <View style={qr.idRow}>
-              <Text style={qr.idLabel}>Member No</Text>
+              <Text style={qr.idLabel}>Coop Member No</Text>
               <Text style={qr.idValue}>{memberNo || user?.coop_member_no}</Text>
             </View>
           ) : null}

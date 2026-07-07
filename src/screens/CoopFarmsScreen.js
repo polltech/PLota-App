@@ -459,7 +459,9 @@ export default function CoopFarmsScreen() {
       (f.farm_name || '').toLowerCase().includes(q) ||
       (f.farmer_name || '').toLowerCase().includes(q) ||
       (f.county || '').toLowerCase().includes(q) ||
-      (f.farm_code || '').toLowerCase().includes(q)
+      (f.farm_code || '').toLowerCase().includes(q) ||
+      (f.coop_member_no || '').toString().includes(q) ||
+      (f.pcfno || '').toLowerCase().includes(q)
     );
   });
 
@@ -468,7 +470,10 @@ export default function CoopFarmsScreen() {
     return (
       (f.farm_name || '').toLowerCase().includes(q) ||
       (f.farmer_name || '').toLowerCase().includes(q) ||
-      (f.county || '').toLowerCase().includes(q)
+      (f.county || '').toLowerCase().includes(q) ||
+      (f.farm_code || '').toLowerCase().includes(q) ||
+      (f.coop_member_no || '').toString().includes(q) ||
+      (f.pcfno || '').toLowerCase().includes(q)
     );
   });
 

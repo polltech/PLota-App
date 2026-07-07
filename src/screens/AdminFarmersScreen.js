@@ -27,8 +27,10 @@ const FarmerCard = ({ farmer, isPending, onVerify, onReject }) => (
         <Text style={s.name}>
           {[farmer.first_name, farmer.last_name].filter(Boolean).join(' ') || farmer.email}
         </Text>
-        {!!farmer.coop_member_no && (
-          <Text style={[s.meta, { color: '#6d28d9', fontWeight: '700' }]}>{farmer.coop_member_no}</Text>
+        {(farmer.pcfno || farmer.coop_member_no) && (
+          <Text style={[s.meta, { color: '#6d28d9', fontWeight: '700' }]}>
+            {[farmer.pcfno, farmer.coop_member_no].filter(Boolean).join('  ·  ')}
+          </Text>
         )}
         <Text style={s.meta}>ID: {farmer.national_id || '—'} · {farmer.phone || '—'}</Text>
         <Text style={s.meta}>{farmer.county || farmer.district || '—'} · Joined {fmtDate(farmer.created_at)}</Text>
@@ -141,7 +143,9 @@ export default function AdminFarmersScreen() {
     (f.email || '').toLowerCase().includes(q) ||
     (f.phone || '').toLowerCase().includes(q) ||
     (f.national_id || '').toLowerCase().includes(q) ||
-    (f.county || f.district || '').toLowerCase().includes(q)
+    (f.county || f.district || '').toLowerCase().includes(q) ||
+    (f.coop_member_no || '').toLowerCase().includes(q) ||
+    (f.pcfno || '').toLowerCase().includes(q)
   );
 
   return (

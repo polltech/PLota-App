@@ -162,7 +162,11 @@ function FarmerApprovalModal({ farmer, visible, onClose, onApproved, onRejected,
             </View>
             <View style={{ flex: 1 }}>
               <Text style={m.identityName}>{name}</Text>
-              {f.coop_member_no && <Text style={m.identityCode}>Member #{f.coop_member_no}</Text>}
+              {(f.pcfno || f.coop_member_no) && (
+              <Text style={m.identityCode}>
+                {[f.pcfno, f.coop_member_no ? `#${f.coop_member_no}` : null].filter(Boolean).join('  ·  ')}
+              </Text>
+            )}
             </View>
             <View style={[m.statusBadge, { backgroundColor: ss.bg }]}>
               <Text style={[m.statusBadgeText, { color: ss.color }]}>{ss.label}</Text>
@@ -315,7 +319,11 @@ function FarmerCard({ farmer: f, onPress }) {
             <Text style={s.cardName} numberOfLines={1}>{name}</Text>
             {f.update_requested && <Ionicons name="warning" size={13} color="#d97706" />}
           </View>
-          {f.coop_member_no && <Text style={s.cardSub}>#{f.coop_member_no}</Text>}
+          {(f.pcfno || f.coop_member_no) && (
+            <Text style={s.cardSub}>
+              {[f.pcfno, f.coop_member_no ? `#${f.coop_member_no}` : null].filter(Boolean).join('  ·  ')}
+            </Text>
+          )}
           <View style={s.cardMeta}>
             {f.phone && <Text style={s.cardMetaText}>{f.phone}</Text>}
             {f.county && <Text style={s.cardMetaText}>{f.phone ? ' · ' : ''}{f.county}</Text>}
@@ -384,7 +392,8 @@ export default function CoopFarmersScreen() {
       (f.phone || '').includes(q) ||
       (f.county || '').toLowerCase().includes(q) ||
       (f.national_id || '').includes(q) ||
-      (f.coop_member_no || '').includes(q)
+      (f.coop_member_no || '').includes(q) ||
+      (f.pcfno || '').toLowerCase().includes(q)
     );
   });
 

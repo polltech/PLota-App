@@ -86,7 +86,8 @@ export default function CreateDeliveryScreen() {
         const phone = (f.phone || '').toLowerCase();
         const email = (f.email || '').toLowerCase();
         const memberNo = (f.coop_member_no || '').toLowerCase();
-        return name.includes(q) || phone.includes(q) || email.includes(q) || memberNo.includes(q);
+        const pcfno = (f.pcfno || '').toLowerCase();
+        return name.includes(q) || phone.includes(q) || email.includes(q) || memberNo.includes(q) || pcfno.includes(q);
       })
     : allFarmers.slice(0, 15);
 
@@ -209,7 +210,7 @@ export default function CreateDeliveryScreen() {
                   <View>
                     <Text style={s.selectedName}>{selectedFarmer.first_name} {selectedFarmer.last_name}</Text>
                     <Text style={s.selectedSub}>
-                      {[selectedFarmer.coop_member_no, selectedFarmer.phone].filter(Boolean).join('  ·  ')}
+                      {[selectedFarmer.pcfno, selectedFarmer.coop_member_no, selectedFarmer.phone].filter(Boolean).join('  ·  ')}
                     </Text>
                   </View>
                 </View>
@@ -246,7 +247,7 @@ export default function CreateDeliveryScreen() {
                             <View>
                               <Text style={s.dropName}>{f.first_name} {f.last_name}</Text>
                               <Text style={s.dropSub}>
-                                {[f.coop_member_no, f.phone].filter(Boolean).join('  ·  ')}
+                                {[f.pcfno, f.coop_member_no, f.phone].filter(Boolean).join('  ·  ')}
                               </Text>
                             </View>
                           </View>

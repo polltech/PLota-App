@@ -15,8 +15,9 @@ export default function LoginScreen({ navigation }) {
   const { login, loginWithOtp } = useAuth();
 
   // ── shared ────────────────────────────────────────────────────────────────
-  const [mode,        setMode]        = useState('farmer'); // 'farmer' | 'staff'
-  const [staffMethod, setStaffMethod] = useState('otp');    // 'otp' | 'password'
+  const [mode,         setMode]         = useState('farmer'); // 'farmer' | 'staff'
+  const [staffMethod,  setStaffMethod]  = useState('otp');    // 'otp' | 'password'
+  const [farmerMethod, setFarmerMethod] = useState('otp');    // 'otp' | 'password'
   const [isOnline,    setIsOnline]    = useState(true);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -64,6 +65,7 @@ export default function LoginScreen({ navigation }) {
   const switchMode = (m) => {
     setMode(m);
     setStaffMethod('otp');
+    setFarmerMethod('otp');
     setOtpStep(1); setOtpError(''); setOtpCode(''); setOtpPhone(''); setResendSecs(0);
     clearInterval(resendTimer.current);
     setIdentifier(''); setPassword('');
@@ -174,14 +176,29 @@ export default function LoginScreen({ navigation }) {
               </View>
 
               {mode === 'farmer' ? (
-                // ── FARMER PASSWORD LOGIN ───────────────────────────────────
+                // ── FARMER LOGIN ────────────────────────────────────────────
                 <>
                   <Text style={s.heading}>Farmer Sign in</Text>
-                  <Text style={s.subheading}>
-                    {isOnline
-                      ? 'Enter your email or phone number to continue.'
-                      : 'No internet — using cached credentials from last online session.'}
-                  </Text>
+
+                  {/* Method sub-toggle */}
+                  <View style={s.methodRow}>
+                    <TouchableOpacity
+                      style={[s.methodBtn, farmerMethod === 'otp' && s.methodBtnActive]}
+                      onPress={() => { setFarmerMethod('otp'); setOtpError(''); setOtpStep(1); setOtpCode(''); }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="chatbubble-ellipses-outline" size={13} color={farmerMethod === 'otp' ? C.c700 : C.muted} />
+                      <Text style={[s.methodBtnText, farmerMethod === 'otp' && s.methodBtnTextActive]}>Phone OTP</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.methodBtn, farmerMethod === 'password' && s.methodBtnActive]}
+                      onPress={() => setFarmerMethod('password')}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="lock-closed-outline" size={13} color={farmerMethod === 'password' ? C.c700 : C.muted} />
+                      <Text style={[s.methodBtnText, farmerMethod === 'password' && s.methodBtnTextActive]}>Password</Text>
+                    </TouchableOpacity>
+                  </View>
 
                   {!isOnline && (
                     <View style={s.offlineBanner}>
@@ -190,48 +207,166 @@ export default function LoginScreen({ navigation }) {
                     </View>
                   )}
 
-                  <View style={s.fieldGroup}>
-                    <Text style={s.label}>Email or phone number</Text>
-                    <View style={[s.inputWrap, focusId && s.inputWrapFocused]}>
-                      <TextInput
-                        style={s.input}
-                        value={identifier}
-                        onChangeText={setIdentifier}
-                        placeholder="you@example.com or +254 7XX..."
-                        placeholderTextColor="rgba(255,255,255,0.38)"
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        returnKeyType="next"
-                        textContentType="username"
-                        autoComplete="username"
-                        onFocus={() => setFocusId(true)}
-                        onBlur={() => setFocusId(false)}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={s.fieldGroup}>
-                    <Text style={s.label}>Password</Text>
-                    <View style={[s.inputWrap, focusPwd && s.inputWrapFocused]}>
-                      <TextInput
-                        style={[s.input, { flex: 1 }]}
-                        value={password}
-                        onChangeText={setPassword}
-                        placeholder="Password"
-                        placeholderTextColor="rgba(255,255,255,0.38)"
-                        secureTextEntry={!showPwd}
-                        returnKeyType="done"
-                        onSubmitEditing={handlePasswordLogin}
-                        textContentType="password"
-                        autoComplete="current-password"
-                        onFocus={() => setFocusPwd(true)}
-                        onBlur={() => setFocusPwd(false)}
-                      />
-                      <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)} activeOpacity={0.7}>
-                        <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
+                  {farmerMethod === 'otp' ? (
+                    <>
+                      <Text style={s.subheading}>
+                        {otpStep === 1
+                          ? 'Enter your phone number to receive a one-time sign-in code.'
+                          : `Enter the code sent to ${otpPhone}.`}
+                      </Text>
+                      {!!otpError && (
+                        <View style={s.errorBanner}>
+                          <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
+                          <Text style={s.errorText}>{otpError}</Text>
+                        </View>
+                      )}
+                      {otpStep === 1 ? (
+                        <>
+                          <View style={s.fieldGroup}>
+                            <Text style={s.label}>Phone number</Text>
+                            <View style={[s.inputWrap, focusPhone && s.inputWrapFocused]}>
+                              <Ionicons name="call-outline" size={16} color="rgba(255,255,255,0.55)" style={{ marginRight: 8 }} />
+                              <TextInput
+                                style={[s.input, { flex: 1 }]}
+                                value={otpPhone}
+                                onChangeText={setOtpPhone}
+                                placeholder="+254 7XX XXX XXX"
+                                placeholderTextColor="rgba(255,255,255,0.38)"
+                                keyboardType="phone-pad"
+                                returnKeyType="done"
+                                onSubmitEditing={handleSendOtp}
+                                onFocus={() => setFocusPhone(true)}
+                                onBlur={() => setFocusPhone(false)}
+                              />
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[s.primaryBtn, (!otpPhone.trim() || otpLoading) && s.primaryBtnDisabled]}
+                            onPress={handleSendOtp}
+                            disabled={!otpPhone.trim() || otpLoading}
+                            activeOpacity={0.85}
+                          >
+                            {otpLoading
+                              ? <ActivityIndicator color={C.white} size="small" />
+                              : <><Ionicons name="send-outline" size={16} color={C.white} /><Text style={s.primaryBtnText}>Send OTP</Text></>
+                            }
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <View style={s.otpPhoneRow}>
+                            <Text style={s.otpPhoneLabel}>Code sent to</Text>
+                            <Text style={s.otpPhoneVal}>{otpPhone}</Text>
+                            <TouchableOpacity onPress={() => { setOtpStep(1); setOtpCode(''); setOtpError(''); }}>
+                              <Text style={s.otpChangeLink}>Change</Text>
+                            </TouchableOpacity>
+                          </View>
+                          <View style={s.fieldGroup}>
+                            <Text style={s.label}>OTP Code</Text>
+                            <View style={[s.otpInputWrap, focusCode && s.inputWrapFocused]}>
+                              <TextInput
+                                style={s.otpInput}
+                                value={otpCode}
+                                onChangeText={v => setOtpCode(v.replace(/\D/g, '').slice(0, 6))}
+                                placeholder="· · · · · ·"
+                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                keyboardType="number-pad"
+                                maxLength={6}
+                                returnKeyType="done"
+                                onSubmitEditing={handleVerifyOtp}
+                                onFocus={() => setFocusCode(true)}
+                                onBlur={() => setFocusCode(false)}
+                                autoFocus
+                              />
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[s.primaryBtn, (otpCode.length < 4 || otpLoading) && s.primaryBtnDisabled]}
+                            onPress={handleVerifyOtp}
+                            disabled={otpCode.length < 4 || otpLoading}
+                            activeOpacity={0.85}
+                          >
+                            {otpLoading
+                              ? <ActivityIndicator color={C.white} size="small" />
+                              : <><Ionicons name="checkmark-circle-outline" size={16} color={C.white} /><Text style={s.primaryBtnText}>Verify & Sign In</Text></>
+                            }
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[s.resendBtn, resendSecs > 0 && { opacity: 0.4 }]}
+                            onPress={handleResend}
+                            disabled={resendSecs > 0}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name="refresh-outline" size={14} color={C.c700} />
+                            <Text style={s.resendText}>
+                              {resendSecs > 0 ? `Resend code in ${resendSecs}s` : 'Resend OTP'}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.subheading}>
+                        {isOnline ? 'Enter your phone number and password.' : 'No internet — using cached credentials.'}
+                      </Text>
+                      <View style={s.fieldGroup}>
+                        <Text style={s.label}>Phone number</Text>
+                        <View style={[s.inputWrap, focusId && s.inputWrapFocused]}>
+                          <TextInput
+                            style={s.input}
+                            value={identifier}
+                            onChangeText={setIdentifier}
+                            placeholder="+254 7XX XXX XXX"
+                            placeholderTextColor="rgba(255,255,255,0.38)"
+                            autoCapitalize="none"
+                            keyboardType="phone-pad"
+                            returnKeyType="next"
+                            textContentType="username"
+                            autoComplete="username"
+                            onFocus={() => setFocusId(true)}
+                            onBlur={() => setFocusId(false)}
+                          />
+                        </View>
+                      </View>
+                      <View style={s.fieldGroup}>
+                        <Text style={s.label}>Password</Text>
+                        <View style={[s.inputWrap, focusPwd && s.inputWrapFocused]}>
+                          <TextInput
+                            style={[s.input, { flex: 1 }]}
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholder="Password"
+                            placeholderTextColor="rgba(255,255,255,0.38)"
+                            secureTextEntry={!showPwd}
+                            returnKeyType="done"
+                            onSubmitEditing={handlePasswordLogin}
+                            textContentType="password"
+                            autoComplete="current-password"
+                            onFocus={() => setFocusPwd(true)}
+                            onBlur={() => setFocusPwd(false)}
+                          />
+                          <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPwd(v => !v)} activeOpacity={0.7}>
+                            <Ionicons name={showPwd ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.55)" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity style={s.forgotRow} onPress={() => navigation.navigate('ForgotPassword')} activeOpacity={0.7}>
+                        <Text style={s.forgotText}>Forgot password?</Text>
                       </TouchableOpacity>
-                    </View>
-                  </View>
+                      <TouchableOpacity
+                        style={[s.primaryBtn, (!identifier.trim() || !password || pwdLoading) && s.primaryBtnDisabled]}
+                        onPress={handlePasswordLogin}
+                        disabled={pwdLoading || !identifier.trim() || !password}
+                        activeOpacity={0.85}
+                      >
+                        {pwdLoading
+                          ? <ActivityIndicator color={C.white} size="small" />
+                          : <Text style={s.primaryBtnText}>Sign in</Text>
+                        }
+                      </TouchableOpacity>
+                    </>
+                  )}
 
                   <View style={s.coopHintRow}>
                     <Ionicons name="information-circle-outline" size={13} color="rgba(255,255,255,0.55)" />
@@ -240,22 +375,6 @@ export default function LoginScreen({ navigation }) {
                       <Text style={s.coopHintLink}>Staff tab</Text>
                     </TouchableOpacity>
                   </View>
-
-                  <TouchableOpacity style={s.forgotRow} onPress={() => navigation.navigate('ForgotPassword')} activeOpacity={0.7}>
-                    <Text style={s.forgotText}>Forgot password?</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[s.primaryBtn, (!identifier.trim() || !password || pwdLoading) && s.primaryBtnDisabled]}
-                    onPress={handlePasswordLogin}
-                    disabled={pwdLoading || !identifier.trim() || !password}
-                    activeOpacity={0.85}
-                  >
-                    {pwdLoading
-                      ? <ActivityIndicator color={C.white} size="small" />
-                      : <Text style={s.primaryBtnText}>Sign in</Text>
-                    }
-                  </TouchableOpacity>
 
                   <View style={s.divider}>
                     <View style={s.divLine} />

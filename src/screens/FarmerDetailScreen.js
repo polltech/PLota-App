@@ -199,8 +199,11 @@ export default function FarmerDetailScreen() {
         {/* Personal info */}
         <View style={s.section}>
           <Text style={s.subHeader}>Personal Information</Text>
+          {!!farmer?.pcfno && (
+            <InfoRow icon="ribbon-outline" label="Plotra ID (PCFNO)" value={farmer.pcfno} />
+          )}
           {!!farmer?.coop_member_no && (
-            <InfoRow icon="ribbon-outline" label="Member No." value={farmer.coop_member_no} />
+            <InfoRow icon="ribbon-outline" label="Coop Member No." value={farmer.coop_member_no} />
           )}
           <InfoRow icon="person-outline" label="Full Name" value={fullName} />
           <InfoRow icon="call-outline" label="Phone" value={farmer?.phone} />

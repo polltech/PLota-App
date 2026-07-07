@@ -285,6 +285,7 @@ export default function FarmDetailScreen() {
               <Row label="National ID"   value={farm?.farmer_national_id} mono />
               <Row label="Gender"        value={cap(farm?.farmer_gender)} />
               <Row label="Location"      value={farm?.farmer_location} />
+              <Row label="Plotra ID (PCFNO)" value={farm?.pcfno} mono />
               <Row label="Coop Member No." value={farm?.coop_member_no} mono />
               <Row label="Registered"    value={fmtDate(farm?.created_at)} last />
             </SectionCard>
